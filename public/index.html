@@ -44,6 +44,10 @@
       border-color: #444;
     }
 
+    body.dark-mode .table-wrapper {
+      background-color: #333;
+    }
+
     body.dark-mode table {
       background-color: #333;
       color: #ecf0f1;
@@ -173,26 +177,66 @@
       background-color: #c0392b;
     }
 
+    /* TABELA COM SCROLL */
+    .table-wrapper {
+      overflow-x: auto;
+      border-radius: 8px;
+      background: var(--white);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      border: 1px solid var(--border);
+    }
+
     table {
       width: 100%;
       border-collapse: collapse;
       background: var(--white);
+      min-width: 800px;
     }
 
     thead {
       background-color: var(--primary);
       color: var(--white);
+      position: sticky;
+      top: 0;
     }
 
     th, td {
-      padding: 12px;
+      padding: 12px 15px;
       text-align: left;
       border-bottom: 1px solid var(--border);
+      white-space: nowrap;
     }
 
     tbody tr:hover {
       background-color: #f8f9fa;
       cursor: pointer;
+    }
+
+    body.dark-mode tbody tr:hover {
+      background-color: #444;
+    }
+
+    /* BARRA DE SCROLL CUSTOMIZADA */
+    .table-wrapper::-webkit-scrollbar {
+      height: 8px;
+    }
+
+    .table-wrapper::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 10px;
+    }
+
+    body.dark-mode .table-wrapper::-webkit-scrollbar-track {
+      background: #444;
+    }
+
+    .table-wrapper::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 10px;
+    }
+
+    .table-wrapper::-webkit-scrollbar-thumb:hover {
+      background: var(--secondary);
     }
 
     .modal {
@@ -316,7 +360,7 @@
       }
 
       th, td {
-        padding: 8px;
+        padding: 8px 10px;
       }
     }
   </style>
@@ -358,21 +402,28 @@
       <button onclick="abrirModalCriar()">➕ Novo Contrato</button>
     </div>
 
-    <table id="tabela">
-      <thead>
-        <tr>
-          <th>Contrato</th>
-          <th>Endereço</th>
-          <th>Locatário</th>
-          <th>Comunicação Inquilino</th>
-          <th>Agendamento Vistoria</th>
-          <th>Status</th>
-          <th>Ações</th>
-        </tr>
-      </thead>
-      <tbody id="tabelaCorpo">
-      </tbody>
-    </table>
+    <!-- TABELA COM SCROLL -->
+    <div class="table-wrapper">
+      <table id="tabela">
+        <thead>
+          <tr>
+            <th>Contrato</th>
+            <th>Endereço</th>
+            <th>Locatário</th>
+            <th>Comunicação Inquilino</th>
+            <th>Comunicação Proprietário</th>
+            <th>Agendamento Vistoria</th>
+            <th>Entrega Chaves</th>
+            <th>Retirada Chaves</th>
+            <th>Reparos</th>
+            <th>Status</th>
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabelaCorpo">
+        </tbody>
+      </table>
+    </div>
   </div>
 
   <div class="modal" id="modal">
@@ -415,6 +466,14 @@
           <input type="date" id="retiradaChaves">
         </div>
         <div class="form-group">
+          <label>Reparos</label>
+          <select id="reparos">
+            <option value="">-- Selecionar --</option>
+            <option value="sim">Sim</option>
+            <option value="nao">Não</option>
+          </select>
+        </div>
+        <div class="form-group">
           <label>Status</label>
           <select id="status" required>
             <option value="pendente">Pendente</option>
@@ -446,12 +505,6 @@
       return `${dia}/${mes}/${ano}`;
     }
 
-    // Formatar data de DD/MM/YYYY para ISO
-    function formatarDataISO(dataStr) {
-      if (!dataStr) return null;
-      return dataStr; // A input type="date" já retorna ISO
-    }
-
     function toggleDarkMode() {
       document.body.classList.toggle('dark-mode');
       localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
@@ -462,16 +515,16 @@
         .then(r => r.json())
         .then(data => {
           contratos = data.contratos || [
-            { _id: '1', contrato: 'CA0535/1', endereco: 'Rua Conselheiro Antônio Prado 230', locatario: 'Município de Olímpia', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '2', contrato: 'CA1814/2', endereco: 'Rua Ilda Carrara Canevarollo 205', locatario: 'Andre Ruiz Spegiorin', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '3', contrato: 'CA1374/3', endereco: 'Rua Expedicionário Lonildo Porcionato 42', locatario: 'Maria de Lourdes Barriento', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '4', contrato: 'CA1979/1', endereco: 'Rua do Tico-tico 308', locatario: 'Leonilda São Jose da Silva', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '5', contrato: 'CA1338/2', endereco: 'Rua Paschoal Michelli 82', locatario: 'Richard Alexssander de Matos', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '6', contrato: 'AP0208/2', endereco: 'Alameda das Orquídeas 125', locatario: 'Aléxia Andreia Lomba', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '7', contrato: 'CA2796/1', endereco: 'Rua Adevar José de Castro 48', locatario: 'Olivia Aparecida Pimenta', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '8', contrato: 'CA2762/1', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', locatario: 'Daniel Costa Paraguassu', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '9', contrato: 'CA2902/1', endereco: 'Rua Alexandre Bonini 85', locatario: 'Naila Aparecida de Sá Gimente', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '10', contrato: 'CA2458/1', endereco: 'Rua Sebastião Marins 149', locatario: 'Dionatan Vieira Costa', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, status: 'pendente', dataCriacao: new Date().toISOString() }
+            { _id: '1', contrato: 'CA0535/1', endereco: 'Rua Conselheiro Antônio Prado 230', locatario: 'Município de Olímpia', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '2', contrato: 'CA1814/2', endereco: 'Rua Ilda Carrara Canevarollo 205', locatario: 'Andre Ruiz Spegiorin', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '3', contrato: 'CA1374/3', endereco: 'Rua Expedicionário Lonildo Porcionato 42', locatario: 'Maria de Lourdes Barriento', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '4', contrato: 'CA1979/1', endereco: 'Rua do Tico-tico 308', locatario: 'Leonilda São Jose da Silva', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '5', contrato: 'CA1338/2', endereco: 'Rua Paschoal Michelli 82', locatario: 'Richard Alexssander de Matos', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '6', contrato: 'AP0208/2', endereco: 'Alameda das Orquídeas 125', locatario: 'Aléxia Andreia Lomba', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '7', contrato: 'CA2796/1', endereco: 'Rua Adevar José de Castro 48', locatario: 'Olivia Aparecida Pimenta', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '8', contrato: 'CA2762/1', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', locatario: 'Daniel Costa Paraguassu', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '9', contrato: 'CA2902/1', endereco: 'Rua Alexandre Bonini 85', locatario: 'Naila Aparecida de Sá Gimente', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '10', contrato: 'CA2458/1', endereco: 'Rua Sebastião Marins 149', locatario: 'Dionatan Vieira Costa', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() }
           ];
           atualizarTabela();
           atualizarStats();
@@ -509,13 +562,17 @@
 
     function renderizarTabela(dados) {
       const tbody = document.getElementById('tabelaCorpo');
-      tbody.innerHTML = dados.length === 0 ? '<tr><td colspan="7" class="empty-state">Nenhum contrato encontrado</td></tr>' : dados.map(c => `
+      tbody.innerHTML = dados.length === 0 ? '<tr><td colspan="11" class="empty-state">Nenhum contrato encontrado</td></tr>' : dados.map(c => `
         <tr onclick="abrirModalEditar('${c._id}')">
           <td>${c.contrato}</td>
           <td>${c.endereco}</td>
           <td>${c.locatario}</td>
           <td>${formatarData(c.comunicacaoInquilino)}</td>
+          <td>${formatarData(c.comunicacaoProprietario)}</td>
           <td>${formatarData(c.agendamentoVistoria)}</td>
+          <td>${formatarData(c.entregaChaves)}</td>
+          <td>${formatarData(c.retiradaChaves)}</td>
+          <td>${c.reparos === 'sim' ? '✅ Sim' : c.reparos === 'nao' ? '❌ Não' : '-'}</td>
           <td><span style="padding: 5px 10px; border-radius: 3px; font-size: 12px; background: ${c.status === 'pendente' ? '#f39c12' : c.status === 'agendada' ? '#3498db' : '#27ae60'}; color: white;">${c.status}</span></td>
           <td><button onclick="event.stopPropagation(); abrirModalEditar('${c._id}')">Editar</button></td>
         </tr>
@@ -543,6 +600,7 @@
       document.getElementById('agendamentoVistoria').value = contratoEditando.agendamentoVistoria ? contratoEditando.agendamentoVistoria.split('T')[0] : '';
       document.getElementById('entregaChaves').value = contratoEditando.entregaChaves ? contratoEditando.entregaChaves.split('T')[0] : '';
       document.getElementById('retiradaChaves').value = contratoEditando.retiradaChaves ? contratoEditando.retiradaChaves.split('T')[0] : '';
+      document.getElementById('reparos').value = contratoEditando.reparos;
       document.getElementById('status').value = contratoEditando.status;
       document.getElementById('modal').classList.add('active');
     }
@@ -562,6 +620,7 @@
         agendamentoVistoria: document.getElementById('agendamentoVistoria').value || null,
         entregaChaves: document.getElementById('entregaChaves').value || null,
         retiradaChaves: document.getElementById('retiradaChaves').value || null,
+        reparos: document.getElementById('reparos').value,
         status: document.getElementById('status').value
       };
 
@@ -605,8 +664,3 @@
   </script>
 </body>
 </html>
-
-         
-
-      
-   
