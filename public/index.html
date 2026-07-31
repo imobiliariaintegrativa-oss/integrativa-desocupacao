@@ -1,0 +1,1039 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integrativa Desocupação - Sistema de Gerenciamento</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #5B7FFF;
+            --primary-dark: #3E5FD6;
+            --secondary: #FF6B6B;
+            --success: #51CF66;
+            --warning: #FFD43B;
+            --danger: #FF6B6B;
+            --light: #F8F9FA;
+            --dark: #2D3436;
+            --border: #E9ECEF;
+            --text: #495057;
+            --text-light: #868E96;
+        }
+
+        [data-theme="dark"] {
+            --light: #1E1E1E;
+            --dark: #F8F9FA;
+            --border: #404040;
+            --text: #E0E0E0;
+            --text-light: #B0B0B0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--light);
+            color: var(--text);
+            line-height: 1.6;
+            transition: background-color 0.3s ease;
+        }
+
+        .container-fluid {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 20px 0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+
+        .logo {
+            font-size: 28px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            font-size: 32px;
+        }
+
+        .header-controls {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .btn-theme {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-theme:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        /* MAIN CONTENT */
+        .main {
+            padding: 30px 0;
+            min-height: calc(100vh - 100px);
+        }
+
+        /* CARDS ESTATÍSTICAS */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            border-left: 4px solid var(--primary);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        [data-theme="dark"] .stat-card {
+            background: #2D2D2D;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.15);
+        }
+
+        .stat-card.pendente {
+            border-left-color: var(--danger);
+        }
+
+        .stat-card.agendada {
+            border-left-color: var(--warning);
+        }
+
+        .stat-card.realizada {
+            border-left-color: var(--success);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: var(--primary);
+            margin-bottom: 8px;
+        }
+
+        .stat-card.agendada .stat-number {
+            color: var(--warning);
+        }
+
+        .stat-card.realizada .stat-number {
+            color: var(--success);
+        }
+
+        .stat-card.pendente .stat-number {
+            color: var(--danger);
+        }
+
+        .stat-icon {
+            font-size: 28px;
+            text-align: right;
+        }
+
+        /* CONTROLES */
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        [data-theme="dark"] .controls {
+            background: #2D2D2D;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+        }
+
+        .search-box input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            background: var(--light);
+            color: var(--text);
+            transition: border-color 0.3s ease;
+        }
+
+        [data-theme="dark"] .search-box input {
+            background: #1E1E1E;
+            border-color: #404040;
+        }
+
+        .search-box input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(91, 127, 255, 0.1);
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(91, 127, 255, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--border);
+            color: var(--text);
+        }
+
+        .btn-secondary:hover {
+            background: #DEE2E6;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 8px 15px;
+            border: 1px solid var(--border);
+            background: white;
+            color: var(--text);
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        [data-theme="dark"] .filter-btn {
+            background: #1E1E1E;
+        }
+
+        .filter-btn:hover,
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+
+        /* TABELA */
+        .table-container {
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow-x: auto;
+        }
+
+        [data-theme="dark"] .table-container {
+            background: #2D2D2D;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        thead {
+            background: #F8F9FA;
+            border-bottom: 2px solid var(--border);
+        }
+
+        [data-theme="dark"] thead {
+            background: #1E1E1E;
+        }
+
+        th {
+            padding: 16px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-light);
+            white-space: nowrap;
+        }
+
+        td {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 14px;
+        }
+
+        tbody tr:hover {
+            background: #F8F9FA;
+        }
+
+        [data-theme="dark"] tbody tr:hover {
+            background: #1E1E1E;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .status-pendente {
+            background: rgba(255, 107, 107, 0.1);
+            color: var(--danger);
+        }
+
+        .status-agendada {
+            background: rgba(255, 212, 59, 0.1);
+            color: #F59F00;
+        }
+
+        .status-realizada {
+            background: rgba(81, 207, 102, 0.1);
+            color: var(--success);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-edit {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-edit:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-delete {
+            background: var(--danger);
+            color: white;
+        }
+
+        .btn-delete:hover {
+            background: #E03C3C;
+        }
+
+        /* MODAL */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+        }
+
+        [data-theme="dark"] .modal-content {
+            background: #2D2D2D;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+        }
+
+        .modal-header h2 {
+            font-size: 20px;
+            margin: 0;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: color 0.3s ease;
+        }
+
+        .modal-close:hover {
+            color: var(--text);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            background: var(--light);
+            color: var(--text);
+            font-family: inherit;
+            transition: border-color 0.3s ease;
+        }
+
+        [data-theme="dark"] .form-group input,
+        [data-theme="dark"] .form-group textarea,
+        [data-theme="dark"] .form-group select {
+            background: #1E1E1E;
+            border-color: #404040;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(91, 127, 255, 0.1);
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .modal-footer {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 25px;
+            border-top: 1px solid var(--border);
+            padding-top: 20px;
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+
+        .empty-state-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+        }
+
+        .empty-state h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+        }
+
+        .empty-state p {
+            color: var(--text-light);
+            margin-bottom: 20px;
+        }
+
+        /* TOAST NOTIFICATIONS */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: white;
+            padding: 16px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            max-width: 400px;
+            animation: slideIn 0.3s ease;
+            z-index: 2000;
+        }
+
+        [data-theme="dark"] .toast {
+            background: #2D2D2D;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .toast.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .toast.error {
+            border-left: 4px solid var(--danger);
+        }
+
+        .toast.info {
+            border-left: 4px solid var(--primary);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            }
+
+            .stat-number {
+                font-size: 28px;
+            }
+
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .filters {
+                width: 100%;
+            }
+
+            table {
+                font-size: 12px;
+            }
+
+            th, td {
+                padding: 12px 8px;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+
+            .btn-small {
+                width: 100%;
+            }
+        }
+
+        /* LOADING */
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* FOOTER */
+        .footer {
+            background: #F8F9FA;
+            padding: 20px 0;
+            text-align: center;
+            color: var(--text-light);
+            font-size: 12px;
+            margin-top: 50px;
+            border-top: 1px solid var(--border);
+        }
+
+        [data-theme="dark"] .footer {
+            background: #1E1E1E;
+            border-top-color: #404040;
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <header class="header">
+        <div class="container-fluid">
+            <div class="header-content">
+                <div class="logo">
+                    <span class="logo-icon">📋</span>
+                    <span>Integrativa Desocupação</span>
+                </div>
+                <div class="header-controls">
+                    <button class="btn-theme" id="themeToggle">🌙 Modo Escuro</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="main">
+        <div class="container-fluid">
+            <!-- ESTATÍSTICAS -->
+            <div class="stats-grid">
+                <div class="stat-card pendente">
+                    <div class="stat-label">🔴 Pendentes</div>
+                    <div class="stat-number" id="statPendente">0</div>
+                    <div class="stat-icon">⏳</div>
+                </div>
+                <div class="stat-card agendada">
+                    <div class="stat-label">🟡 Agendadas</div>
+                    <div class="stat-number" id="statAgendada">0</div>
+                    <div class="stat-icon">📅</div>
+                </div>
+                <div class="stat-card realizada">
+                    <div class="stat-label">🟢 Realizadas</div>
+                    <div class="stat-number" id="statRealizada">0</div>
+                    <div class="stat-icon">✅</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">🏢 Total</div>
+                    <div class="stat-number" id="statTotal">0</div>
+                    <div class="stat-icon">📊</div>
+                </div>
+            </div>
+
+            <!-- CONTROLES -->
+            <div class="controls">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="🔍 Procurar por contrato, endereço ou locatário...">
+                </div>
+                <button class="btn btn-primary" id="btnNovoContrato">+ Novo Contrato</button>
+                <button class="btn btn-secondary" id="btnRecarregar">🔄 Recarregar</button>
+            </div>
+
+            <!-- FILTROS -->
+            <div class="controls">
+                <span style="font-weight: 500; margin-right: 10px;">Filtrar por Status:</span>
+                <div class="filters">
+                    <button class="filter-btn active" data-status="todos">Todos</button>
+                    <button class="filter-btn" data-status="pendente">🔴 Pendentes</button>
+                    <button class="filter-btn" data-status="agendada">🟡 Agendadas</button>
+                    <button class="filter-btn" data-status="realizada">🟢 Realizadas</button>
+                </div>
+            </div>
+
+            <!-- TABELA -->
+            <div class="table-container">
+                <table id="contractsTable">
+                    <thead>
+                        <tr>
+                            <th>Contrato</th>
+                            <th>Endereço</th>
+                            <th>Locatário</th>
+                            <th>Comunicação Inquilino</th>
+                            <th>Comunicação Proprietário</th>
+                            <th>Agendamento Vistoria</th>
+                            <th>Entrega Chaves</th>
+                            <th>Retirada Chaves Vistoriador</th>
+                            <th>Reparos</th>
+                            <th>Status</th>
+                            <th>Data Criação</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="contractsBody">
+                    </tbody>
+                </table>
+                <div id="emptyState" class="empty-state" style="display: none;">
+                    <div class="empty-state-icon">📭</div>
+                    <h3>Nenhum contrato encontrado</h3>
+                    <p>Comece criando um novo contrato de desocupação</p>
+                    <button class="btn btn-primary" id="btnNovoContratoEmpty">+ Novo Contrato</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- MODAL -->
+    <div class="modal" id="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Novo Contrato</h2>
+                <button class="modal-close" id="modalClose">&times;</button>
+            </div>
+            <form id="contractForm">
+                <div class="form-group">
+                    <label>Contrato *</label>
+                    <input type="text" id="formContrato" required placeholder="CA0535/1">
+                </div>
+                <div class="form-group">
+                    <label>Endereço *</label>
+                    <input type="text" id="formEndereco" required placeholder="Rua...">
+                </div>
+                <div class="form-group">
+                    <label>Locatário *</label>
+                    <input type="text" id="formLocatario" required placeholder="Nome do locatário">
+                </div>
+                <div class="form-group">
+                    <label>Comunicação Inquilino</label>
+                    <input type="date" id="formComunicacaoInquilino">
+                </div>
+                <div class="form-group">
+                    <label>Comunicação Proprietário</label>
+                    <input type="date" id="formComunicacaoProprietario">
+                </div>
+                <div class="form-group">
+                    <label>Agendamento Vistoria</label>
+                    <input type="date" id="formAgendamentoVistoria">
+                </div>
+                <div class="form-group">
+                    <label>Entrega Chaves Inquilino</label>
+                    <input type="date" id="formEntregaChaves">
+                </div>
+                <div class="form-group">
+                    <label>Retirada Chaves Vistoriador</label>
+                    <input type="date" id="formRetiradaChaves">
+                </div>
+                <div class="form-group">
+                    <label>Reparos Constatados</label>
+                    <select id="formReparos">
+                        <option value="">-- Selecionar --</option>
+                        <option value="sim">Sim</option>
+                        <option value="nao">Não</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Status *</label>
+                    <select id="formStatus" required>
+                        <option value="">-- Selecionar --</option>
+                        <option value="pendente">Pendente</option>
+                        <option value="agendada">Agendada</option>
+                        <option value="realizada">Realizada</option>
+                    </select>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" id="btnCancelar">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar Contrato</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container-fluid">
+            <p>Integrativa Desocupação © 2026 | Sistema Profissional de Gerenciamento de Desocupações</p>
+        </div>
+    </footer>
+
+    <script>
+        // DADOS (Mock - será substituído pela API)
+        const contracts = [
+            { id: 1, contrato: 'CA0535/1', endereco: 'R. Conselheiro Antônio Prado 230', locatario: 'Município de Olímpia', comunicacaoInquilino: '11/2020', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparos: 'não', status: 'pendente', dataCriacao: '29/07/2026' },
+            { id: 2, contrato: 'CA1814/2', endereco: 'Rua Ilda Carrara Canevarollo 205', locatario: 'Andre Ruiz Spegiorin', comunicacaoInquilino: '11/2026', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparos: 'não', status: 'pendente', dataCriacao: '29/07/2026' },
+            { id: 3, contrato: 'CA1374/3', endereco: 'Rua Expedicionário Lonildo Porcionato 42', locatario: 'Maria de Lourdes Barriento', comunicacaoInquilino: '12/2026', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparos: 'não', status: 'pendente', dataCriacao: '29/07/2026' },
+            { id: 4, contrato: 'CA1979/1', endereco: 'Rua do Tico-tico 308', locatario: 'Leonilda São Jose da Silva', comunicacaoInquilino: '05/2027', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparos: 'não', status: 'pendente', dataCriacao: '29/07/2026' },
+            { id: 5, contrato: 'CA1338/2', endereco: 'Rua Paschoal Michelli 82', locatario: 'Richard Alexssander de Matos', comunicacaoInquilino: '06/2027', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparos: 'não', status: 'pendente', dataCriacao: '29/07/2026' },
+            { id: 6, contrato: 'AP0208/2', endereco: 'Alameda das Orquídeas 125', locatario: 'Aléxia Andreia Lomba', comunicacaoInquilino: '07/2027', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparos: 'não', status: 'pendente', dataCriacao: '29/07/2026' },
+            { id: 7, contrato: 'CA2796/1', endereco: 'Rua Adevar José de Castro 48', locatario: 'Olivia Aparecida Pimenta', comunicacaoInquilino: '11/2027', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparos: 'não', status: 'pendente', dataCriacao: '29/07/2026' },
+            { id: 8, contrato: 'CA2762/1', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', locatario: 'Daniel Costa Paraguassu', comunicacaoInquilino: '12/2027', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparos: 'não', status: 'pendente', dataCriacao: '29/07/2026' },
+            { id: 9, contrato: 'CA2902/1', endereco: 'Rua Alexandre Bonini 85', locatario: 'Naila Aparecida de Sá Gimente', comunicacaoInquilino: '01/2028', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparos: 'não', status: 'pendente', dataCriacao: '29/07/2026' },
+            { id: 10, contrato: 'CA2458/1', endereco: 'Rua Sebastião Marins 149', locatario: 'Dionatan Vieira Costa', comunicacaoInquilino: '06/2028', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparos: 'não', status: 'pendente', dataCriacao: '29/07/2026' }
+        ];
+
+        let currentFilter = 'todos';
+        let searchTerm = '';
+        let editingId = null;
+
+        // TEMA
+        const themeToggle = document.getElementById('themeToggle');
+        const html = document.documentElement;
+
+        function initTheme() {
+            const saved = localStorage.getItem('theme') || 'light';
+            html.setAttribute('data-theme', saved);
+            updateThemeButton();
+        }
+
+        function updateThemeButton() {
+            const theme = html.getAttribute('data-theme');
+            themeToggle.textContent = theme === 'dark' ? '☀️ Modo Claro' : '🌙 Modo Escuro';
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const current = html.getAttribute('data-theme');
+            const newTheme = current === 'dark' ? 'light' : 'dark';
+            html.setAttribute('data-theme', newTheme);
+            localStorage.setItem('theme', newTheme);
+            updateThemeButton();
+        });
+
+        // INICIALIZAR
+        function init() {
+            initTheme();
+            renderTable();
+            updateStats();
+            setupEventListeners();
+        }
+
+        function setupEventListeners() {
+            document.getElementById('btnNovoContrato').addEventListener('click', openModal);
+            document.getElementById('btnNovoContratoEmpty').addEventListener('click', openModal);
+            document.getElementById('btnCancelar').addEventListener('click', closeModal);
+            document.getElementById('modalClose').addEventListener('click', closeModal);
+            document.getElementById('contractForm').addEventListener('submit', handleSave);
+            document.getElementById('searchInput').addEventListener('input', handleSearch);
+            document.getElementById('btnRecarregar').addEventListener('click', handleRefresh);
+
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', handleFilter);
+            });
+        }
+
+        function renderTable() {
+            const filtered = getFilteredData();
+            const tbody = document.getElementById('contractsBody');
+            const emptyState = document.getElementById('emptyState');
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.style.display = 'block';
+                return;
+            }
+
+            emptyState.style.display = 'none';
+            tbody.innerHTML = filtered.map(contract => `
+                <tr>
+                    <td><strong>${contract.contrato}</strong></td>
+                    <td>${contract.endereco}</td>
+                    <td>${contract.locatario}</td>
+                    <td>${contract.comunicacaoInquilino || '-'}</td>
+                    <td>${contract.comunicacaoProprietario || '-'}</td>
+                    <td>${contract.agendamentoVistoria || '-'}</td>
+                    <td>${contract.entregaChaves || '-'}</td>
+                    <td>${contract.retiradaChaves || '-'}</td>
+                    <td>${contract.reparos === 'sim' ? '✅ Sim' : '❌ Não'}</td>
+                    <td>
+                        <span class="status-badge status-${contract.status}">
+                            ${contract.status.charAt(0).toUpperCase() + contract.status.slice(1)}
+                        </span>
+                    </td>
+                    <td>${contract.dataCriacao}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn-small btn-edit" onclick="editContract(${contract.id})">Editar</button>
+                            <button class="btn-small btn-delete" onclick="deleteContract(${contract.id})">Deletar</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getFilteredData() {
+            return contracts.filter(contract => {
+                const statusMatch = currentFilter === 'todos' || contract.status === currentFilter;
+                const searchMatch = searchTerm === '' || 
+                    contract.contrato.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    contract.endereco.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    contract.locatario.toLowerCase().includes(searchTerm.toLowerCase());
+                return statusMatch && searchMatch;
+            });
+        }
+
+        function updateStats() {
+            const pendente = contracts.filter(c => c.status === 'pendente').length;
+            const agendada = contracts.filter(c => c.status === 'agendada').length;
+            const realizada = contracts.filter(c => c.status === 'realizada').length;
+
+            document.getElementById('statPendente').textContent = pendente;
+            document.getElementById('statAgendada').textContent = agendada;
+            document.getElementById('statRealizada').textContent = realizada;
+            document.getElementById('statTotal').textContent = contracts.length;
+        }
+
+        function openModal(edit = null) {
+            const modal = document.getElementById('modal');
+            const form = document.getElementById('contractForm');
+            
+            if (edit) {
+                document.getElementById('modalTitle').textContent = 'Editar Contrato';
+                const contract = contracts.find(c => c.id === edit);
+                editingId = edit;
+
+                document.getElementById('formContrato').value = contract.contrato;
+                document.getElementById('formEndereco').value = contract.endereco;
+                document.getElementById('formLocatario').value = contract.locatario;
+                document.getElementById('formComunicacaoInquilino').value = contract.comunicacaoInquilino;
+                document.getElementById('formComunicacaoProprietario').value = contract.comunicacaoProprietario;
+                document.getElementById('formAgendamentoVistoria').value = contract.agendamentoVistoria;
+                document.getElementById('formEntregaChaves').value = contract.entregaChaves;
+                document.getElementById('formRetiradaChaves').value = contract.retiradaChaves;
+                document.getElementById('formReparos').value = contract.reparos;
+                document.getElementById('formStatus').value = contract.status;
+            } else {
+                document.getElementById('modalTitle').textContent = 'Novo Contrato';
+                editingId = null;
+                form.reset();
+            }
+
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('modal').classList.remove('active');
+        }
+
+        function handleSave(e) {
+            e.preventDefault();
+
+            const data = {
+                contrato: document.getElementById('formContrato').value,
+                endereco: document.getElementById('formEndereco').value,
+                locatario: document.getElementById('formLocatario').value,
+                comunicacaoInquilino: document.getElementById('formComunicacaoInquilino').value,
+                comunicacaoProprietario: document.getElementById('formComunicacaoProprietario').value,
+                agendamentoVistoria: document.getElementById('formAgendamentoVistoria').value,
+                entregaChaves: document.getElementById('formEntregaChaves').value,
+                retiradaChaves: document.getElementById('formRetiradaChaves').value,
+                reparos: document.getElementById('formReparos').value,
+                status: document.getElementById('formStatus').value
+            };
+
+            if (editingId) {
+                const idx = contracts.findIndex(c => c.id === editingId);
+                contracts[idx] = { ...contracts[idx], ...data };
+                showToast('Contrato atualizado com sucesso!', 'success');
+            } else {
+                contracts.push({ id: Math.max(...contracts.map(c => c.id)) + 1, ...data, dataCriacao: new Date().toLocaleDateString('pt-BR') });
+                showToast('Contrato criado com sucesso!', 'success');
+            }
+
+            closeModal();
+            renderTable();
+            updateStats();
+        }
+
+        function editContract(id) {
+            openModal(id);
+        }
+
+        function deleteContract(id) {
+            if (confirm('Tem certeza que deseja deletar este contrato?')) {
+                contracts.splice(contracts.findIndex(c => c.id === id), 1);
+                showToast('Contrato deletado com sucesso!', 'success');
+                renderTable();
+                updateStats();
+            }
+        }
+
+        function handleFilter(e) {
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            e.target.classList.add('active');
+            currentFilter = e.target.dataset.status;
+            renderTable();
+        }
+
+        function handleSearch(e) {
+            searchTerm = e.target.value;
+            renderTable();
+        }
+
+        function handleRefresh() {
+            showToast('Dados recarregados!', 'info');
+            renderTable();
+            updateStats();
+        }
+
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 3000);
+        }
+
+        // INICIAR
+        init();
+    </script>
+</body>
+</html>
