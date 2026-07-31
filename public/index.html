@@ -583,37 +583,43 @@
     let contratoEditando = null;
     let ordenacao = { campo: null, direcao: 'asc' };
 
-    // DADOS PADRÃO DOS 10 CONTRATOS
-    const dadosPadrao = [
-      { contrato: 'CA0535/1', endereco: 'Rua Conselheiro Antônio Prado 230, Centro', locatario: 'Município de Olímpia', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
-      { contrato: 'CA1814/2', endereco: 'Rua Ilda Carrara Canevarollo 205, Cohab 4', locatario: 'Andre Ruiz Spegiorin', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
-      { contrato: 'CA1374/3', endereco: 'Rua Expedicionário Lonildo Porcionato 42', locatario: 'Maria de Lourdes Barriento', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
-      { contrato: 'CA1979/1', endereco: 'Rua do Tico-tico 308', locatario: 'Leonilda São Jose da Silva', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
-      { contrato: 'CA1338/2', endereco: 'Rua Paschoal Michelli 82', locatario: 'Richard Alexssander de Matos', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
-      { contrato: 'AP0208/2', endereco: 'Alameda das Orquídeas 125, Apto 12', locatario: 'Aléxia Andreia Lomba', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
-      { contrato: 'CA2796/1', endereco: 'Rua Adevar José de Castro 48', locatario: 'Olivia Aparecida Pimenta', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
-      { contrato: 'CA2762/1', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', locatario: 'Daniel Costa Paraguassu', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
-      { contrato: 'CA2902/1', endereco: 'Rua Alexandre Bonini 85', locatario: 'Naila Aparecida de Sá Gimente', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
-      { contrato: 'CA2458/1', endereco: 'Rua Sebastião Marins 149', locatario: 'Dionatan Vieira Costa', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' }
-    ];
-
+    // ✅ FORMATAR DATA CORRETAMENTE - NÃO DEIXA NaN
     function formatarData(dataISO) {
-      if (!dataISO) return '-';
-      const data = new Date(dataISO + 'T00:00:00');
-      const dia = String(data.getDate()).padStart(2, '0');
-      const mes = String(data.getMonth() + 1).padStart(2, '0');
-      const ano = data.getFullYear();
-      return `${dia}/${mes}/${ano}`;
+      if (!dataISO || dataISO === '' || dataISO === 'null') return '-';
+      
+      try {
+        const data = new Date(dataISO);
+        if (isNaN(data.getTime())) return '-';
+        
+        const dia = String(data.getDate()).padStart(2, '0');
+        const mes = String(data.getMonth() + 1).padStart(2, '0');
+        const ano = data.getFullYear();
+        return `${dia}/${mes}/${ano}`;
+      } catch (e) {
+        return '-';
+      }
     }
 
-    // INICIALIZAR DADOS PADRÃO SE BANCO ESTIVER VAZIO
+    // DADOS PADRÃO DOS 10 CONTRATOS
+    const dadosPadrao = [
+      { contrato: 'CA0535/1', endereco: 'Rua Conselheiro Antônio Prado 230, Centro', locatario: 'Município de Olímpia', comunicacaoInquilino: '', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA1814/2', endereco: 'Rua Ilda Carrara Canevarollo 205, Cohab 4', locatario: 'Andre Ruiz Spegiorin', comunicacaoInquilino: '', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA1374/3', endereco: 'Rua Expedicionário Lonildo Porcionato 42', locatario: 'Maria de Lourdes Barriento', comunicacaoInquilino: '', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA1979/1', endereco: 'Rua do Tico-tico 308', locatario: 'Leonilda São Jose da Silva', comunicacaoInquilino: '', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA1338/2', endereco: 'Rua Paschoal Michelli 82', locatario: 'Richard Alexssander de Matos', comunicacaoInquilino: '', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparosConstatados: '', status: 'pendente' },
+      { contrato: 'AP0208/2', endereco: 'Alameda das Orquídeas 125, Apto 12', locatario: 'Aléxia Andreia Lomba', comunicacaoInquilino: '', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA2796/1', endereco: 'Rua Adevar José de Castro 48', locatario: 'Olivia Aparecida Pimenta', comunicacaoInquilino: '', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA2762/1', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', locatario: 'Daniel Costa Paraguassu', comunicacaoInquilino: '', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA2902/1', endereco: 'Rua Alexandre Bonini 85', locatario: 'Naila Aparecida de Sá Gimente', comunicacaoInquilino: '', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA2458/1', endereco: 'Rua Sebastião Marins 149', locatario: 'Dionatan Vieira Costa', comunicacaoInquilino: '', comunicacaoProprietario: '', agendamentoVistoria: '', entregaChaves: '', retiradaChaves: '', reparosConstatados: '', status: 'pendente' }
+    ];
+
     function inicializarDados() {
       fetch(`${API_URL}/contracts`)
         .then(r => r.json())
         .then(data => {
           if (!data.contratos || data.contratos.length === 0) {
             console.log('📦 Banco vazio! Inserindo dados padrão...');
-            // Inserir cada contrato
             dadosPadrao.forEach(contrato => {
               fetch(`${API_URL}/contracts`, {
                 method: 'POST',
@@ -621,7 +627,7 @@
                 body: JSON.stringify(contrato)
               }).catch(e => console.error('Erro ao inserir:', e));
             });
-            setTimeout(carregarDados, 2000); // Aguardar 2s e carregar
+            setTimeout(carregarDados, 2000);
           } else {
             carregarDados();
           }
@@ -790,11 +796,11 @@
         contrato: document.getElementById('contrato').value,
         endereco: document.getElementById('endereco').value,
         locatario: document.getElementById('locatario').value,
-        comunicacaoInquilino: document.getElementById('comunicacaoInquilino').value || null,
-        comunicacaoProprietario: document.getElementById('comunicacaoProprietario').value || null,
-        agendamentoVistoria: document.getElementById('agendamentoVistoria').value || null,
-        entregaChaves: document.getElementById('entregaChaves').value || null,
-        retiradaChaves: document.getElementById('retiradaChaves').value || null,
+        comunicacaoInquilino: document.getElementById('comunicacaoInquilino').value || '',
+        comunicacaoProprietario: document.getElementById('comunicacaoProprietario').value || '',
+        agendamentoVistoria: document.getElementById('agendamentoVistoria').value || '',
+        entregaChaves: document.getElementById('entregaChaves').value || '',
+        retiradaChaves: document.getElementById('retiradaChaves').value || '',
         reparosConstatados: document.getElementById('reparos').value,
         status: document.getElementById('status').value
       };
@@ -811,7 +817,10 @@
           fecharModal();
           mostrarToast('Contrato atualizado!');
         })
-        .catch(() => mostrarToast('Erro ao atualizar!', true));
+        .catch(err => {
+          console.error('Erro:', err);
+          mostrarToast('Erro ao atualizar!', true);
+        });
       } else {
         fetch(`${API_URL}/contracts`, {
           method: 'POST',
@@ -824,7 +833,10 @@
           fecharModal();
           mostrarToast('Contrato criado!');
         })
-        .catch(() => mostrarToast('Erro ao criar!', true));
+        .catch(err => {
+          console.error('Erro:', err);
+          mostrarToast('Erro ao criar!', true);
+        });
       }
     }
 
@@ -839,7 +851,10 @@
           fecharModal();
           mostrarToast('Contrato deletado!');
         })
-        .catch(() => mostrarToast('Erro ao deletar!', true));
+        .catch(err => {
+          console.error('Erro:', err);
+          mostrarToast('Erro ao deletar!', true);
+        });
       }
     }
 
@@ -855,8 +870,8 @@
       document.body.classList.add('dark-mode');
     }
 
+    // Carregar dados na inicialização - SEM RECARREGAMENTO AUTOMÁTICO
     inicializarDados();
-    setInterval(carregarDados, 5000);
   </script>
 </body>
 </html>
