@@ -583,20 +583,34 @@
     let contratoEditando = null;
     let ordenacao = { campo: null, direcao: 'asc' };
 
-    // ✅ FORMATAR DATA CORRETAMENTE - NÃO DEIXA NaN
+    // ✅ CONVERTER DATA ISO PARA FORMATO DD/MM/YYYY - SEM TIMEZONE
     function formatarData(dataISO) {
       if (!dataISO || dataISO === '' || dataISO === 'null') return '-';
       
       try {
-        const data = new Date(dataISO);
-        if (isNaN(data.getTime())) return '-';
+        // Extrai YYYY-MM-DD direto da string (sem converter para Date)
+        let dataParts = dataISO.split('T')[0].split('-'); // "2026-07-06" → ["2026", "07", "06"]
+        if (dataParts.length !== 3) return '-';
         
-        const dia = String(data.getDate()).padStart(2, '0');
-        const mes = String(data.getMonth() + 1).padStart(2, '0');
-        const ano = data.getFullYear();
+        let ano = dataParts[0];
+        let mes = dataParts[1];
+        let dia = dataParts[2];
+        
         return `${dia}/${mes}/${ano}`;
       } catch (e) {
         return '-';
+      }
+    }
+
+    // ✅ CONVERTER DATA ISO PARA INPUT DATE (YYYY-MM-DD)
+    function converterDataParaInput(dataISO) {
+      if (!dataISO || dataISO === '' || dataISO === 'null') return '';
+      
+      try {
+        // Extrai YYYY-MM-DD direto da string
+        return dataISO.split('T')[0];
+      } catch (e) {
+        return '';
       }
     }
 
@@ -776,11 +790,14 @@
       document.getElementById('contrato').value = contratoEditando.contrato;
       document.getElementById('endereco').value = contratoEditando.endereco;
       document.getElementById('locatario').value = contratoEditando.locatario;
-      document.getElementById('comunicacaoInquilino').value = contratoEditando.comunicacaoInquilino || '';
-      document.getElementById('comunicacaoProprietario').value = contratoEditando.comunicacaoProprietario || '';
-      document.getElementById('agendamentoVistoria').value = contratoEditando.agendamentoVistoria || '';
-      document.getElementById('entregaChaves').value = contratoEditando.entregaChaves || '';
-      document.getElementById('retiradaChaves').value = contratoEditando.retiradaChaves || '';
+      
+      // ✅ USAR A FUNÇÃO CONVERSOR
+      document.getElementById('comunicacaoInquilino').value = converterDataParaInput(contratoEditando.comunicacaoInquilino);
+      document.getElementById('comunicacaoProprietario').value = converterDataParaInput(contratoEditando.comunicacaoProprietario);
+      document.getElementById('agendamentoVistoria').value = converterDataParaInput(contratoEditando.agendamentoVistoria);
+      document.getElementById('entregaChaves').value = converterDataParaInput(contratoEditando.entregaChaves);
+      document.getElementById('retiradaChaves').value = converterDataParaInput(contratoEditando.retiradaChaves);
+      
       document.getElementById('reparos').value = contratoEditando.reparosConstatados || '';
       document.getElementById('status').value = contratoEditando.status;
       document.getElementById('modal').classList.add('active');
@@ -870,7 +887,6 @@
       document.body.classList.add('dark-mode');
     }
 
-    // Carregar dados na inicialização - SEM RECARREGAMENTO AUTOMÁTICO
     inicializarDados();
   </script>
 </body>
