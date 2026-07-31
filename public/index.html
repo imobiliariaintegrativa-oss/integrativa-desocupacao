@@ -263,7 +263,7 @@
       width: 100%;
       border-collapse: collapse;
       background: var(--white);
-      min-width: 1000px;
+      min-width: 1200px;
     }
 
     thead {
@@ -274,14 +274,14 @@
     }
 
     th {
-      padding: 12px 15px;
+      padding: 12px 10px;
       text-align: left;
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
       cursor: pointer;
       user-select: none;
       transition: background-color 0.3s;
-      font-size: 13px;
+      font-size: 12px;
     }
 
     th:hover {
@@ -307,11 +307,11 @@
     }
 
     td {
-      padding: 12px 15px;
+      padding: 10px;
       text-align: left;
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
-      font-size: 13px;
+      font-size: 12px;
     }
 
     .dias-badge {
@@ -610,8 +610,9 @@
             <th class="sortable" onclick="ordenar('contrato')">Contrato</th>
             <th>Locatário</th>
             <th class="sortable" onclick="ordenar('agendamentoVistoria')">Vistoria</th>
-            <th>Dias</th>
+            <th>Dias Faltam</th>
             <th>Status Chaves</th>
+            <th>Reparos</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -692,6 +693,7 @@
     let contratoEditando = null;
     let ordenacao = { campo: null, direcao: 'asc' };
 
+    // ✅ FUNÇÃO PARA FORMATAR DATA - FUNCIONA!
     function formatarData(dataISO) {
       if (!dataISO || dataISO === '' || dataISO === 'null') return '-';
       try {
@@ -715,20 +717,47 @@
       }
     }
 
-    // ✅ CALCULAR DIAS ATÉ VISTORIA
-    function calcularDias(dataVistoria) {
-      if (!dataVistoria || dataVistoria === '') return null;
-      
+    // ✅ NOVA FUNÇÃO - USA EXATAMENTE O MESMO PARSE QUE formatarData()
+    function calcularDias(dataISO) {
+      if (!dataISO || dataISO === '' || dataISO === 'null' || dataISO === null) {
+        return null;
+      }
+
       try {
-        const vistoria = new Date(dataVistoria + 'T00:00:00');
+        // Extrair YYYY-MM-DD (EXATAMENTE COMO EM formatarData())
+        let dataParts = dataISO.split('T')[0].split('-');
+        if (dataParts.length !== 3) return null;
+
+        let ano = parseInt(dataParts[0], 10);
+        let mes = parseInt(dataParts[1], 10);
+        let dia = parseInt(dataParts[2], 10);
+
+        // Validar valores
+        if (isNaN(ano) || isNaN(mes) || isNaN(dia)) return null;
+        if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
+
+        // Criar data usando constructor com valores numéricos
+        // IMPORTANTE: mês em JavaScript é 0-11, então mes-1
+        const vistoria = new Date(ano, mes - 1, dia, 0, 0, 0, 0);
+        
+        // Validar se a data foi criada corretamente
+        if (isNaN(vistoria.getTime())) return null;
+
+        // Hoje sem hora
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0);
-        
+
+        // Calcular diferença
         const diferenca = vistoria - hoje;
-        const dias = Math.ceil(diferenca / (1000 * 60 * 60 * 24));
-        
+        const diasMs = 1000 * 60 * 60 * 24;
+        const dias = Math.ceil(diferenca / diasMs);
+
+        // Validar resultado final
+        if (isNaN(dias)) return null;
+
         return dias;
       } catch (e) {
+        console.error('Erro ao calcular dias:', e, dataISO);
         return null;
       }
     }
@@ -747,6 +776,15 @@
         case 'recebidas': return '✅ Recebidas';
         case 'nao-recebidas': return '❌ Não Recebidas';
         default: return '⏳ Pendente';
+      }
+    }
+
+    // ✅ OBTER LABEL DE REPAROS
+    function obterLabelReparos(status) {
+      switch(status) {
+        case 'sim': return '⚠️ Sim';
+        case 'nao': return '✅ Não';
+        default: return '-';
       }
     }
 
@@ -850,7 +888,6 @@
       }
     }
 
-    // ✅ NOVO ALERTA - URGENTE (FALTAM 7 DIAS OU MENOS E NÃO RECEBEU CHAVES)
     function mostrarAlertaUrgente() {
       const urgentes = contratos.filter(c => {
         const dias = calcularDias(c.agendamentoVistoria);
@@ -940,10 +977,21 @@
 
     function renderizarTabela(dados) {
       const tbody = document.getElementById('tabelaCorpo');
-      tbody.innerHTML = dados.length === 0 ? '<tr><td colspan="6" class="empty-state">Nenhum contrato encontrado</td></tr>' : dados.map(c => {
+      tbody.innerHTML = dados.length === 0 ? '<tr><td colspan="7" class="empty-state">Nenhum contrato encontrado</td></tr>' : dados.map(c => {
         const dias = calcularDias(c.agendamentoVistoria);
         const classeCor = obterCorDias(dias);
-        const diasTexto = dias === null ? '-' : (dias < 0 ? '⏳ Vencida' : `${dias}d`);
+        
+        // Formatar dias para exibição
+        let diasTexto = '-';
+        if (dias !== null) {
+          if (dias < 0) {
+            diasTexto = '⏳ Vencida';
+          } else if (dias === 0) {
+            diasTexto = '🔴 HOJE!';
+          } else {
+            diasTexto = `${dias}d`;
+          }
+        }
 
         let classeLinha = '';
         if (c.statusChaves === 'nao-recebidas') {
@@ -961,6 +1009,7 @@
           <td>${formatarData(c.agendamentoVistoria)}</td>
           <td><span class="dias-badge ${classeCor}">${diasTexto}</span></td>
           <td>${obterLabelStatus(c.statusChaves)}</td>
+          <td>${obterLabelReparos(c.reparosConstatados)}</td>
           <td><button onclick="event.stopPropagation(); abrirModalEditar('${c._id}')">Editar</button></td>
         </tr>
       `;
