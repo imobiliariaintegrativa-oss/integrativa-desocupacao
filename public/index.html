@@ -508,6 +508,11 @@
       color: #7f8c8d;
     }
 
+    .saving {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+
     @media (max-width: 768px) {
       .header h1 {
         font-size: 20px;
@@ -628,7 +633,7 @@
         <h2 id="modalTitulo">Novo Contrato</h2>
         <button class="close" onclick="fecharModal()">✕</button>
       </div>
-      <form onsubmit="salvarContrato(event)">
+      <form id="formContrato" onsubmit="salvarContrato(event)">
         <div class="form-group">
           <label>Contrato</label>
           <input type="text" id="contrato" required>
@@ -655,8 +660,7 @@
         </div>
         <div class="form-group">
           <label>🔑 Status de Entrega de Chaves</label>
-          <select id="statusChaves" required>
-            <option value="">-- Selecionar --</option>
+          <select id="statusChaves">
             <option value="pendente">⏳ Pendente (aguardando)</option>
             <option value="recebidas">✅ Recebidas (locatário trouxe)</option>
             <option value="nao-recebidas">❌ Não Recebidas (após vistoria)</option>
@@ -679,7 +683,7 @@
           </select>
         </div>
         <div style="display: flex; gap: 10px;">
-          <button type="submit" style="flex: 1;">Salvar</button>
+          <button type="submit" style="flex: 1;" id="btnSalvar">Salvar</button>
           <button type="button" onclick="fecharModal()" style="flex: 1; background-color: #95a5a6;">Cancelar</button>
           <button type="button" id="btnDeletar" onclick="deletarContrato()" style="flex: 1; background-color: var(--danger); display: none;">Deletar</button>
         </div>
@@ -693,7 +697,6 @@
     let contratoEditando = null;
     let ordenacao = { campo: null, direcao: 'asc' };
 
-    // ✅ FUNÇÃO PARA FORMATAR DATA - FUNCIONA!
     function formatarData(dataISO) {
       if (!dataISO || dataISO === '' || dataISO === 'null') return '-';
       try {
@@ -717,14 +720,12 @@
       }
     }
 
-    // ✅ NOVA FUNÇÃO - USA EXATAMENTE O MESMO PARSE QUE formatarData()
     function calcularDias(dataISO) {
       if (!dataISO || dataISO === '' || dataISO === 'null' || dataISO === null) {
         return null;
       }
 
       try {
-        // Extrair YYYY-MM-DD (EXATAMENTE COMO EM formatarData())
         let dataParts = dataISO.split('T')[0].split('-');
         if (dataParts.length !== 3) return null;
 
@@ -732,27 +733,20 @@
         let mes = parseInt(dataParts[1], 10);
         let dia = parseInt(dataParts[2], 10);
 
-        // Validar valores
         if (isNaN(ano) || isNaN(mes) || isNaN(dia)) return null;
         if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
 
-        // Criar data usando constructor com valores numéricos
-        // IMPORTANTE: mês em JavaScript é 0-11, então mes-1
         const vistoria = new Date(ano, mes - 1, dia, 0, 0, 0, 0);
         
-        // Validar se a data foi criada corretamente
         if (isNaN(vistoria.getTime())) return null;
 
-        // Hoje sem hora
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0);
 
-        // Calcular diferença
         const diferenca = vistoria - hoje;
         const diasMs = 1000 * 60 * 60 * 24;
         const dias = Math.ceil(diferenca / diasMs);
 
-        // Validar resultado final
         if (isNaN(dias)) return null;
 
         return dias;
@@ -762,7 +756,6 @@
       }
     }
 
-    // ✅ OBTER COR BASEADA NOS DIAS
     function obterCorDias(dias) {
       if (dias === null) return '';
       if (dias >= 15) return 'dias-verde';
@@ -770,7 +763,6 @@
       return 'dias-vermelho';
     }
 
-    // ✅ OBTER LABEL DO STATUS DE CHAVES
     function obterLabelStatus(status) {
       switch(status) {
         case 'recebidas': return '✅ Recebidas';
@@ -779,7 +771,6 @@
       }
     }
 
-    // ✅ OBTER LABEL DE REPAROS
     function obterLabelReparos(status) {
       switch(status) {
         case 'sim': return '⚠️ Sim';
@@ -981,7 +972,6 @@
         const dias = calcularDias(c.agendamentoVistoria);
         const classeCor = obterCorDias(dias);
         
-        // Formatar dias para exibição
         let diasTexto = '-';
         if (dias !== null) {
           if (dias < 0) {
@@ -1020,7 +1010,8 @@
       contratoEditando = null;
       document.getElementById('modalTitulo').textContent = 'Novo Contrato';
       document.getElementById('btnDeletar').style.display = 'none';
-      document.querySelectorAll('input, select').forEach(el => el.value = '');
+      document.getElementById('formContrato').reset();
+      document.getElementById('statusChaves').value = 'pendente';
       document.getElementById('modal').classList.add('active');
     }
 
@@ -1047,6 +1038,14 @@
 
     function salvarContrato(e) {
       e.preventDefault();
+      
+      // Disable button durante envio
+      const btnSalvar = document.getElementById('btnSalvar');
+      btnSalvar.disabled = true;
+      btnSalvar.textContent = '⏳ Salvando...';
+
+      const statusChavesValue = document.getElementById('statusChaves').value || 'pendente';
+      
       const contrato = {
         contrato: document.getElementById('contrato').value,
         locatario: document.getElementById('locatario').value,
@@ -1054,44 +1053,43 @@
         comunicacaoInquilino: document.getElementById('comunicacaoInquilino').value || '',
         agendamentoVistoria: document.getElementById('agendamentoVistoria').value || '',
         entregaChaves: document.getElementById('entregaChaves').value || '',
-        statusChaves: document.getElementById('statusChaves').value || 'pendente',
-        reparosConstatados: document.getElementById('reparos').value,
+        statusChaves: statusChavesValue,
+        reparosConstatados: document.getElementById('reparos').value || '',
         status: document.getElementById('status').value
       };
 
-      if (contratoEditando) {
-        fetch(`${API_URL}/contracts/${contratoEditando._id}`, {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(contrato)
-        })
-        .then(r => r.json())
-        .then(() => {
+      console.log('📤 ENVIANDO:', contrato);
+
+      const url = contratoEditando ? `${API_URL}/contracts/${contratoEditando._id}` : `${API_URL}/contracts`;
+      const metodo = contratoEditando ? 'PUT' : 'POST';
+
+      fetch(url, {
+        method: metodo,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(contrato)
+      })
+      .then(r => {
+        console.log('✅ Response status:', r.status);
+        return r.json();
+      })
+      .then(resultado => {
+        console.log('✅ Resposta:', resultado);
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = 'Salvar';
+        
+        // Força recarregar após 500ms
+        setTimeout(() => {
           carregarDados();
           fecharModal();
-          mostrarToast('Contrato atualizado!');
-        })
-        .catch(err => {
-          console.error('Erro:', err);
-          mostrarToast('Erro ao atualizar!', true);
-        });
-      } else {
-        fetch(`${API_URL}/contracts`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(contrato)
-        })
-        .then(r => r.json())
-        .then(() => {
-          carregarDados();
-          fecharModal();
-          mostrarToast('Contrato criado!');
-        })
-        .catch(err => {
-          console.error('Erro:', err);
-          mostrarToast('Erro ao criar!', true);
-        });
-      }
+          mostrarToast(contratoEditando ? '✅ Atualizado com sucesso!' : '✅ Criado com sucesso!');
+        }, 500);
+      })
+      .catch(err => {
+        console.error('❌ ERRO:', err);
+        btnSalvar.disabled = false;
+        btnSalvar.textContent = 'Salvar';
+        mostrarToast('❌ Erro ao salvar!', true);
+      });
     }
 
     function deletarContrato() {
