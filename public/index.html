@@ -44,6 +44,11 @@
       border-color: #444;
     }
 
+    body.dark-mode .alert {
+      background-color: #2a2a2a;
+      border-color: #f39c12;
+    }
+
     body.dark-mode .table-wrapper {
       background-color: #333;
     }
@@ -102,6 +107,33 @@
       background: var(--white);
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    /* ALERTA DE CHAVES */
+    .alert {
+      background-color: #fff3cd;
+      border-left: 4px solid var(--warning);
+      padding: 15px 20px;
+      border-radius: 5px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .alert-icon {
+      font-size: 24px;
+    }
+
+    .alert-content h3 {
+      margin-bottom: 5px;
+      color: #856404;
+    }
+
+    .alert-content p {
+      margin: 0;
+      color: #856404;
+      font-size: 14px;
     }
 
     .stats {
@@ -169,14 +201,6 @@
       background-color: var(--secondary);
     }
 
-    button.danger {
-      background-color: var(--danger);
-    }
-
-    button.danger:hover {
-      background-color: #c0392b;
-    }
-
     /* TABELA COM SCROLL */
     .table-wrapper {
       overflow-x: auto;
@@ -190,7 +214,7 @@
       width: 100%;
       border-collapse: collapse;
       background: var(--white);
-      min-width: 800px;
+      min-width: 900px;
     }
 
     thead {
@@ -200,7 +224,39 @@
       top: 0;
     }
 
-    th, td {
+    th {
+      padding: 12px 15px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.3s;
+    }
+
+    th:hover {
+      background-color: var(--secondary);
+    }
+
+    th.sortable::after {
+      content: ' ↕️';
+      font-size: 12px;
+      opacity: 0.7;
+    }
+
+    th.sort-asc::after {
+      content: ' ↑';
+      font-size: 12px;
+      opacity: 1;
+    }
+
+    th.sort-desc::after {
+      content: ' ↓';
+      font-size: 12px;
+      opacity: 1;
+    }
+
+    td {
       padding: 12px 15px;
       text-align: left;
       border-bottom: 1px solid var(--border);
@@ -214,6 +270,14 @@
 
     body.dark-mode tbody tr:hover {
       background-color: #444;
+    }
+
+    .alert-row {
+      background-color: #fffacd !important;
+    }
+
+    body.dark-mode .alert-row {
+      background-color: #664d00 !important;
     }
 
     /* BARRA DE SCROLL CUSTOMIZADA */
@@ -309,6 +373,16 @@
       width: 100%;
     }
 
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .checkbox-group input {
+      width: auto;
+    }
+
     .toast {
       position: fixed;
       bottom: 20px;
@@ -372,6 +446,15 @@
   </div>
 
   <div class="container">
+    <!-- ALERTA DE CHAVES -->
+    <div id="alertaChaves" class="alert" style="display: none;">
+      <div class="alert-icon">🔑</div>
+      <div class="alert-content">
+        <h3>Atenção: Locatário com Chaves Trazidas!</h3>
+        <p id="alertaMsg"></p>
+      </div>
+    </div>
+
     <div class="stats">
       <div class="card pendente">
         <h3>Pendentes</h3>
@@ -407,15 +490,12 @@
       <table id="tabela">
         <thead>
           <tr>
-            <th>Contrato</th>
+            <th class="sortable" onclick="ordenar('contrato')">Contrato</th>
             <th>Endereço</th>
             <th>Locatário</th>
-            <th>Comunicação Inquilino</th>
-            <th>Comunicação Proprietário</th>
-            <th>Agendamento Vistoria</th>
-            <th>Entrega Chaves</th>
-            <th>Retirada Chaves</th>
-            <th>Reparos</th>
+            <th class="sortable" onclick="ordenar('comunicacaoInquilino')">Comunicação Inquilino</th>
+            <th class="sortable" onclick="ordenar('agendamentoVistoria')">Agendamento Vistoria</th>
+            <th class="sortable" onclick="ordenar('entregaChaves')">Entrega Chaves</th>
             <th>Status</th>
             <th>Ações</th>
           </tr>
@@ -473,6 +553,10 @@
             <option value="nao">Não</option>
           </select>
         </div>
+        <div class="form-group checkbox-group">
+          <input type="checkbox" id="chavesObtidas">
+          <label for="chavesObtidas">✅ Locatário trouxe as chaves para vistoria</label>
+        </div>
         <div class="form-group">
           <label>Status</label>
           <select id="status" required>
@@ -494,6 +578,7 @@
     const API_URL = '/api';
     let contratos = [];
     let contratoEditando = null;
+    let ordenacao = { campo: null, direcao: 'asc' };
 
     // Formatar data de ISO para DD/MM/YYYY
     function formatarData(dataISO) {
@@ -503,6 +588,63 @@
       const mes = String(data.getMonth() + 1).padStart(2, '0');
       const ano = data.getFullYear();
       return `${dia}/${mes}/${ano}`;
+    }
+
+    // ORDENAR DADOS
+    function ordenar(campo) {
+      if (ordenacao.campo === campo) {
+        ordenacao.direcao = ordenacao.direcao === 'asc' ? 'desc' : 'asc';
+      } else {
+        ordenacao.campo = campo;
+        ordenacao.direcao = 'asc';
+      }
+
+      contratos.sort((a, b) => {
+        let valA = a[campo];
+        let valB = b[campo];
+
+        if (valA && valA instanceof Date) {
+          valA = valA.getTime();
+        }
+        if (valB && valB instanceof Date) {
+          valB = valB.getTime();
+        }
+
+        if (valA < valB) return ordenacao.direcao === 'asc' ? -1 : 1;
+        if (valA > valB) return ordenacao.direcao === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      atualizarTabela();
+      atualizarIndicadoresOrdenacao();
+    }
+
+    function atualizarIndicadoresOrdenacao() {
+      document.querySelectorAll('th').forEach(th => {
+        th.classList.remove('sort-asc', 'sort-desc');
+      });
+
+      if (ordenacao.campo) {
+        const th = Array.from(document.querySelectorAll('th')).find(t => 
+          t.textContent.toLowerCase().includes(ordenacao.campo.toLowerCase())
+        );
+        if (th) {
+          th.classList.add(ordenacao.direcao === 'asc' ? 'sort-asc' : 'sort-desc');
+        }
+      }
+    }
+
+    function mostrarAlertaChaves() {
+      const comChaves = contratos.filter(c => c.chavesObtidas && !c.chavesObtidas.verificado);
+      const alertaDiv = document.getElementById('alertaChaves');
+
+      if (comChaves.length > 0) {
+        const nomes = comChaves.map(c => c.contrato).join(', ');
+        document.getElementById('alertaMsg').textContent = `Contrato(s): ${nomes} - Locatário trouxe as chaves para vistoria!`;
+        alertaDiv.style.display = 'flex';
+      } else {
+        alertaDiv.style.display = 'none';
+      }
     }
 
     function toggleDarkMode() {
@@ -515,23 +657,25 @@
         .then(r => r.json())
         .then(data => {
           contratos = data.contratos || [
-            { _id: '1', contrato: 'CA0535/1', endereco: 'Rua Conselheiro Antônio Prado 230', locatario: 'Município de Olímpia', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '2', contrato: 'CA1814/2', endereco: 'Rua Ilda Carrara Canevarollo 205', locatario: 'Andre Ruiz Spegiorin', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '3', contrato: 'CA1374/3', endereco: 'Rua Expedicionário Lonildo Porcionato 42', locatario: 'Maria de Lourdes Barriento', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '4', contrato: 'CA1979/1', endereco: 'Rua do Tico-tico 308', locatario: 'Leonilda São Jose da Silva', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '5', contrato: 'CA1338/2', endereco: 'Rua Paschoal Michelli 82', locatario: 'Richard Alexssander de Matos', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '6', contrato: 'AP0208/2', endereco: 'Alameda das Orquídeas 125', locatario: 'Aléxia Andreia Lomba', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '7', contrato: 'CA2796/1', endereco: 'Rua Adevar José de Castro 48', locatario: 'Olivia Aparecida Pimenta', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '8', contrato: 'CA2762/1', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', locatario: 'Daniel Costa Paraguassu', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '9', contrato: 'CA2902/1', endereco: 'Rua Alexandre Bonini 85', locatario: 'Naila Aparecida de Sá Gimente', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() },
-            { _id: '10', contrato: 'CA2458/1', endereco: 'Rua Sebastião Marins 149', locatario: 'Dionatan Vieira Costa', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', status: 'pendente', dataCriacao: new Date().toISOString() }
+            { _id: '1', contrato: 'CA0535/1', endereco: 'Rua Conselheiro Antônio Prado 230', locatario: 'Município de Olímpia', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', chavesObtidas: false, status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '2', contrato: 'CA1814/2', endereco: 'Rua Ilda Carrara Canevarollo 205', locatario: 'Andre Ruiz Spegiorin', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', chavesObtidas: false, status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '3', contrato: 'CA1374/3', endereco: 'Rua Expedicionário Lonildo Porcionato 42', locatario: 'Maria de Lourdes Barriento', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', chavesObtidas: false, status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '4', contrato: 'CA1979/1', endereco: 'Rua do Tico-tico 308', locatario: 'Leonilda São Jose da Silva', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', chavesObtidas: false, status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '5', contrato: 'CA1338/2', endereco: 'Rua Paschoal Michelli 82', locatario: 'Richard Alexssander de Matos', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', chavesObtidas: false, status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '6', contrato: 'AP0208/2', endereco: 'Alameda das Orquídeas 125', locatario: 'Aléxia Andreia Lomba', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', chavesObtidas: false, status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '7', contrato: 'CA2796/1', endereco: 'Rua Adevar José de Castro 48', locatario: 'Olivia Aparecida Pimenta', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', chavesObtidas: false, status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '8', contrato: 'CA2762/1', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', locatario: 'Daniel Costa Paraguassu', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', chavesObtidas: false, status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '9', contrato: 'CA2902/1', endereco: 'Rua Alexandre Bonini 85', locatario: 'Naila Aparecida de Sá Gimente', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', chavesObtidas: false, status: 'pendente', dataCriacao: new Date().toISOString() },
+            { _id: '10', contrato: 'CA2458/1', endereco: 'Rua Sebastião Marins 149', locatario: 'Dionatan Vieira Costa', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparos: '', chavesObtidas: false, status: 'pendente', dataCriacao: new Date().toISOString() }
           ];
           atualizarTabela();
           atualizarStats();
+          mostrarAlertaChaves();
         })
         .catch(() => {
           atualizarTabela();
           atualizarStats();
+          mostrarAlertaChaves();
         });
     }
 
@@ -562,17 +706,14 @@
 
     function renderizarTabela(dados) {
       const tbody = document.getElementById('tabelaCorpo');
-      tbody.innerHTML = dados.length === 0 ? '<tr><td colspan="11" class="empty-state">Nenhum contrato encontrado</td></tr>' : dados.map(c => `
-        <tr onclick="abrirModalEditar('${c._id}')">
+      tbody.innerHTML = dados.length === 0 ? '<tr><td colspan="8" class="empty-state">Nenhum contrato encontrado</td></tr>' : dados.map(c => `
+        <tr class="${c.chavesObtidas ? 'alert-row' : ''}" onclick="abrirModalEditar('${c._id}')">
           <td>${c.contrato}</td>
           <td>${c.endereco}</td>
-          <td>${c.locatario}</td>
+          <td>${c.locatario} ${c.chavesObtidas ? '🔑' : ''}</td>
           <td>${formatarData(c.comunicacaoInquilino)}</td>
-          <td>${formatarData(c.comunicacaoProprietario)}</td>
           <td>${formatarData(c.agendamentoVistoria)}</td>
           <td>${formatarData(c.entregaChaves)}</td>
-          <td>${formatarData(c.retiradaChaves)}</td>
-          <td>${c.reparos === 'sim' ? '✅ Sim' : c.reparos === 'nao' ? '❌ Não' : '-'}</td>
           <td><span style="padding: 5px 10px; border-radius: 3px; font-size: 12px; background: ${c.status === 'pendente' ? '#f39c12' : c.status === 'agendada' ? '#3498db' : '#27ae60'}; color: white;">${c.status}</span></td>
           <td><button onclick="event.stopPropagation(); abrirModalEditar('${c._id}')">Editar</button></td>
         </tr>
@@ -584,6 +725,7 @@
       document.getElementById('modalTitulo').textContent = 'Novo Contrato';
       document.getElementById('btnDeletar').style.display = 'none';
       document.querySelectorAll('input, select').forEach(el => el.value = '');
+      document.getElementById('chavesObtidas').checked = false;
       document.getElementById('modal').classList.add('active');
     }
 
@@ -601,6 +743,7 @@
       document.getElementById('entregaChaves').value = contratoEditando.entregaChaves ? contratoEditando.entregaChaves.split('T')[0] : '';
       document.getElementById('retiradaChaves').value = contratoEditando.retiradaChaves ? contratoEditando.retiradaChaves.split('T')[0] : '';
       document.getElementById('reparos').value = contratoEditando.reparos;
+      document.getElementById('chavesObtidas').checked = contratoEditando.chavesObtidas || false;
       document.getElementById('status').value = contratoEditando.status;
       document.getElementById('modal').classList.add('active');
     }
@@ -621,6 +764,7 @@
         entregaChaves: document.getElementById('entregaChaves').value || null,
         retiradaChaves: document.getElementById('retiradaChaves').value || null,
         reparos: document.getElementById('reparos').value,
+        chavesObtidas: document.getElementById('chavesObtidas').checked,
         status: document.getElementById('status').value
       };
 
@@ -633,6 +777,7 @@
       }
       atualizarTabela();
       atualizarStats();
+      mostrarAlertaChaves();
       fecharModal();
       mostrarToast(contratoEditando ? 'Contrato atualizado!' : 'Contrato criado!');
     }
@@ -642,6 +787,7 @@
         contratos = contratos.filter(c => c._id !== contratoEditando._id);
         atualizarTabela();
         atualizarStats();
+        mostrarAlertaChaves();
         fecharModal();
         mostrarToast('Contrato deletado!');
       }
