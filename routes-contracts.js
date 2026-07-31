@@ -1,5 +1,5 @@
 ﻿import express from 'express';
-import { Contract } from './models.js'; 
+ import ... from './models.js'  
 import { authenticate } from '../middleware.js';
 
 const router = express.Router();
