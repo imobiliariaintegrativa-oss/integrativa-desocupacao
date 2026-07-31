@@ -456,7 +456,7 @@
     <div id="alertaChaves" class="alert" style="display: none;">
       <div class="alert-icon">🔑</div>
       <div class="alert-content">
-        <h3>Atenção: Locatário com Chaves Trazidas!</h3>
+        <h3>Atenção: Reparos Constatados!</h3>
         <p id="alertaMsg"></p>
       </div>
     </div>
@@ -493,7 +493,7 @@
     </div>
 
     <div class="table-wrapper">
-      <div id="loading" class="loading" style="display: none;">⏳ Carregando dados...</div>
+      <div id="loading" class="loading">⏳ Carregando dados...</div>
       <table id="tabela" style="display: none;">
         <thead>
           <tr>
@@ -560,10 +560,6 @@
             <option value="nao">Não</option>
           </select>
         </div>
-        <div class="form-group checkbox-group">
-          <input type="checkbox" id="chavesObtidas">
-          <label for="chavesObtidas">✅ Locatário trouxe as chaves para vistoria</label>
-        </div>
         <div class="form-group">
           <label>Status</label>
           <select id="status" required>
@@ -587,6 +583,20 @@
     let contratoEditando = null;
     let ordenacao = { campo: null, direcao: 'asc' };
 
+    // DADOS PADRÃO DOS 10 CONTRATOS
+    const dadosPadrao = [
+      { contrato: 'CA0535/1', endereco: 'Rua Conselheiro Antônio Prado 230, Centro', locatario: 'Município de Olímpia', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA1814/2', endereco: 'Rua Ilda Carrara Canevarollo 205, Cohab 4', locatario: 'Andre Ruiz Spegiorin', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA1374/3', endereco: 'Rua Expedicionário Lonildo Porcionato 42', locatario: 'Maria de Lourdes Barriento', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA1979/1', endereco: 'Rua do Tico-tico 308', locatario: 'Leonilda São Jose da Silva', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA1338/2', endereco: 'Rua Paschoal Michelli 82', locatario: 'Richard Alexssander de Matos', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
+      { contrato: 'AP0208/2', endereco: 'Alameda das Orquídeas 125, Apto 12', locatario: 'Aléxia Andreia Lomba', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA2796/1', endereco: 'Rua Adevar José de Castro 48', locatario: 'Olivia Aparecida Pimenta', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA2762/1', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', locatario: 'Daniel Costa Paraguassu', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA2902/1', endereco: 'Rua Alexandre Bonini 85', locatario: 'Naila Aparecida de Sá Gimente', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' },
+      { contrato: 'CA2458/1', endereco: 'Rua Sebastião Marins 149', locatario: 'Dionatan Vieira Costa', comunicacaoInquilino: null, comunicacaoProprietario: null, agendamentoVistoria: null, entregaChaves: null, retiradaChaves: null, reparosConstatados: '', status: 'pendente' }
+    ];
+
     function formatarData(dataISO) {
       if (!dataISO) return '-';
       const data = new Date(dataISO + 'T00:00:00');
@@ -596,7 +606,32 @@
       return `${dia}/${mes}/${ano}`;
     }
 
-    // CARREGAR DADOS DO SERVIDOR
+    // INICIALIZAR DADOS PADRÃO SE BANCO ESTIVER VAZIO
+    function inicializarDados() {
+      fetch(`${API_URL}/contracts`)
+        .then(r => r.json())
+        .then(data => {
+          if (!data.contratos || data.contratos.length === 0) {
+            console.log('📦 Banco vazio! Inserindo dados padrão...');
+            // Inserir cada contrato
+            dadosPadrao.forEach(contrato => {
+              fetch(`${API_URL}/contracts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(contrato)
+              }).catch(e => console.error('Erro ao inserir:', e));
+            });
+            setTimeout(carregarDados, 2000); // Aguardar 2s e carregar
+          } else {
+            carregarDados();
+          }
+        })
+        .catch(erro => {
+          console.error('Erro ao verificar banco:', erro);
+          carregarDados();
+        });
+    }
+
     function carregarDados() {
       document.getElementById('loading').style.display = 'block';
       document.getElementById('tabela').style.display = 'none';
@@ -661,11 +696,11 @@
     }
 
     function mostrarAlertaChaves() {
-      const comChaves = contratos.filter(c => c.reparosConstatados === 'sim');
+      const comReparos = contratos.filter(c => c.reparosConstatados === 'sim');
       const alertaDiv = document.getElementById('alertaChaves');
 
-      if (comChaves.length > 0) {
-        const nomes = comChaves.map(c => c.contrato).join(', ');
+      if (comReparos.length > 0) {
+        const nomes = comReparos.map(c => c.contrato).join(', ');
         document.getElementById('alertaMsg').textContent = `Contrato(s): ${nomes} - Apresenta reparos!`;
         alertaDiv.style.display = 'flex';
       } else {
@@ -724,7 +759,6 @@
       document.getElementById('modalTitulo').textContent = 'Novo Contrato';
       document.getElementById('btnDeletar').style.display = 'none';
       document.querySelectorAll('input, select').forEach(el => el.value = '');
-      document.getElementById('chavesObtidas').checked = false;
       document.getElementById('modal').classList.add('active');
     }
 
@@ -742,7 +776,6 @@
       document.getElementById('entregaChaves').value = contratoEditando.entregaChaves || '';
       document.getElementById('retiradaChaves').value = contratoEditando.retiradaChaves || '';
       document.getElementById('reparos').value = contratoEditando.reparosConstatados || '';
-      document.getElementById('chavesObtidas').checked = contratoEditando.chavesObtidas || false;
       document.getElementById('status').value = contratoEditando.status;
       document.getElementById('modal').classList.add('active');
     }
@@ -763,12 +796,10 @@
         entregaChaves: document.getElementById('entregaChaves').value || null,
         retiradaChaves: document.getElementById('retiradaChaves').value || null,
         reparosConstatados: document.getElementById('reparos').value,
-        chavesObtidas: document.getElementById('chavesObtidas').checked,
         status: document.getElementById('status').value
       };
 
       if (contratoEditando) {
-        // ATUALIZAR
         fetch(`${API_URL}/contracts/${contratoEditando._id}`, {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
@@ -782,7 +813,6 @@
         })
         .catch(() => mostrarToast('Erro ao atualizar!', true));
       } else {
-        // CRIAR
         fetch(`${API_URL}/contracts`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -825,8 +855,8 @@
       document.body.classList.add('dark-mode');
     }
 
-    carregarDados();
-    setInterval(carregarDados, 5000); // Recarregar a cada 5 segundos
+    inicializarDados();
+    setInterval(carregarDados, 5000);
   </script>
 </body>
 </html>
