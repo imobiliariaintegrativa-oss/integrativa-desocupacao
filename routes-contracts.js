@@ -1,4 +1,4 @@
-﻿import express from 'express';
+import express from 'express';
 import { Contract } from './models.js';
 import { authenticate } from './middleware.js';
 
