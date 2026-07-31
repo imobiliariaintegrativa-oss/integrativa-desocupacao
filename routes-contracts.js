@@ -1,7 +1,6 @@
 ﻿import express from 'express';
- import ... from './models.js'  
-import { authenticate } from '../middleware.js';
-
+import { Contract } from './models.js';
+import { authenticate } from './middleware.js';
 const router = express.Router();
 
 router.get('/', authenticate, async (req, res) => {
