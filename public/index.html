@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Integrativa Desocupação - Painel de Gerenciamento</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -390,8 +391,8 @@
     }
 
     .alert {
-      background-color: #fff3cd;
-      border-left: 4px solid var(--warning);
+      background-color: #e7f3ff;
+      border-left: 4px solid #2196F3;
       padding: 15px 20px;
       border-radius: 5px;
       margin-bottom: 20px;
@@ -406,12 +407,12 @@
 
     .alert-content h3 {
       margin-bottom: 5px;
-      color: #856404;
+      color: #1976D2;
     }
 
     .alert-content p {
       margin: 0;
-      color: #856404;
+      color: #1976D2;
       font-size: 12px;
     }
 
@@ -557,6 +558,133 @@
       }
     }
 
+    /* MODAL STYLES */
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 3000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      animation: fadeIn 0.3s ease;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    .modal.show {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-content {
+      background-color: var(--white);
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+      max-width: 500px;
+      width: 90%;
+      animation: slideUp 0.3s ease;
+    }
+
+    body.dark-mode .modal-content {
+      background-color: #333;
+      color: #ecf0f1;
+    }
+
+    @keyframes slideUp {
+      from {
+        transform: translateY(50px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .modal-header {
+      font-size: 20px;
+      font-weight: bold;
+      margin-bottom: 20px;
+      color: var(--primary);
+    }
+
+    .modal-form-group {
+      margin-bottom: 15px;
+    }
+
+    .modal-form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+      color: var(--dark);
+    }
+
+    body.dark-mode .modal-form-group label {
+      color: #ecf0f1;
+    }
+
+    .modal-form-group input,
+    .modal-form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    .modal-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 25px;
+    }
+
+    .modal-buttons button {
+      flex: 1;
+      padding: 12px;
+      font-size: 14px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-weight: bold;
+    }
+
+    .modal-buttons .btn-primary {
+      background-color: var(--primary);
+      color: var(--white);
+    }
+
+    .modal-buttons .btn-primary:hover {
+      background-color: var(--secondary);
+    }
+
+    .modal-buttons .btn-secondary {
+      background-color: #95a5a6;
+      color: var(--white);
+    }
+
+    .modal-buttons .btn-secondary:hover {
+      background-color: #7f8c8d;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 5px;
+    }
+
+    .action-buttons button {
+      padding: 4px 8px;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
     @media (max-width: 768px) {
       .header h1 {
         font-size: 20px;
@@ -573,6 +701,108 @@
       .funil {
         flex-direction: column;
       }
+    }
+
+    /* ESTILOS PARA RELATÓRIO PDF */
+    .relatorio-pdf {
+      display: none;
+      background: white;
+      padding: 40px;
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+    }
+
+    .relatorio-pdf.show {
+      display: block;
+    }
+
+    .relatorio-header {
+      text-align: center;
+      border-bottom: 2px solid #333;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+
+    .relatorio-titulo {
+      font-size: 24px;
+      font-weight: bold;
+      color: #2c5aa0;
+      margin-bottom: 10px;
+    }
+
+    .relatorio-info {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 30px;
+      font-size: 13px;
+    }
+
+    .relatorio-info-item {
+      padding: 10px;
+      background: #f8f9fa;
+      border-radius: 5px;
+    }
+
+    .relatorio-info-label {
+      font-weight: bold;
+      color: #2c5aa0;
+      margin-bottom: 3px;
+    }
+
+    .relatorio-info-value {
+      color: #333;
+    }
+
+    .relatorio-section {
+      margin-bottom: 25px;
+    }
+
+    .relatorio-section-titulo {
+      font-size: 14px;
+      font-weight: bold;
+      color: #2c5aa0;
+      border-bottom: 1px solid #bdc3c7;
+      padding-bottom: 8px;
+      margin-bottom: 12px;
+    }
+
+    .relatorio-cronologia {
+      font-size: 12px;
+      line-height: 1.8;
+    }
+
+    .relatorio-cronologia-item {
+      display: flex;
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+
+    .relatorio-cronologia-data {
+      font-weight: bold;
+      color: #2c5aa0;
+      min-width: 100px;
+    }
+
+    .relatorio-cronologia-descricao {
+      flex: 1;
+      color: #333;
+    }
+
+    .relatorio-assinatura {
+      margin-top: 40px;
+      padding-top: 20px;
+      border-top: 1px solid #bdc3c7;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    .relatorio-assinatura-linha {
+      border-top: 1px solid #333;
+      width: 200px;
+      margin: 20px auto 5px;
     }
   </style>
 </head>
@@ -592,6 +822,14 @@
     <!-- ABA DASHBOARD -->
     <div id="dashboard" class="tab-content active">
       <h2 class="section-title">📊 DASHBOARD EXECUTIVO</h2>
+
+      <div class="alert">
+        <div class="alert-icon">⚡</div>
+        <div class="alert-content">
+          <h3>V21 - Agendamento Inteligente Ativado!</h3>
+          <p>Quando chaves são recebidas, o sistema sugere vistoria automática.</p>
+        </div>
+      </div>
 
       <!-- KPIs PRINCIPAIS -->
       <div class="kpi-grid">
@@ -722,12 +960,121 @@
     </div>
   </div>
 
+  <!-- MODAL: AGENDAMENTO INTELIGENTE -->
+  <div id="modalAgendamento" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">⚡ Agendamento Inteligente de Vistoria</div>
+      
+      <p style="margin-bottom: 20px; color: #666; font-size: 13px;">
+        Chaves foram recebidas! Deseja agendar a vistoria agora?
+      </p>
+
+      <form id="formAgendamento">
+        <div class="modal-form-group">
+          <label>📋 Contrato:</label>
+          <input type="text" id="agend-contrato" readonly>
+        </div>
+
+        <div class="modal-form-group">
+          <label>👤 Locatário:</label>
+          <input type="text" id="agend-locatario" readonly>
+        </div>
+
+        <div class="modal-form-group">
+          <label>📅 Data Proposta para Vistoria:</label>
+          <input type="date" id="agend-data" required>
+        </div>
+
+        <div class="modal-form-group">
+          <label>👨‍💼 Vistoriador:</label>
+          <select id="agend-vistoriador" required>
+            <option value="">-- Selecione --</option>
+            <option>Maria Santos</option>
+            <option>João Silva</option>
+            <option>Pedro Costa</option>
+            <option>Ana Paula</option>
+            <option>Carlos Mendes</option>
+          </select>
+        </div>
+
+        <div class="modal-buttons">
+          <button type="button" class="btn-primary" onclick="confirmarAgendamento()">✅ Agendar</button>
+          <button type="button" class="btn-secondary" onclick="fecharModalAgendamento()">❌ Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- MODAL: EDITAR CONTRATO -->
+  <div id="modalEditar" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">✏️ Editar Contrato</div>
+      
+      <form id="formEditar">
+        <div class="modal-form-group">
+          <label>📋 Contrato:</label>
+          <input type="text" id="edit-contrato" readonly>
+        </div>
+
+        <div class="modal-form-group">
+          <label>👤 Locatário:</label>
+          <input type="text" id="edit-locatario">
+        </div>
+
+        <div class="modal-form-group">
+          <label>📍 Endereço:</label>
+          <input type="text" id="edit-endereco">
+        </div>
+
+        <div class="modal-form-group">
+          <label>📱 Comunicação Inquilino:</label>
+          <input type="date" id="edit-comunicacao">
+        </div>
+
+        <div class="modal-form-group">
+          <label>📅 Agendamento Vistoria:</label>
+          <input type="date" id="edit-agendamento">
+        </div>
+
+        <div class="modal-form-group">
+          <label>🔑 Entrega de Chaves:</label>
+          <input type="date" id="edit-entrega">
+        </div>
+
+        <div class="modal-form-group">
+          <label>🔑 Status Chaves:</label>
+          <select id="edit-statusChaves">
+            <option value="pendente">⏳ Pendente</option>
+            <option value="recebidas">✅ Recebidas</option>
+            <option value="nao-recebidas">❌ Não Recebidas</option>
+          </select>
+        </div>
+
+        <div class="modal-form-group">
+          <label>✅ Imóvel Finalizado:</label>
+          <select id="edit-finalizado">
+            <option value="nao">❌ Não</option>
+            <option value="sim">✅ Sim</option>
+          </select>
+        </div>
+
+        <div class="modal-buttons">
+          <button type="button" class="btn-primary" onclick="salvarEdicao()">💾 Salvar</button>
+          <button type="button" class="btn-secondary" onclick="fecharModalEditar()">❌ Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- DIV OCULTA PARA GERAR PDF -->
+  <div id="relatorioTemporario" class="relatorio-pdf"></div>
+
   <script>
     const API_URL = window.location.hostname === 'localhost' ? '/api' : 'https://integrativa-desocupacao.onrender.com/api';
     let contratos = [];
+    let contratoAtualSelecionado = null;
 
     function mudarAba(abaName) {
-      // Esconder todas as abas
       document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
       });
@@ -735,11 +1082,9 @@
         btn.classList.remove('active');
       });
 
-      // Mostrar aba selecionada
       document.getElementById(abaName).classList.add('active');
       event.target.classList.add('active');
 
-      // Recarregar dados se for contratos
       if (abaName === 'contratos') {
         carregarDados();
       }
@@ -824,7 +1169,7 @@
         .then(r => r.json())
         .then(data => {
           contratos = data.contratos || [];
-          console.log('✅ V20 - Contratos carregados:', contratos.length);
+          console.log('✅ V21 - Contratos carregados:', contratos.length);
           
           atualizarDashboard();
           atualizarTabela();
@@ -840,13 +1185,11 @@
     }
 
     function atualizarDashboard() {
-      // KPI: Taxa de Conclusão
       const comComunicacao = contratos.filter(c => c.comunicacaoInquilino).length;
       const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
       const taxaConclusao = comComunicacao > 0 ? Math.round((finalizados / comComunicacao) * 100) : 0;
       document.getElementById('taxaConclusao').textContent = `${taxaConclusao}%`;
 
-      // KPI: Tempo Médio de Desocupação
       let tempoTotal = 0;
       let contador = 0;
       contratos.forEach(c => {
@@ -861,21 +1204,18 @@
       const tempoMedio = contador > 0 ? Math.round(tempoTotal / contador) : 0;
       document.getElementById('tempoMedio').textContent = tempoMedio;
 
-      // KPI: Próximas a Vencer
       const proximasVencer = contratos.filter(c => {
         const dias = calcularDias(c.agendamentoVistoria);
         return dias !== null && dias <= 7 && dias >= 0 && c.statusChaves !== 'recebidas';
       }).length;
       document.getElementById('proximasVencer').textContent = proximasVencer;
 
-      // KPI: Aguardando Vistoria
       const aguardandoVistoria = contratos.filter(c => {
         return c.entregaChaves && c.entregaChaves !== '' && 
                (!c.agendamentoVistoria || c.agendamentoVistoria === '');
       }).length;
       document.getElementById('aguardandoVistoria').textContent = aguardandoVistoria;
 
-      // FUNIL
       const comCom = contratos.filter(c => c.comunicacaoInquilino).length;
       const comAge = contratos.filter(c => c.agendamentoVistoria).length;
       const comVis = contratos.filter(c => c.status === 'realizada').length;
@@ -891,7 +1231,6 @@
       document.getElementById('taxaVis').textContent = comCom > 0 ? `${Math.round((comVis / comCom) * 100)}%` : '0%';
       document.getElementById('taxaFin').textContent = comCom > 0 ? `${Math.round((comFin / comCom) * 100)}%` : '0%';
 
-      // TOP VISTORIADORES
       const temposVistoriadores = {};
       contratos.forEach(c => {
         if (c.responsavelVistoria && c.agendamentoVistoria) {
@@ -924,7 +1263,6 @@
 
       document.getElementById('topVistoriadores').innerHTML = htmlTop;
 
-      // PRÓXIMAS A VENCER
       const proximas = contratos
         .filter(c => {
           const dias = calcularDias(c.agendamentoVistoria);
@@ -950,7 +1288,6 @@
 
       document.getElementById('proximasVencerLista').innerHTML = htmlProximas;
 
-      // RESUMO DE CONTRATOS
       const chavesRecebidas = contratos.filter(c => c.statusChaves === 'recebidas').length;
       const chavesPendentes = contratos.filter(c => c.statusChaves === 'pendente').length;
       const vistorias = contratos.filter(c => c.agendamentoVistoria && c.agendamentoVistoria !== '').length;
@@ -1029,10 +1366,236 @@
           <td><span class="dias-badge ${classeCor}">${diasTexto}</span></td>
           <td>${obterLabelStatus(c.statusChaves)}</td>
           <td>${obterLabelFinalizado(c.finalizado)}</td>
-          <td><button onclick="alert('Editar: ${c.contrato}')">Editar</button></td>
+          <td>
+            <div class="action-buttons">
+              <button onclick="abrirModalEditar('${c._id}')">✏️ Editar</button>
+              <button onclick="gerarRelatorioPDF('${c._id}')" style="background-color: #27ae60;">📄 PDF</button>
+            </div>
+          </td>
         </tr>
       `;
       }).join('');
+    }
+
+    function abrirModalEditar(id) {
+      const c = contratos.find(x => x._id === id);
+      if (!c) return;
+
+      contratoAtualSelecionado = id;
+
+      document.getElementById('edit-contrato').value = c.contrato;
+      document.getElementById('edit-locatario').value = c.locatario;
+      document.getElementById('edit-endereco').value = c.endereco || '';
+      document.getElementById('edit-comunicacao').value = c.comunicacaoInquilino ? c.comunicacaoInquilino.split('T')[0] : '';
+      document.getElementById('edit-agendamento').value = c.agendamentoVistoria ? c.agendamentoVistoria.split('T')[0] : '';
+      document.getElementById('edit-entrega').value = c.entregaChaves ? c.entregaChaves.split('T')[0] : '';
+      document.getElementById('edit-statusChaves').value = c.statusChaves || 'pendente';
+      document.getElementById('edit-finalizado').value = c.finalizado || 'nao';
+
+      document.getElementById('modalEditar').classList.add('show');
+    }
+
+    function fecharModalEditar() {
+      document.getElementById('modalEditar').classList.remove('show');
+      contratoAtualSelecionado = null;
+    }
+
+    function salvarEdicao() {
+      if (!contratoAtualSelecionado) return;
+
+      const dados = {
+        locatario: document.getElementById('edit-locatario').value,
+        endereco: document.getElementById('edit-endereco').value,
+        comunicacaoInquilino: document.getElementById('edit-comunicacao').value || null,
+        agendamentoVistoria: document.getElementById('edit-agendamento').value || null,
+        entregaChaves: document.getElementById('edit-entrega').value || null,
+        statusChaves: document.getElementById('edit-statusChaves').value,
+        finalizado: document.getElementById('edit-finalizado').value
+      };
+
+      fetch(`${API_URL}/contracts/${contratoAtualSelecionado}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.sucesso) {
+          mostrarToast('✅ Contrato atualizado!');
+          fecharModalEditar();
+          carregarDados();
+
+          // ⚡ AGENDAMENTO INTELIGENTE: Se statusChaves virou "recebidas"
+          if (document.getElementById('edit-statusChaves').value === 'recebidas') {
+            abrirModalAgendamentoInteligente(contratoAtualSelecionado);
+          }
+        } else {
+          mostrarToast('❌ Erro ao atualizar!', true);
+        }
+      })
+      .catch(erro => {
+        console.error('Erro:', erro);
+        mostrarToast('❌ Erro ao atualizar contrato!', true);
+      });
+    }
+
+    // ⚡ AGENDAMENTO INTELIGENTE
+    function abrirModalAgendamentoInteligente(id) {
+      const c = contratos.find(x => x._id === id);
+      if (!c) return;
+
+      contratoAtualSelecionado = id;
+
+      document.getElementById('agend-contrato').value = c.contrato;
+      document.getElementById('agend-locatario').value = c.locatario;
+
+      // Propor vistoria para 1-2 dias depois
+      const hoje = new Date();
+      const proposta = new Date(hoje);
+      proposta.setDate(proposta.getDate() + 2);
+      const dataProposta = proposta.toISOString().split('T')[0];
+      document.getElementById('agend-data').value = dataProposta;
+      document.getElementById('agend-vistoriador').value = '';
+
+      document.getElementById('modalAgendamento').classList.add('show');
+    }
+
+    function fecharModalAgendamento() {
+      document.getElementById('modalAgendamento').classList.remove('show');
+      contratoAtualSelecionado = null;
+    }
+
+    function confirmarAgendamento() {
+      if (!contratoAtualSelecionado) return;
+
+      const data = document.getElementById('agend-data').value;
+      const vistoriador = document.getElementById('agend-vistoriador').value;
+
+      if (!data || !vistoriador) {
+        mostrarToast('❌ Preencha todos os campos!', true);
+        return;
+      }
+
+      const dados = {
+        agendamentoVistoria: data,
+        responsavelVistoria: vistoriador,
+        status: 'agendada'
+      };
+
+      fetch(`${API_URL}/contracts/${contratoAtualSelecionado}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.sucesso) {
+          mostrarToast('✅ Vistoria agendada automaticamente!');
+          fecharModalAgendamento();
+          carregarDados();
+        } else {
+          mostrarToast('❌ Erro ao agendar!', true);
+        }
+      })
+      .catch(erro => {
+        console.error('Erro:', erro);
+        mostrarToast('❌ Erro ao agendar!', true);
+      });
+    }
+
+    // 📄 GERAÇÃO DE PDF (OPÇÃO 1)
+    function gerarRelatorioPDF(id) {
+      const c = contratos.find(x => x._id === id);
+      if (!c) return;
+
+      const html = `
+        <div class="relatorio-pdf show">
+          <div class="relatorio-header">
+            <div class="relatorio-titulo">TERMO DE DESOCUPAÇÃO</div>
+            <div style="font-size: 11px; color: #666;">Integrativa Negócios Imobiliários Ltda</div>
+          </div>
+
+          <div class="relatorio-info">
+            <div class="relatorio-info-item">
+              <div class="relatorio-info-label">Contrato:</div>
+              <div class="relatorio-info-value">${c.contrato}</div>
+            </div>
+            <div class="relatorio-info-item">
+              <div class="relatorio-info-label">Data de Emissão:</div>
+              <div class="relatorio-info-value">${new Date().toLocaleDateString('pt-BR')}</div>
+            </div>
+            <div class="relatorio-info-item">
+              <div class="relatorio-info-label">Locatário:</div>
+              <div class="relatorio-info-value">${c.locatario}</div>
+            </div>
+            <div class="relatorio-info-item">
+              <div class="relatorio-info-label">Endereço:</div>
+              <div class="relatorio-info-value">${c.endereco || '-'}</div>
+            </div>
+          </div>
+
+          <div class="relatorio-section">
+            <div class="relatorio-section-titulo">📋 CRONOLOGIA DE EVENTOS</div>
+            <div class="relatorio-cronologia">
+              ${c.comunicacaoInquilino ? `
+                <div class="relatorio-cronologia-item">
+                  <div class="relatorio-cronologia-data">${formatarData(c.comunicacaoInquilino)}</div>
+                  <div class="relatorio-cronologia-descricao">Comunicação de Desocupação (${c.responsavelComunicacao || 'N/A'})</div>
+                </div>
+              ` : ''}
+              ${c.agendamentoVistoria ? `
+                <div class="relatorio-cronologia-item">
+                  <div class="relatorio-cronologia-data">${formatarData(c.agendamentoVistoria)}</div>
+                  <div class="relatorio-cronologia-descricao">Vistoria Agendada (${c.responsavelVistoria || 'N/A'})</div>
+                </div>
+              ` : ''}
+              ${c.entregaChaves ? `
+                <div class="relatorio-cronologia-item">
+                  <div class="relatorio-cronologia-data">${formatarData(c.entregaChaves)}</div>
+                  <div class="relatorio-cronologia-descricao">Entrega de Chaves (${c.responsavelEntregaChaves || 'N/A'})</div>
+                </div>
+              ` : ''}
+              ${c.finalizado === 'sim' ? `
+                <div class="relatorio-cronologia-item">
+                  <div class="relatorio-cronologia-data">${new Date().toLocaleDateString('pt-BR')}</div>
+                  <div class="relatorio-cronologia-descricao">Desocupação Finalizada (${c.responsavelFinalizacao || 'N/A'})</div>
+                </div>
+              ` : ''}
+            </div>
+          </div>
+
+          <div class="relatorio-section">
+            <div class="relatorio-section-titulo">⚠️ INFORMAÇÕES ADICIONAIS</div>
+            <div style="font-size: 12px; line-height: 1.6;">
+              <strong>Status Chaves:</strong> ${obterLabelStatus(c.statusChaves)}<br>
+              <strong>Reparos Constatados:</strong> ${c.reparosConstatados === 'sim' ? 'Sim ⚠️' : 'Não ✅'}<br>
+              <strong>Status:</strong> ${c.finalizado === 'sim' ? 'Finalizado ✅' : 'Em Andamento ⏳'}
+            </div>
+          </div>
+
+          <div class="relatorio-assinatura">
+            <p>Este documento foi gerado automaticamente pelo sistema de gerenciamento de desocupações Integrativa.</p>
+            <div class="relatorio-assinatura-linha"></div>
+            <div style="font-weight: bold; font-size: 12px;">Assinado Digitalmente</div>
+            <div style="font-size: 11px; color: #666;">${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('relatorioTemporario').innerHTML = html;
+
+      const element = document.getElementById('relatorioTemporario').querySelector('.relatorio-pdf');
+      
+      const opt = {
+        margin: 10,
+        filename: `Termo-Desocupacao-${c.contrato}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+      };
+
+      html2pdf().set(opt).from(element).save();
+      mostrarToast('✅ PDF gerado e baixando!');
     }
 
     function recarregarDados() {
