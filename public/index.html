@@ -501,6 +501,26 @@
       text-overflow: ellipsis;
     }
 
+    /* DESTAQUE PARA CHAVES RECEBIDAS */
+    tr.chaves-recebidas {
+      background: linear-gradient(90deg, #d4edda 0%, transparent 100%);
+      border-left: 4px solid #28a745 !important;
+      animation: pulse-verde 2s infinite;
+    }
+
+    @keyframes pulse-verde {
+      0%, 100% {
+        box-shadow: inset -4px 0 0 #28a745;
+      }
+      50% {
+        box-shadow: inset -4px 0 0 #1e7e34;
+      }
+    }
+
+    body.dark-mode tr.chaves-recebidas {
+      background: linear-gradient(90deg, rgba(40, 167, 69, 0.3) 0%, transparent 100%);
+    }
+
     .dias-badge {
       display: inline-block;
       padding: 4px 8px;
@@ -547,6 +567,10 @@
       box-shadow: 0 4px 6px rgba(0,0,0,0.1);
       z-index: 2000;
       animation: slideIn 0.3s ease;
+    }
+
+    .toast.error {
+      background: var(--danger);
     }
 
     @keyframes slideIn {
@@ -826,8 +850,8 @@
       <div class="alert">
         <div class="alert-icon">⚡</div>
         <div class="alert-content">
-          <h3>V21 - Agendamento Inteligente Ativado!</h3>
-          <p>Quando chaves são recebidas, o sistema sugere vistoria automática.</p>
+          <h3>V21.1 - Bug Fix + Destaque de Chaves</h3>
+          <p>Agendamento inteligente corrigido. Contratos com chaves recebidas têm destaque verde piscante!</p>
         </div>
       </div>
 
@@ -966,7 +990,7 @@
       <div class="modal-header">⚡ Agendamento Inteligente de Vistoria</div>
       
       <p style="margin-bottom: 20px; color: #666; font-size: 13px;">
-        Chaves foram recebidas! Deseja agendar a vistoria agora?
+        🔑 Chaves foram recebidas! Deseja agendar a vistoria agora?
       </p>
 
       <form id="formAgendamento">
@@ -1104,6 +1128,11 @@
       }
     }
 
+    function converterDataParaISO(dataStr) {
+      if (!dataStr) return null;
+      return new Date(dataStr + 'T00:00:00Z').toISOString();
+    }
+
     function calcularDias(dataISO) {
       if (!dataISO || dataISO === '' || dataISO === 'null' || dataISO === null) {
         return null;
@@ -1169,7 +1198,7 @@
         .then(r => r.json())
         .then(data => {
           contratos = data.contratos || [];
-          console.log('✅ V21 - Contratos carregados:', contratos.length);
+          console.log('✅ V21.1 - Contratos carregados:', contratos.length);
           
           atualizarDashboard();
           atualizarTabela();
@@ -1357,8 +1386,11 @@
           }
         }
 
+        // DESTAQUE PARA CHAVES RECEBIDAS
+        const classeDestaque = c.statusChaves === 'recebidas' ? 'chaves-recebidas' : '';
+
         return `
-        <tr>
+        <tr class="${classeDestaque}">
           <td><strong>${c.contrato}</strong></td>
           <td>${c.locatario}</td>
           <td>${c.endereco || '-'}</td>
@@ -1406,12 +1438,14 @@
       const dados = {
         locatario: document.getElementById('edit-locatario').value,
         endereco: document.getElementById('edit-endereco').value,
-        comunicacaoInquilino: document.getElementById('edit-comunicacao').value || null,
-        agendamentoVistoria: document.getElementById('edit-agendamento').value || null,
-        entregaChaves: document.getElementById('edit-entrega').value || null,
+        comunicacaoInquilino: document.getElementById('edit-comunicacao').value ? converterDataParaISO(document.getElementById('edit-comunicacao').value) : null,
+        agendamentoVistoria: document.getElementById('edit-agendamento').value ? converterDataParaISO(document.getElementById('edit-agendamento').value) : null,
+        entregaChaves: document.getElementById('edit-entrega').value ? converterDataParaISO(document.getElementById('edit-entrega').value) : null,
         statusChaves: document.getElementById('edit-statusChaves').value,
         finalizado: document.getElementById('edit-finalizado').value
       };
+
+      console.log('📤 Enviando dados:', dados);
 
       fetch(`${API_URL}/contracts/${contratoAtualSelecionado}`, {
         method: 'PUT',
@@ -1420,6 +1454,7 @@
       })
       .then(r => r.json())
       .then(data => {
+        console.log('📥 Resposta:', data);
         if (data.sucesso) {
           mostrarToast('✅ Contrato atualizado!');
           fecharModalEditar();
@@ -1427,14 +1462,16 @@
 
           // ⚡ AGENDAMENTO INTELIGENTE: Se statusChaves virou "recebidas"
           if (document.getElementById('edit-statusChaves').value === 'recebidas') {
-            abrirModalAgendamentoInteligente(contratoAtualSelecionado);
+            setTimeout(() => {
+              abrirModalAgendamentoInteligente(contratoAtualSelecionado);
+            }, 500);
           }
         } else {
-          mostrarToast('❌ Erro ao atualizar!', true);
+          mostrarToast(`❌ Erro: ${data.mensagem || 'Erro ao atualizar'}`, true);
         }
       })
       .catch(erro => {
-        console.error('Erro:', erro);
+        console.error('❌ Erro:', erro);
         mostrarToast('❌ Erro ao atualizar contrato!', true);
       });
     }
@@ -1477,7 +1514,7 @@
       }
 
       const dados = {
-        agendamentoVistoria: data,
+        agendamentoVistoria: converterDataParaISO(data),
         responsavelVistoria: vistoriador,
         status: 'agendada'
       };
