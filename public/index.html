@@ -461,6 +461,12 @@
       width: 100%;
     }
 
+    .help-text {
+      font-size: 12px;
+      color: #7f8c8d;
+      margin-top: 3px;
+    }
+
     .toast {
       position: fixed;
       bottom: 20px;
@@ -643,8 +649,9 @@
           <input type="date" id="agendamentoVistoria">
         </div>
         <div class="form-group">
-          <label>Entrega Chaves</label>
-          <input type="date" id="entregaChaves">
+          <label>📍 Entrega Chaves pelo Locatário</label>
+          <input type="date" id="entregaChaves" onchange="marcarComRecebido()">
+          <div class="help-text">✨ Ao preencher esta data, será marcado automaticamente como "Chaves Recebidas"</div>
         </div>
         <div class="form-group">
           <label>🔑 Status de Entrega de Chaves</label>
@@ -691,6 +698,14 @@
     let contratos = [];
     let contratoEditando = null;
     let ordenacao = { campo: null, direcao: 'asc' };
+
+    function marcarComRecebido() {
+      const dataEntrega = document.getElementById('entregaChaves').value;
+      if (dataEntrega && dataEntrega !== '') {
+        console.log('📍 Data de entrega preenchida! Marcando como "Recebidas"');
+        document.getElementById('statusChaves').value = 'recebidas';
+      }
+    }
 
     function formatarData(dataISO) {
       if (!dataISO || dataISO === '' || dataISO === 'null') return '-';
@@ -823,7 +838,7 @@
         .then(data => {
           contratos = data.contratos || [];
           console.log('📊 Contratos carregados:', contratos.length);
-          console.log('Sample:', contratos[0]);
+          console.log('✅ Dados com statusChaves:', contratos.map(c => ({ contrato: c.contrato, statusChaves: c.statusChaves })));
           
           atualizarTabela();
           atualizarStats();
@@ -840,6 +855,7 @@
     }
 
     function recarregarDados() {
+      console.log('🔄 Recarregando manualmente...');
       carregarDados();
       mostrarToast('Dados recarregados!');
     }
@@ -925,24 +941,26 @@
       localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
     }
 
-    function atualizarStats() {
-      console.log('🔍 Calculando stats...');
-      
-      // Debug: mostrar valores de statusChaves
-      console.log('Status das chaves:', contratos.map(c => ({ contrato: c.contrato, statusChaves: c.statusChaves })));
+    // ✅ NOVA FUNÇÃO: Recalcular stats sem precisar recarregar do servidor
+    function recalcularStatsLocal() {
+      console.log('🔍 Recalculando stats localmente...');
       
       const chavesRecebidas = contratos.filter(c => c.statusChaves === 'recebidas').length;
       const chavesPendentes = contratos.filter(c => c.statusChaves === 'pendente').length;
       const vistorias = contratos.filter(c => c.agendamentoVistoria && c.agendamentoVistoria !== '').length;
       const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
 
-      console.log('📊 Stats:', { chavesRecebidas, chavesPendentes, vistorias, finalizados });
+      console.log('📊 NOVO Stats:', { chavesRecebidas, chavesPendentes, vistorias, finalizados });
 
       document.getElementById('chavesRecebidas').textContent = chavesRecebidas;
       document.getElementById('chavesPendentes').textContent = chavesPendentes;
       document.getElementById('vistoriasAgendadas').textContent = vistorias;
       document.getElementById('imoveisFinal').textContent = finalizados;
       document.getElementById('totalContratos').textContent = contratos.length;
+    }
+
+    function atualizarStats() {
+      recalcularStatsLocal();
     }
 
     function filtrarDados() {
@@ -1070,15 +1088,38 @@
       })
       .then(r => r.json())
       .then(resultado => {
-        console.log('✅ Resposta:', resultado);
+        console.log('✅ Resposta do servidor:', resultado);
+        
+        // ✅ ATUALIZAR LOCALMENTE PRIMEIRO
+        if (contratoEditando) {
+          const index = contratos.findIndex(c => c._id === contratoEditando._id);
+          if (index >= 0) {
+            contratos[index] = { ...contratos[index], ...contrato };
+            console.log('✅ Contrato atualizado localmente');
+          }
+        } else {
+          if (resultado._id) {
+            contrato._id = resultado._id;
+            contratos.push(contrato);
+            console.log('✅ Novo contrato adicionado localmente');
+          }
+        }
+        
+        // Atualizar visuals imediatamente
+        atualizarTabela();
+        recalcularStatsLocal();
+        
         btnSalvar.disabled = false;
         btnSalvar.textContent = 'Salvar';
         
+        fecharModal();
+        mostrarToast(contratoEditando ? '✅ Atualizado!' : '✅ Criado!');
+        
+        // Recarregar do servidor depois de 1 segundo para sincronizar
         setTimeout(() => {
+          console.log('🔄 Sincronizando com servidor...');
           carregarDados();
-          fecharModal();
-          mostrarToast(contratoEditando ? '✅ Atualizado!' : '✅ Criado!');
-        }, 500);
+        }, 1000);
       })
       .catch(err => {
         console.error('❌ ERRO:', err);
@@ -1095,7 +1136,9 @@
         })
         .then(r => r.json())
         .then(() => {
-          carregarDados();
+          contratos = contratos.filter(c => c._id !== contratoEditando._id);
+          atualizarTabela();
+          recalcularStatsLocal();
           fecharModal();
           mostrarToast('Contrato deletado!');
         })
