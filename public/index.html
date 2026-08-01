@@ -163,6 +163,8 @@
 
     .alert.info .alert-content p {
       color: #0c5460;
+      font-size: 12px;
+      line-height: 1.4;
     }
 
     .alert.urgente .alert-content h3 {
@@ -171,6 +173,8 @@
 
     .alert.urgente .alert-content p {
       color: #721c24;
+      font-size: 12px;
+      line-height: 1.4;
     }
 
     .alert-icon {
@@ -185,7 +189,7 @@
     .alert-content p {
       margin: 0;
       color: #856404;
-      font-size: 14px;
+      font-size: 12px;
     }
 
     .stats {
@@ -220,6 +224,39 @@
     .card .number {
       font-size: 32px;
       font-weight: bold;
+    }
+
+    .resumo-mes {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 10px;
+      margin-bottom: 30px;
+    }
+
+    .mes-card {
+      background: #f8f9fa;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      font-size: 12px;
+    }
+
+    body.dark-mode .mes-card {
+      background: #333;
+      border-color: #555;
+    }
+
+    .mes-card .mes-nome {
+      font-weight: bold;
+      color: var(--primary);
+      margin-bottom: 5px;
+    }
+
+    .mes-card .mes-numero {
+      font-size: 24px;
+      font-weight: bold;
+      color: var(--success);
     }
 
     .controls {
@@ -584,6 +621,11 @@
       </div>
     </div>
 
+    <!-- RESUMO POR MÊS -->
+    <h2 class="section-title">📅 Desocupações por Mês</h2>
+    <div class="resumo-mes" id="resumoMeses">
+    </div>
+
     <!-- TABELA -->
     <h2 class="section-title">📋 Contratos</h2>
     <div class="controls">
@@ -698,6 +740,9 @@
     let contratos = [];
     let contratoEditando = null;
     let ordenacao = { campo: null, direcao: 'asc' };
+
+    const meses = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                   'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
     function marcarComRecebido() {
       const dataEntrega = document.getElementById('entregaChaves').value;
@@ -838,10 +883,10 @@
         .then(data => {
           contratos = data.contratos || [];
           console.log('📊 Contratos carregados:', contratos.length);
-          console.log('✅ Dados com statusChaves:', contratos.map(c => ({ contrato: c.contrato, statusChaves: c.statusChaves })));
           
           atualizarTabela();
           atualizarStats();
+          atualizarResumoPorMes();
           mostrarAlertas();
           document.getElementById('loading').style.display = 'none';
           document.getElementById('tabela').style.display = 'table';
@@ -860,6 +905,35 @@
       mostrarToast('Dados recarregados!');
     }
 
+    function atualizarResumoPorMes() {
+      const contagemMeses = {};
+      
+      contratos.forEach(c => {
+        if (c.finalizado === 'sim' && c.entregaChaves) {
+          try {
+            const dataParts = c.entregaChaves.split('T')[0].split('-');
+            const mes = parseInt(dataParts[1], 10) - 1;
+            if (mes >= 0 && mes < 12) {
+              contagemMeses[mes] = (contagemMeses[mes] || 0) + 1;
+            }
+          } catch (e) {
+            console.log('Erro ao processar data:', c.entregaChaves);
+          }
+        }
+      });
+
+      const container = document.getElementById('resumoMeses');
+      container.innerHTML = meses.map((mes, idx) => {
+        const count = contagemMeses[idx] || 0;
+        return `
+          <div class="mes-card">
+            <div class="mes-nome">${mes}</div>
+            <div class="mes-numero">${count}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
     function mostrarAlertas() {
       mostrarAlertaReparos();
       mostrarAlertaVistoriaPendente();
@@ -871,8 +945,8 @@
       const alertaDiv = document.getElementById('alertaReparos');
 
       if (comReparos.length > 0) {
-        const nomes = comReparos.map(c => c.contrato).join(', ');
-        document.getElementById('alertaReparosMsg').textContent = `Contrato(s): ${nomes} - Apresenta reparos!`;
+        const nomes = comReparos.map(c => `${c.contrato} (${c.locatario})`).join(' | ');
+        document.getElementById('alertaReparosMsg').textContent = nomes;
         alertaDiv.style.display = 'flex';
       } else {
         alertaDiv.style.display = 'none';
@@ -888,8 +962,8 @@
       const alertaDiv = document.getElementById('alertaVistoria');
 
       if (comChavesNaoVistoriadas.length > 0) {
-        const nomes = comChavesNaoVistoriadas.map(c => `${c.contrato} (${c.locatario})`).join(', ');
-        document.getElementById('alertaVistorias').textContent = `Contrato(s): ${nomes} - Chaves recebidas. Agende a vistoria!`;
+        const nomes = comChavesNaoVistoriadas.map(c => `${c.contrato} (${c.locatario})`).join(' | ');
+        document.getElementById('alertaVistorias').textContent = nomes;
         alertaDiv.style.display = 'flex';
       } else {
         alertaDiv.style.display = 'none';
@@ -907,9 +981,9 @@
       if (urgentes.length > 0) {
         const items = urgentes.map(c => {
           const dias = calcularDias(c.agendamentoVistoria);
-          return `${c.contrato} - ${dias} dia(s)!`;
+          return `${c.contrato} (${c.locatario}) - ${dias}d`;
         }).join(' | ');
-        document.getElementById('alertaUrgenteMsg').textContent = `${items}`;
+        document.getElementById('alertaUrgenteMsg').textContent = items;
         alertaDiv.style.display = 'flex';
       } else {
         alertaDiv.style.display = 'none';
@@ -941,7 +1015,6 @@
       localStorage.setItem('darkMode', document.body.classList.contains('dark-mode'));
     }
 
-    // ✅ NOVA FUNÇÃO: Recalcular stats sem precisar recarregar do servidor
     function recalcularStatsLocal() {
       console.log('🔍 Recalculando stats localmente...');
       
@@ -1090,24 +1163,21 @@
       .then(resultado => {
         console.log('✅ Resposta do servidor:', resultado);
         
-        // ✅ ATUALIZAR LOCALMENTE PRIMEIRO
         if (contratoEditando) {
           const index = contratos.findIndex(c => c._id === contratoEditando._id);
           if (index >= 0) {
             contratos[index] = { ...contratos[index], ...contrato };
-            console.log('✅ Contrato atualizado localmente');
           }
         } else {
           if (resultado._id) {
             contrato._id = resultado._id;
             contratos.push(contrato);
-            console.log('✅ Novo contrato adicionado localmente');
           }
         }
         
-        // Atualizar visuals imediatamente
         atualizarTabela();
         recalcularStatsLocal();
+        atualizarResumoPorMes();
         
         btnSalvar.disabled = false;
         btnSalvar.textContent = 'Salvar';
@@ -1115,9 +1185,7 @@
         fecharModal();
         mostrarToast(contratoEditando ? '✅ Atualizado!' : '✅ Criado!');
         
-        // Recarregar do servidor depois de 1 segundo para sincronizar
         setTimeout(() => {
-          console.log('🔄 Sincronizando com servidor...');
           carregarDados();
         }, 1000);
       })
@@ -1139,6 +1207,7 @@
           contratos = contratos.filter(c => c._id !== contratoEditando._id);
           atualizarTabela();
           recalcularStatsLocal();
+          atualizarResumoPorMes();
           fecharModal();
           mostrarToast('Contrato deletado!');
         })
