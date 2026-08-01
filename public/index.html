@@ -112,12 +112,22 @@
     }
 
     .container {
-      max-width: 1400px;
+      max-width: 1600px;
       margin: 20px auto;
       padding: 20px;
       background: var(--white);
       border-radius: 8px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .section-title {
+      font-size: 18px;
+      font-weight: bold;
+      margin-top: 30px;
+      margin-bottom: 15px;
+      color: var(--primary);
+      border-bottom: 2px solid var(--primary);
+      padding-bottom: 10px;
     }
 
     .alert {
@@ -180,8 +190,8 @@
 
     .stats {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
       margin-bottom: 30px;
     }
 
@@ -195,15 +205,14 @@
       border: 1px solid var(--border);
     }
 
-    .card.pendente { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
     .card.agendada { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-    .card.realizada { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
-    .card.total { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
     .card.recebidas { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
     .card.pendentes-chaves { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); }
+    .card.total { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .card.finalizados { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
 
     .card h3 {
-      font-size: 14px;
+      font-size: 12px;
       opacity: 0.9;
       margin-bottom: 10px;
     }
@@ -263,7 +272,7 @@
       width: 100%;
       border-collapse: collapse;
       background: var(--white);
-      min-width: 1200px;
+      min-width: 1300px;
     }
 
     thead {
@@ -274,14 +283,14 @@
     }
 
     th {
-      padding: 12px 10px;
+      padding: 12px 8px;
       text-align: left;
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
       cursor: pointer;
       user-select: none;
       transition: background-color 0.3s;
-      font-size: 12px;
+      font-size: 11px;
     }
 
     th:hover {
@@ -290,28 +299,30 @@
 
     th.sortable::after {
       content: ' ↕️';
-      font-size: 12px;
+      font-size: 11px;
       opacity: 0.7;
     }
 
     th.sort-asc::after {
       content: ' ↑';
-      font-size: 12px;
+      font-size: 11px;
       opacity: 1;
     }
 
     th.sort-desc::after {
       content: ' ↓';
-      font-size: 12px;
+      font-size: 11px;
       opacity: 1;
     }
 
     td {
-      padding: 10px;
+      padding: 8px;
       text-align: left;
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
-      font-size: 12px;
+      font-size: 11px;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     .dias-badge {
@@ -319,7 +330,7 @@
       padding: 4px 8px;
       border-radius: 4px;
       font-weight: bold;
-      font-size: 12px;
+      font-size: 11px;
       color: var(--white);
     }
 
@@ -350,24 +361,8 @@
       background-color: #444;
     }
 
-    .alert-row {
-      background-color: #fffacd !important;
-    }
-
-    .alert-row-vistoria {
-      background-color: #e3f2fd !important;
-    }
-
     .alert-row-urgente {
       background-color: #ffebee !important;
-    }
-
-    body.dark-mode .alert-row {
-      background-color: #664d00 !important;
-    }
-
-    body.dark-mode .alert-row-vistoria {
-      background-color: #1a3a52 !important;
     }
 
     body.dark-mode .alert-row-urgente {
@@ -466,16 +461,6 @@
       width: 100%;
     }
 
-    .checkbox-group {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .checkbox-group input {
-      width: auto;
-    }
-
     .toast {
       position: fixed;
       bottom: 20px;
@@ -508,11 +493,6 @@
       color: #7f8c8d;
     }
 
-    .saving {
-      opacity: 0.6;
-      pointer-events: none;
-    }
-
     @media (max-width: 768px) {
       .header h1 {
         font-size: 20px;
@@ -532,11 +512,11 @@
       }
 
       table {
-        font-size: 11px;
+        font-size: 10px;
       }
 
       th, td {
-        padding: 6px 8px;
+        padding: 4px 6px;
       }
     }
   </style>
@@ -548,7 +528,7 @@
   </div>
 
   <div class="container">
-    <!-- ALERTA DE REPAROS -->
+    <!-- ALERTAS -->
     <div id="alertaReparos" class="alert" style="display: none;">
       <div class="alert-icon">⚠️</div>
       <div class="alert-content">
@@ -557,7 +537,6 @@
       </div>
     </div>
 
-    <!-- ALERTA DE VISTORIA PENDENTE -->
     <div id="alertaVistoria" class="alert info" style="display: none;">
       <div class="alert-icon">📋</div>
       <div class="alert-content">
@@ -566,7 +545,6 @@
       </div>
     </div>
 
-    <!-- ALERTA URGENTE -->
     <div id="alertaUrgente" class="alert urgente" style="display: none;">
       <div class="alert-icon">🚨</div>
       <div class="alert-content">
@@ -575,11 +553,16 @@
       </div>
     </div>
 
-    <!-- CARDS DE RESUMO -->
+    <!-- RESUMO DO MÊS -->
+    <h2 class="section-title">📊 Resumo do Mês</h2>
     <div class="stats">
+      <div class="card total">
+        <h3>Total de Contratos</h3>
+        <div class="number" id="totalContratos">0</div>
+      </div>
       <div class="card agendada">
-        <h3>Vistorias Agendadas</h3>
-        <div class="number" id="vistorias">0</div>
+        <h3>📋 Vistorias Agendadas</h3>
+        <div class="number" id="vistoriasAgendadas">0</div>
       </div>
       <div class="card recebidas">
         <h3>🔑 Chaves Recebidas</h3>
@@ -589,12 +572,14 @@
         <h3>⏳ Chaves Pendentes</h3>
         <div class="number" id="chavesPendentes">0</div>
       </div>
-      <div class="card total">
-        <h3>Total</h3>
-        <div class="number" id="total">0</div>
+      <div class="card finalizados">
+        <h3>✅ Imóveis Finalizados</h3>
+        <div class="number" id="imoveisFinal">0</div>
       </div>
     </div>
 
+    <!-- TABELA -->
+    <h2 class="section-title">📋 Contratos</h2>
     <div class="controls">
       <input type="text" id="busca" placeholder="🔍 Buscar contrato..." onkeyup="filtrarDados()">
       <select id="filtroStatus" onchange="filtrarDados()">
@@ -602,6 +587,7 @@
         <option value="recebidas">🔑 Chaves Recebidas</option>
         <option value="pendente">⏳ Chaves Pendentes</option>
         <option value="nao-recebidas">❌ Não Recebidas</option>
+        <option value="finalizado">✅ Finalizados</option>
       </select>
       <button onclick="abrirModalCriar()">➕ Novo Contrato</button>
       <button onclick="recarregarDados()" style="background-color: #95a5a6;">🔄 Atualizar</button>
@@ -614,10 +600,11 @@
           <tr>
             <th class="sortable" onclick="ordenar('contrato')">Contrato</th>
             <th>Locatário</th>
+            <th>Endereço</th>
             <th class="sortable" onclick="ordenar('agendamentoVistoria')">Vistoria</th>
-            <th>Dias Faltam</th>
+            <th>Dias</th>
             <th>Status Chaves</th>
-            <th>Reparos</th>
+            <th>Finalizado</th>
             <th>Ações</th>
           </tr>
         </thead>
@@ -627,6 +614,7 @@
     </div>
   </div>
 
+  <!-- MODAL -->
   <div class="modal" id="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -651,7 +639,7 @@
           <input type="date" id="comunicacaoInquilino">
         </div>
         <div class="form-group">
-          <label>Agendamento Vistoria (+30 dias)</label>
+          <label>Agendamento Vistoria</label>
           <input type="date" id="agendamentoVistoria">
         </div>
         <div class="form-group">
@@ -675,8 +663,15 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Status</label>
-          <select id="status" required>
+          <label>✅ Imóvel Finalizado</label>
+          <select id="finalizado">
+            <option value="nao">Não</option>
+            <option value="sim">Sim</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Status Vistoria</label>
+          <select id="status">
             <option value="pendente">Pendente</option>
             <option value="agendada">Agendada</option>
             <option value="realizada">Realizada</option>
@@ -751,7 +746,6 @@
 
         return dias;
       } catch (e) {
-        console.error('Erro ao calcular dias:', e, dataISO);
         return null;
       }
     }
@@ -779,17 +773,21 @@
       }
     }
 
+    function obterLabelFinalizado(status) {
+      return status === 'sim' ? '✅ Sim' : '❌ Não';
+    }
+
     const dadosPadrao = [
-      { contrato: 'CA0535/1', locatario: 'Município de Olímpia', endereco: 'Rua Conselheiro Antônio Prado 230', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', status: 'agendada' },
-      { contrato: 'CA1814/2', locatario: 'Andre Ruiz Spegiorin', endereco: 'Rua Ilda Carrara Canevarollo 205', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', status: 'agendada' },
-      { contrato: 'CA1374/3', locatario: 'Maria de Lourdes Barriento', endereco: 'Rua Expedicionário Lonildo Porcionato 42', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', status: 'agendada' },
-      { contrato: 'CA1979/1', locatario: 'Leonilda São Jose da Silva', endereco: 'Rua do Tico-tico 308', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', status: 'agendada' },
-      { contrato: 'CA1338/2', locatario: 'Richard Alexssander de Matos', endereco: 'Rua Paschoal Michelli 82', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', status: 'agendada' },
-      { contrato: 'AP0208/2', locatario: 'Aléxia Andreia Lomba', endereco: 'Alameda das Orquídeas 125', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', status: 'agendada' },
-      { contrato: 'CA2796/1', locatario: 'Olivia Aparecida Pimenta', endereco: 'Rua Adevar José de Castro 48', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', status: 'agendada' },
-      { contrato: 'CA2762/1', locatario: 'Daniel Costa Paraguassu', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', status: 'agendada' },
-      { contrato: 'CA2902/1', locatario: 'Naila Aparecida de Sá Gimente', endereco: 'Rua Alexandre Bonini 85', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', status: 'agendada' },
-      { contrato: 'CA2458/1', locatario: 'Dionatan Vieira Costa', endereco: 'Rua Sebastião Marins 149', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', status: 'agendada' }
+      { contrato: 'CA0535/1', locatario: 'Município de Olímpia', endereco: 'Rua Conselheiro Antônio Prado 230', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', finalizado: 'nao', status: 'agendada' },
+      { contrato: 'CA1814/2', locatario: 'Andre Ruiz Spegiorin', endereco: 'Rua Ilda Carrara Canevarollo 205', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', finalizado: 'nao', status: 'agendada' },
+      { contrato: 'CA1374/3', locatario: 'Maria de Lourdes Barriento', endereco: 'Rua Expedicionário Lonildo Porcionato 42', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', finalizado: 'nao', status: 'agendada' },
+      { contrato: 'CA1979/1', locatario: 'Leonilda São Jose da Silva', endereco: 'Rua do Tico-tico 308', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', finalizado: 'nao', status: 'agendada' },
+      { contrato: 'CA1338/2', locatario: 'Richard Alexssander de Matos', endereco: 'Rua Paschoal Michelli 82', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', finalizado: 'nao', status: 'agendada' },
+      { contrato: 'AP0208/2', locatario: 'Aléxia Andreia Lomba', endereco: 'Alameda das Orquídeas 125', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', finalizado: 'nao', status: 'agendada' },
+      { contrato: 'CA2796/1', locatario: 'Olivia Aparecida Pimenta', endereco: 'Rua Adevar José de Castro 48', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', finalizado: 'nao', status: 'agendada' },
+      { contrato: 'CA2762/1', locatario: 'Daniel Costa Paraguassu', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', finalizado: 'nao', status: 'agendada' },
+      { contrato: 'CA2902/1', locatario: 'Naila Aparecida de Sá Gimente', endereco: 'Rua Alexandre Bonini 85', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', finalizado: 'nao', status: 'agendada' },
+      { contrato: 'CA2458/1', locatario: 'Dionatan Vieira Costa', endereco: 'Rua Sebastião Marins 149', comunicacaoInquilino: '', agendamentoVistoria: '', entregaChaves: '', statusChaves: 'pendente', reparosConstatados: '', finalizado: 'nao', status: 'agendada' }
     ];
 
     function inicializarDados() {
@@ -824,6 +822,9 @@
         .then(r => r.json())
         .then(data => {
           contratos = data.contratos || [];
+          console.log('📊 Contratos carregados:', contratos.length);
+          console.log('Sample:', contratos[0]);
+          
           atualizarTabela();
           atualizarStats();
           mostrarAlertas();
@@ -890,7 +891,7 @@
       if (urgentes.length > 0) {
         const items = urgentes.map(c => {
           const dias = calcularDias(c.agendamentoVistoria);
-          return `${c.contrato} (${c.locatario}) - ${dias} dia(s)!`;
+          return `${c.contrato} - ${dias} dia(s)!`;
         }).join(' | ');
         document.getElementById('alertaUrgenteMsg').textContent = `${items}`;
         alertaDiv.style.display = 'flex';
@@ -917,22 +918,6 @@
       });
 
       atualizarTabela();
-      atualizarIndicadoresOrdenacao();
-    }
-
-    function atualizarIndicadoresOrdenacao() {
-      document.querySelectorAll('th').forEach(th => {
-        th.classList.remove('sort-asc', 'sort-desc');
-      });
-
-      if (ordenacao.campo) {
-        const th = Array.from(document.querySelectorAll('th')).find(t => 
-          t.textContent.toLowerCase().includes(ordenacao.campo.toLowerCase())
-        );
-        if (th) {
-          th.classList.add(ordenacao.direcao === 'asc' ? 'sort-asc' : 'sort-desc');
-        }
-      }
     }
 
     function toggleDarkMode() {
@@ -941,14 +926,23 @@
     }
 
     function atualizarStats() {
+      console.log('🔍 Calculando stats...');
+      
+      // Debug: mostrar valores de statusChaves
+      console.log('Status das chaves:', contratos.map(c => ({ contrato: c.contrato, statusChaves: c.statusChaves })));
+      
       const chavesRecebidas = contratos.filter(c => c.statusChaves === 'recebidas').length;
       const chavesPendentes = contratos.filter(c => c.statusChaves === 'pendente').length;
       const vistorias = contratos.filter(c => c.agendamentoVistoria && c.agendamentoVistoria !== '').length;
+      const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
+
+      console.log('📊 Stats:', { chavesRecebidas, chavesPendentes, vistorias, finalizados });
 
       document.getElementById('chavesRecebidas').textContent = chavesRecebidas;
       document.getElementById('chavesPendentes').textContent = chavesPendentes;
-      document.getElementById('vistorias').textContent = vistorias;
-      document.getElementById('total').textContent = contratos.length;
+      document.getElementById('vistoriasAgendadas').textContent = vistorias;
+      document.getElementById('imoveisFinal').textContent = finalizados;
+      document.getElementById('totalContratos').textContent = contratos.length;
     }
 
     function filtrarDados() {
@@ -956,7 +950,14 @@
       const status = document.getElementById('filtroStatus').value;
       const filtrados = contratos.filter(c => {
         const matchBusca = !busca || c.contrato.toLowerCase().includes(busca) || c.locatario.toLowerCase().includes(busca);
-        const matchStatus = !status || c.statusChaves === status;
+        let matchStatus = true;
+        
+        if (status === 'finalizado') {
+          matchStatus = c.finalizado === 'sim';
+        } else if (status) {
+          matchStatus = c.statusChaves === status;
+        }
+        
         return matchBusca && matchStatus;
       });
       renderizarTabela(filtrados);
@@ -968,7 +969,7 @@
 
     function renderizarTabela(dados) {
       const tbody = document.getElementById('tabelaCorpo');
-      tbody.innerHTML = dados.length === 0 ? '<tr><td colspan="7" class="empty-state">Nenhum contrato encontrado</td></tr>' : dados.map(c => {
+      tbody.innerHTML = dados.length === 0 ? '<tr><td colspan="8" class="empty-state">Nenhum contrato encontrado</td></tr>' : dados.map(c => {
         const dias = calcularDias(c.agendamentoVistoria);
         const classeCor = obterCorDias(dias);
         
@@ -984,22 +985,19 @@
         }
 
         let classeLinha = '';
-        if (c.statusChaves === 'nao-recebidas') {
+        if (dias !== null && dias <= 7 && dias >= 0 && c.statusChaves !== 'recebidas') {
           classeLinha = 'alert-row-urgente';
-        } else if (dias !== null && dias <= 7 && dias >= 0 && c.statusChaves !== 'recebidas') {
-          classeLinha = 'alert-row-urgente';
-        } else if (c.statusChaves === 'pendente' && dias !== null && dias >= 0) {
-          classeLinha = 'alert-row-vistoria';
         }
 
         return `
         <tr class="${classeLinha}" onclick="abrirModalEditar('${c._id}')">
           <td><strong>${c.contrato}</strong></td>
           <td>${c.locatario}</td>
+          <td>${c.endereco || '-'}</td>
           <td>${formatarData(c.agendamentoVistoria)}</td>
           <td><span class="dias-badge ${classeCor}">${diasTexto}</span></td>
           <td>${obterLabelStatus(c.statusChaves)}</td>
-          <td>${obterLabelReparos(c.reparosConstatados)}</td>
+          <td>${obterLabelFinalizado(c.finalizado)}</td>
           <td><button onclick="event.stopPropagation(); abrirModalEditar('${c._id}')">Editar</button></td>
         </tr>
       `;
@@ -1012,6 +1010,7 @@
       document.getElementById('btnDeletar').style.display = 'none';
       document.getElementById('formContrato').reset();
       document.getElementById('statusChaves').value = 'pendente';
+      document.getElementById('finalizado').value = 'nao';
       document.getElementById('modal').classList.add('active');
     }
 
@@ -1028,6 +1027,7 @@
       document.getElementById('entregaChaves').value = converterDataParaInput(contratoEditando.entregaChaves);
       document.getElementById('statusChaves').value = contratoEditando.statusChaves || 'pendente';
       document.getElementById('reparos').value = contratoEditando.reparosConstatados || '';
+      document.getElementById('finalizado').value = contratoEditando.finalizado || 'nao';
       document.getElementById('status').value = contratoEditando.status;
       document.getElementById('modal').classList.add('active');
     }
@@ -1039,7 +1039,6 @@
     function salvarContrato(e) {
       e.preventDefault();
       
-      // Disable button durante envio
       const btnSalvar = document.getElementById('btnSalvar');
       btnSalvar.disabled = true;
       btnSalvar.textContent = '⏳ Salvando...';
@@ -1055,6 +1054,7 @@
         entregaChaves: document.getElementById('entregaChaves').value || '',
         statusChaves: statusChavesValue,
         reparosConstatados: document.getElementById('reparos').value || '',
+        finalizado: document.getElementById('finalizado').value || 'nao',
         status: document.getElementById('status').value
       };
 
@@ -1068,20 +1068,16 @@
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(contrato)
       })
-      .then(r => {
-        console.log('✅ Response status:', r.status);
-        return r.json();
-      })
+      .then(r => r.json())
       .then(resultado => {
         console.log('✅ Resposta:', resultado);
         btnSalvar.disabled = false;
         btnSalvar.textContent = 'Salvar';
         
-        // Força recarregar após 500ms
         setTimeout(() => {
           carregarDados();
           fecharModal();
-          mostrarToast(contratoEditando ? '✅ Atualizado com sucesso!' : '✅ Criado com sucesso!');
+          mostrarToast(contratoEditando ? '✅ Atualizado!' : '✅ Criado!');
         }, 500);
       })
       .catch(err => {
