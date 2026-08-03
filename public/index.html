@@ -58,6 +58,15 @@
       gap: 10px;
     }
 
+    .version-badge {
+      background: rgba(255,255,255,0.3);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-left: auto;
+    }
+
     .header-controls {
       display: flex;
       gap: 10px;
@@ -246,6 +255,35 @@
       text-align: center;
       padding: 20px;
       color: var(--primary);
+    }
+
+    .sync-status {
+      font-size: 11px;
+      padding: 4px 8px;
+      border-radius: 3px;
+      display: inline-block;
+      margin-left: 10px;
+    }
+
+    .sync-status.synced {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .sync-status.syncing {
+      background: #fff3cd;
+      color: #856404;
+      animation: pulse 1s infinite;
+    }
+
+    .sync-status.error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
     }
 
     .table-wrapper {
@@ -513,122 +551,14 @@
       min-width: 120px;
     }
 
-    /* ESTILO PDF */
-    #pdfContent {
-      display: none;
-    }
-
-    .pdf-page {
-      background: white;
-      padding: 40px;
-      page-break-after: always;
-      font-family: Arial, sans-serif;
-      font-size: 11pt;
-      color: #333;
-    }
-
-    .pdf-header {
-      border-bottom: 3px solid #2c5aa0;
-      padding-bottom: 15px;
-      margin-bottom: 30px;
-      text-align: center;
-    }
-
-    .pdf-header h1 {
-      font-size: 24pt;
-      color: #2c5aa0;
-      margin-bottom: 5px;
-    }
-
-    .pdf-header p {
-      font-size: 9pt;
-      color: #666;
-    }
-
-    .pdf-section-title {
-      font-size: 13pt;
-      font-weight: bold;
-      color: #2c5aa0;
-      margin-top: 20px;
-      margin-bottom: 15px;
-      border-bottom: 2px solid #2c5aa0;
-      padding-bottom: 8px;
-    }
-
-    .pdf-kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 15px;
-      margin-bottom: 30px;
-    }
-
-    .pdf-kpi-card {
-      border: 1px solid #ddd;
-      padding: 15px;
-      text-align: center;
-      border-radius: 5px;
-      background: #f9f9f9;
-    }
-
-    .pdf-kpi-card h3 {
-      font-size: 9pt;
-      font-weight: bold;
-      color: #666;
-      margin-bottom: 8px;
-    }
-
-    .pdf-kpi-card .number {
-      font-size: 24pt;
-      font-weight: bold;
-      color: #2c5aa0;
-    }
-
-    .pdf-alert {
-      border-left: 4px solid #ffc107;
-      background: #fff9e6;
-      padding: 10px;
-      margin-bottom: 10px;
-      font-size: 9pt;
-    }
-
-    .pdf-alert.danger {
-      border-left-color: #e74c3c;
-      background: #ffe6e6;
-    }
-
-    .pdf-alert.success {
-      border-left-color: #27ae60;
-      background: #e6ffe6;
-    }
-
-    .pdf-table {
-      width: 100%;
-      border-collapse: collapse;
-      margin-top: 10px;
-      font-size: 9pt;
-    }
-
-    .pdf-table th {
-      background: #2c5aa0;
-      color: white;
-      padding: 8px;
-      text-align: left;
-      font-weight: bold;
-      border: 1px solid #999;
-    }
-
-    .pdf-table td {
-      padding: 6px 8px;
-      border: 1px solid #ddd;
-    }
-
-    .pdf-table tbody tr:nth-child(even) {
-      background: #f9f9f9;
-    }
-
     @media (max-width: 768px) {
       .header h1 {
         font-size: 20px;
+      }
+
+      .version-badge {
+        margin-left: 0;
+        margin-top: 10px;
       }
 
       .nav-tabs {
@@ -652,6 +582,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
+    <div class="version-badge">V25 🚀 MongoDB Sync</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -664,7 +595,7 @@
   <div class="container">
     <!-- ABA DASHBOARD -->
     <div id="dashboard" class="tab-content active">
-      <h2 class="section-title">📊 RESUMO DA DESOCUPAÇÃO</h2>
+      <h2 class="section-title">📊 RESUMO DA DESOCUPAÇÃO <span class="sync-status synced" id="syncStatus">✅ Sincronizado</span></h2>
 
       <div class="kpi-grid">
         <div class="kpi-card total">
@@ -779,7 +710,7 @@
     </div>
   </div>
 
-  <!-- MODAL: REGISTRAR REPARO SIMPLES -->
+  <!-- MODAL: REGISTRAR REPARO -->
   <div id="modalReparo" class="modal">
     <div class="modal-content">
       <div class="modal-header">🔧 Registrar Reparo</div>
@@ -834,13 +765,9 @@
     </div>
   </div>
 
-  <!-- CONTEÚDO PDF (ESCONDIDO) -->
-  <div id="pdfContent"></div>
-
   <script>
     const API_URL = window.location.hostname === 'localhost' ? '/api' : 'https://integrativa-desocupacao.onrender.com/api';
     let contratos = [];
-    let reparos = {};
     let contratoEmEdicao = null;
     let contratoEmReparo = null;
 
@@ -857,6 +784,22 @@
 
       if (abaName === 'contratos') {
         carregarDados();
+      }
+    }
+
+    function atualizarSyncStatus(status) {
+      const statusEl = document.getElementById('syncStatus');
+      statusEl.classList.remove('synced', 'syncing', 'error');
+      
+      if (status === 'syncing') {
+        statusEl.classList.add('syncing');
+        statusEl.textContent = '⏳ Sincronizando...';
+      } else if (status === 'synced') {
+        statusEl.classList.add('synced');
+        statusEl.textContent = '✅ Sincronizado';
+      } else if (status === 'error') {
+        statusEl.classList.add('error');
+        statusEl.textContent = '❌ Erro na sincronização';
       }
     }
 
@@ -956,34 +899,22 @@
         .then(r => r.json())
         .then(data => {
           contratos = data.contratos || [];
-          console.log('✅ V24 - Contratos carregados:', contratos.length);
+          console.log('✅ V25 - Contratos carregados:', contratos.length);
           
-          carregarReparosDoLocalStorage();
           atualizarDashboard();
           atualizarAlertas();
           atualizarTabela();
           document.getElementById('loading').style.display = 'none';
           document.getElementById('tabela').style.display = 'table';
+          atualizarSyncStatus('synced');
         })
         .catch(erro => {
           console.error('❌ Erro:', erro);
           mostrarToast('❌ Erro ao carregar dados!', true);
           document.getElementById('loading').style.display = 'none';
           document.getElementById('tabela').style.display = 'table';
+          atualizarSyncStatus('error');
         });
-    }
-
-    function carregarReparosDoLocalStorage() {
-      const stored = localStorage.getItem('integrativa_reparos');
-      if (stored) {
-        reparos = JSON.parse(stored);
-      } else {
-        reparos = {};
-      }
-    }
-
-    function salvarReparosNoLocalStorage() {
-      localStorage.setItem('integrativa_reparos', JSON.stringify(reparos));
     }
 
     function atualizarDashboard() {
@@ -992,9 +923,8 @@
       const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
 
       let emManutencao = 0;
-      Object.keys(reparos).forEach(cid => {
-        const repsDoC = reparos[cid] || [];
-        if (repsDoC.some(r => r.status !== 'CONCLUIDO')) {
+      contratos.forEach(c => {
+        if (c.reparos && c.reparos.some(r => r.status !== 'CONCLUIDO')) {
           emManutencao++;
         }
       });
@@ -1060,13 +990,11 @@
       }
 
       const repEmManutencao = [];
-      Object.keys(reparos).forEach(cid => {
-        const c = contratos.find(x => x._id === cid);
-        if (c) {
-          const repsDoC = reparos[cid] || [];
-          const temUrgente = repsDoC.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
+      contratos.forEach(c => {
+        if (c.reparos) {
+          const temUrgente = c.reparos.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
           if (temUrgente) {
-            const urgentes = repsDoC.filter(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO').length;
+            const urgentes = c.reparos.filter(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO').length;
             repEmManutencao.push(`${c.contrato} (${c.locatario}) - ${urgentes} reparo(s) urgente(s)`);
           }
         }
@@ -1116,9 +1044,9 @@
       tbody.innerHTML = dados.length === 0 
         ? '<tr><td colspan="9" style="text-align: center; padding: 40px;">Nenhum contrato encontrado</td></tr>' 
         : dados.map(c => {
-        const repsDoC = reparos[c._id] || [];
-        const totalReps = repsDoC.filter(r => r.status !== 'CONCLUIDO').length;
-        const temUrgente = repsDoC.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
+        const reparos = c.reparos || [];
+        const totalReps = reparos.filter(r => r.status !== 'CONCLUIDO').length;
+        const temUrgente = reparos.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
 
         let classeAlerta = '';
         if (temUrgente) {
@@ -1209,6 +1137,8 @@
         return;
       }
 
+      atualizarSyncStatus('syncing');
+
       const dados = {
         locatario: document.getElementById('edit-locatario').value,
         endereco: document.getElementById('edit-endereco').value,
@@ -1231,11 +1161,13 @@
           carregarDados();
         } else {
           mostrarToast('❌ Erro ao atualizar!', true);
+          atualizarSyncStatus('error');
         }
       })
       .catch(erro => {
         console.error('Erro:', erro);
         mostrarToast('❌ Erro ao atualizar!', true);
+        atualizarSyncStatus('error');
       });
     }
 
@@ -1275,42 +1207,49 @@
         return;
       }
 
-      carregarReparosDoLocalStorage();
-
-      if (!reparos[contratoEmReparo]) {
-        reparos[contratoEmReparo] = [];
-      }
+      atualizarSyncStatus('syncing');
 
       const novoReparo = {
-        _id: Date.now().toString(),
         descricao,
         urgencia,
         responsavel,
         dataLimite: new Date(dataLimite + 'T00:00:00Z').toISOString(),
-        status: 'PENDENTE',
-        dataCriacao: new Date().toISOString()
+        status: 'PENDENTE'
       };
 
-      reparos[contratoEmReparo].push(novoReparo);
-      salvarReparosNoLocalStorage();
-
-      mostrarToast('✅ Reparo registrado!');
-      fecharModalReparo();
-      carregarDados();
+      fetch(`${API_URL}/repairs/${contratoEmReparo}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(novoReparo)
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.sucesso) {
+          mostrarToast('✅ Reparo registrado!');
+          fecharModalReparo();
+          carregarDados();
+        } else {
+          mostrarToast('❌ Erro ao registrar reparo!', true);
+          atualizarSyncStatus('error');
+        }
+      })
+      .catch(erro => {
+        console.error('Erro:', erro);
+        mostrarToast('❌ Erro ao registrar reparo!', true);
+        atualizarSyncStatus('error');
+      });
     }
 
     function abrirModalReparos(contratoId) {
-      carregarReparosDoLocalStorage();
-
       const c = contratos.find(x => x._id === contratoId);
-      const repsDoC = reparos[contratoId] || [];
+      const reparos = c.reparos || [];
 
-      if (repsDoC.length === 0) {
+      if (reparos.length === 0) {
         alert('Nenhum reparo registrado para este contrato');
         return;
       }
 
-      const html = repsDoC.map(rep => {
+      const html = reparos.map(rep => {
         let urgenciaClass = 'pequena';
         let urgenciaLabel = '🟢 PEQUENA';
         if (rep.urgencia === 'URGENTE') {
@@ -1359,33 +1298,55 @@
     }
 
     function marcarComoConcluido(contratoId, reparoId) {
-      carregarReparosDoLocalStorage();
+      atualizarSyncStatus('syncing');
 
-      const repsDoC = reparos[contratoId] || [];
-      const reparo = repsDoC.find(r => r._id === reparoId);
-
-      if (reparo) {
-        reparo.status = 'CONCLUIDO';
-        reparo.dataConclusao = new Date().toISOString();
-        salvarReparosNoLocalStorage();
-        mostrarToast('✅ Reparo marcado como concluído!');
-        carregarDados();
-        abrirModalReparos(contratoId);
-      }
+      fetch(`${API_URL}/repairs/${contratoId}/${reparoId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'CONCLUIDO' })
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.sucesso) {
+          mostrarToast('✅ Reparo marcado como concluído!');
+          carregarDados();
+          abrirModalReparos(contratoId);
+        } else {
+          mostrarToast('❌ Erro ao atualizar reparo!', true);
+          atualizarSyncStatus('error');
+        }
+      })
+      .catch(erro => {
+        console.error('Erro:', erro);
+        mostrarToast('❌ Erro ao atualizar!', true);
+        atualizarSyncStatus('error');
+      });
     }
 
     function deletarReparo(contratoId, reparoId) {
       if (!confirm('Tem certeza que deseja deletar este reparo?')) return;
 
-      carregarReparosDoLocalStorage();
+      atualizarSyncStatus('syncing');
 
-      if (reparos[contratoId]) {
-        reparos[contratoId] = reparos[contratoId].filter(r => r._id !== reparoId);
-        salvarReparosNoLocalStorage();
-        mostrarToast('✅ Reparo deletado!');
-        carregarDados();
-        abrirModalReparos(contratoId);
-      }
+      fetch(`${API_URL}/repairs/${contratoId}/${reparoId}`, {
+        method: 'DELETE'
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.sucesso) {
+          mostrarToast('✅ Reparo deletado!');
+          carregarDados();
+          abrirModalReparos(contratoId);
+        } else {
+          mostrarToast('❌ Erro ao deletar reparo!', true);
+          atualizarSyncStatus('error');
+        }
+      })
+      .catch(erro => {
+        console.error('Erro:', erro);
+        mostrarToast('❌ Erro ao deletar!', true);
+        atualizarSyncStatus('error');
+      });
     }
 
     function gerarRelatorioPDF() {
@@ -1397,14 +1358,12 @@
       const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
 
       let emManutencao = 0;
-      Object.keys(reparos).forEach(cid => {
-        const repsDoC = reparos[cid] || [];
-        if (repsDoC.some(r => r.status !== 'CONCLUIDO')) {
+      contratos.forEach(c => {
+        if (c.reparos && c.reparos.some(r => r.status !== 'CONCLUIDO')) {
           emManutencao++;
         }
       });
 
-      // Preparar alertas
       let alertasHTML = '';
 
       const chavasEntregues = contratos.filter(c => {
@@ -1453,13 +1412,11 @@
       }
 
       const repEmManutencao = [];
-      Object.keys(reparos).forEach(cid => {
-        const c = contratos.find(x => x._id === cid);
-        if (c) {
-          const repsDoC = reparos[cid] || [];
-          const temUrgente = repsDoC.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
+      contratos.forEach(c => {
+        if (c.reparos) {
+          const temUrgente = c.reparos.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
           if (temUrgente) {
-            const urgentes = repsDoC.filter(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO').length;
+            const urgentes = c.reparos.filter(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO').length;
             repEmManutencao.push(`• ${c.contrato} (${c.locatario}) - ${urgentes} reparo(s) urgente(s)`);
           }
         }
@@ -1476,7 +1433,6 @@
         alertasHTML = '<div class="pdf-alert success"><strong>✅ Tudo em dia!</strong> Nenhum alerta crítico.</div>';
       }
 
-      // Preparar tabela de contratos
       const tabelaHTML = `
         <table class="pdf-table">
           <thead>
@@ -1492,8 +1448,8 @@
           </thead>
           <tbody>
             ${contratos.map(c => {
-              const repsDoC = reparos[c._id] || [];
-              const totalReps = repsDoC.filter(r => r.status !== 'CONCLUIDO').length;
+              const reparos = c.reparos || [];
+              const totalReps = reparos.filter(r => r.status !== 'CONCLUIDO').length;
               const reparosTxt = totalReps > 0 ? totalReps + ' rep.' : 'Nenhum';
               return `
                 <tr>
@@ -1512,41 +1468,41 @@
       `;
 
       const pdfHTML = `
-        <div class="pdf-page">
-          <div class="pdf-header">
-            <h1>🏢 Integrativa Desocupação</h1>
-            <p>Relatório de Desocupações e Manutenção</p>
-            <p>Data: ${dataFormatada}</p>
+        <div style="background: white; padding: 40px; font-family: Arial, sans-serif; font-size: 11pt; color: #333;">
+          <div style="border-bottom: 3px solid #2c5aa0; padding-bottom: 15px; margin-bottom: 30px; text-align: center;">
+            <h1 style="font-size: 24pt; color: #2c5aa0; margin-bottom: 5px;">🏢 Integrativa Desocupação</h1>
+            <p style="font-size: 9pt; color: #666; margin: 0;">Relatório de Desocupações e Manutenção</p>
+            <p style="font-size: 9pt; color: #666; margin: 0;">Data: ${dataFormatada}</p>
           </div>
 
-          <div class="pdf-section-title">📊 Resumo Executivo</div>
-          <div class="pdf-kpi-grid">
-            <div class="pdf-kpi-card">
-              <h3>📋 Total de Contratos</h3>
-              <div class="number">${total}</div>
+          <div style="font-size: 13pt; font-weight: bold; color: #2c5aa0; margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid #2c5aa0; padding-bottom: 8px;">📊 Resumo Executivo</div>
+          <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 30px;">
+            <div style="border: 1px solid #ddd; padding: 15px; text-align: center; border-radius: 5px; background: #f9f9f9;">
+              <h3 style="font-size: 9pt; font-weight: bold; color: #666; margin-bottom: 8px;">📋 Total</h3>
+              <div style="font-size: 24pt; font-weight: bold; color: #2c5aa0;">${total}</div>
             </div>
-            <div class="pdf-kpi-card">
-              <h3>🔑 Chaves Recebidas</h3>
-              <div class="number">${chaves}</div>
+            <div style="border: 1px solid #ddd; padding: 15px; text-align: center; border-radius: 5px; background: #f9f9f9;">
+              <h3 style="font-size: 9pt; font-weight: bold; color: #666; margin-bottom: 8px;">🔑 Chaves</h3>
+              <div style="font-size: 24pt; font-weight: bold; color: #2c5aa0;">${chaves}</div>
             </div>
-            <div class="pdf-kpi-card">
-              <h3>✅ Finalizados</h3>
-              <div class="number">${finalizados}</div>
+            <div style="border: 1px solid #ddd; padding: 15px; text-align: center; border-radius: 5px; background: #f9f9f9;">
+              <h3 style="font-size: 9pt; font-weight: bold; color: #666; margin-bottom: 8px;">✅ Finalizados</h3>
+              <div style="font-size: 24pt; font-weight: bold; color: #2c5aa0;">${finalizados}</div>
             </div>
-            <div class="pdf-kpi-card">
-              <h3>🚨 Em Manutenção</h3>
-              <div class="number">${emManutencao}</div>
+            <div style="border: 1px solid #ddd; padding: 15px; text-align: center; border-radius: 5px; background: #f9f9f9;">
+              <h3 style="font-size: 9pt; font-weight: bold; color: #666; margin-bottom: 8px;">🚨 Manutenção</h3>
+              <div style="font-size: 24pt; font-weight: bold; color: #2c5aa0;">${emManutencao}</div>
             </div>
           </div>
 
-          <div class="pdf-section-title">🚨 Alertas Críticos</div>
+          <div style="font-size: 13pt; font-weight: bold; color: #2c5aa0; margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid #2c5aa0; padding-bottom: 8px;">🚨 Alertas Críticos</div>
           ${alertasHTML}
 
-          <div class="pdf-section-title">📋 Contratos Detalhados</div>
+          <div style="font-size: 13pt; font-weight: bold; color: #2c5aa0; margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid #2c5aa0; padding-bottom: 8px;">📋 Contratos Detalhados</div>
           ${tabelaHTML}
 
           <p style="margin-top: 40px; font-size: 8pt; color: #999; text-align: center;">
-            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação
+            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25
           </p>
         </div>
       `;
@@ -1588,7 +1544,6 @@
       document.body.classList.add('dark-mode');
     }
 
-    carregarReparosDoLocalStorage();
     carregarDados();
   </script>
 </body>
