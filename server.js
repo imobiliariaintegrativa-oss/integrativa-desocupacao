@@ -69,7 +69,7 @@ mongoose.connect(MONGODB_URI, {
 app.get('/api/health', (req, res) => {
   res.json({
     status: '✅ Server OK',
-    version: 'V26-ES',
+    version: 'V27-ES-Seed',
     mongodb: mongoose.connection.readyState === 1 ? 'Conectado' : 'Desconectado'
   });
 });
