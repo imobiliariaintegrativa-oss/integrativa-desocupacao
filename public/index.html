@@ -602,7 +602,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.5.1 🚀 Filtros dos Cards Corrigidos</div>
+    <div class="version-badge">V25.5.2 🚀 Carregamento Automático de Dados</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -1845,6 +1845,18 @@
     }
 
     carregarDados();
+    // ========= CARREGAR DADOS AUTOMATICAMENTE AO ABRIR A PÁGINA =========
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('✅ Página carregada! Buscando contratos...');
+      carregarDados();
+    });
+
+    // Também carregar se o script for executado depois do DOM estar pronto
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', carregarDados);
+    } else {
+      carregarDados();
+    }
   </script>
 </body>
 </html>
