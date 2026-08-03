@@ -602,7 +602,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.5 🚀 Tipo de Desocupação (Comum/Despejo)</div>
+    <div class="version-badge">V25.5.1 🚀 Filtros dos Cards Corrigidos</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -874,8 +874,10 @@
 
     // ========= FUNÇÕES DE FILTRO =========
     function filtrarPor(tipo) {
+      console.log(`🔴 FILTRO CLICADO: ${tipo}`);
+      
       filtroAtivo = tipo;
-      let dados = contratos;
+      let dados = [];
       let titulo = '';
       
       if (tipo === 'total') {
@@ -896,12 +898,13 @@
         titulo = 'Despejos (Jurídico)';
       }
       
-      // MUITO IMPORTANTE: Armazenar dados filtrados
-      dadosAtivos = dados;
+      // DEBUG
+      console.log(`📊 Filtro "${titulo}" encontrou: ${dados.length} contratos`);
+      console.log(`📋 Total disponível: ${contratos.length}`);
+      console.log(`✅ Dados filtrados:`, dados);
       
-      console.log(`🔍 Filtro ativado: ${titulo}`);
-      console.log(`📊 Mostrando ${dados.length} de ${contratos.length} contratos`);
-      console.log(`📋 dadosAtivos = ${dados.length}`);
+      // Armazenar dados filtrados
+      dadosAtivos = dados;
       
       // Limpar busca
       document.getElementById('busca').value = '';
