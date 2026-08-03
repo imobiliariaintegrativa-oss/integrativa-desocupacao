@@ -74,6 +74,44 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ============= ROTA DE SEED (Popular banco com dados) =============
+app.post('/api/seed', async (req, res) => {
+  try {
+    console.log('🌱 Iniciando seed de dados...');
+
+    // Deletar contratos antigos
+    await Contrato.deleteMany({});
+    console.log('🗑️  Contratos antigos deletados');
+
+    // 10 contratos originais
+    const contratos = [
+      { contrato: 'CA0535/1', endereco: 'R. Conselheiro Antônio Prado 230', locatario: 'Município de Olímpia', statusChaves: 'pendente', reparos: [] },
+      { contrato: 'CA1814/2', endereco: 'Rua Ilda Carrara Canevarollo 205', locatario: 'Andre Ruiz Spegiorin', statusChaves: 'pendente', reparos: [] },
+      { contrato: 'CA1374/3', endereco: 'Rua Expedicionário Lonildo Porcionato 42', locatario: 'Maria de Lourdes Barriento', statusChaves: 'pendente', reparos: [] },
+      { contrato: 'CA1979/1', endereco: 'Rua do Tico-tico 308', locatario: 'Leonilda São Jose da Silva', statusChaves: 'pendente', reparos: [] },
+      { contrato: 'CA1338/2', endereco: 'Rua Paschoal Michelli 82', locatario: 'Richard Alexssander de Matos', statusChaves: 'pendente', reparos: [] },
+      { contrato: 'AP0208/2', endereco: 'Alameda das Orquídeas 125, Apto 12', locatario: 'Aléxia Andreia Lomba', statusChaves: 'pendente', reparos: [] },
+      { contrato: 'CA2796/1', endereco: 'Rua Adevar José de Castro 48', locatario: 'Olivia Aparecida Pimenta', statusChaves: 'pendente', reparos: [] },
+      { contrato: 'CA2762/1', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', locatario: 'Daniel Costa Paraguassu', statusChaves: 'pendente', reparos: [] },
+      { contrato: 'CA2902/1', endereco: 'Rua Alexandre Bonini 85', locatario: 'Naila Aparecida de Sá Gimente', statusChaves: 'pendente', reparos: [] },
+      { contrato: 'CA2458/1', endereco: 'Rua Sebastião Marins 149', locatario: 'Dionatan Vieira Costa', statusChaves: 'pendente', reparos: [] }
+    ];
+
+    // Inserir contratos
+    const resultado = await Contrato.insertMany(contratos);
+    console.log(`✅ ${resultado.length} contratos inseridos!`);
+
+    res.json({
+      sucesso: true,
+      mensagem: `${resultado.length} contratos carregados com sucesso!`,
+      contratos: resultado
+    });
+  } catch (erro) {
+    console.error('❌ Erro ao fazer seed:', erro);
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
 // ============= ROTAS DE CONTRATOS =============
 
 // GET - Listar todos os contratos (SEM autenticação)
