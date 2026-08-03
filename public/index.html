@@ -596,7 +596,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.4.1 🚀 Filtros Corrigidos</div>
+    <div class="version-badge">V25.4.2 🚀 Filtros Funcionando + Alerta Melhorado</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -1138,7 +1138,14 @@
     }
 
     function atualizarTabela() {
-      renderizarTabela(contratos);
+      // Respeita o filtro ativo se houver
+      if (filtroAtivo) {
+        console.log(`📊 Atualizando tabela com filtro ativo: ${filtroAtivo}`);
+        filtrarDados(); // Reaplica o filtro
+      } else {
+        console.log('📊 Atualizando tabela: todos os contratos');
+        renderizarTabela(contratos);
+      }
     }
 
     function filtrarDados() {
@@ -1323,31 +1330,11 @@
       .then(r => r.json())
       .then(data => {
         if (data.sucesso) {
-          // Alerta especial se recebeu chaves
+          // Alerta especial se RECEBEU chaves (mudou para recebidas)
           const contratoAntigo = contratos.find(c => c._id === contratoEmEdicao);
           if (contratoAntigo && contratoAntigo.statusChaves !== 'recebidas' && novoStatus === 'recebidas') {
-            mostrarToast(`🔑 ✅ CHAVES RECEBIDAS! ${data.contrato.contrato}`, false);
-            // Mostrar alerta visual
-            const alertaEspecial = document.createElement('div');
-            alertaEspecial.style.cssText = `
-              position: fixed;
-              top: 50%;
-              left: 50%;
-              transform: translate(-50%, -50%);
-              background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
-              color: white;
-              padding: 30px 40px;
-              border-radius: 10px;
-              font-size: 18px;
-              font-weight: bold;
-              z-index: 9999;
-              box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-              animation: scaleIn 0.5s ease;
-              text-align: center;
-            `;
-            alertaEspecial.innerHTML = `🔑 CHAVES RECEBIDAS!<br/>${data.contrato.contrato}`;
-            document.body.appendChild(alertaEspecial);
-            setTimeout(() => alertaEspecial.remove(), 3000);
+            // Alerta visual grande e chamativo
+            mostrarAlertsChavesRecebidas(data.contrato.contrato, contratoAntigo.locatario);
           } else {
             mostrarToast('✅ Contrato atualizado!');
           }
@@ -1363,6 +1350,72 @@
         mostrarToast('❌ Erro ao atualizar!', true);
         atualizarSyncStatus('error');
       });
+    }
+
+    function mostrarAlertsChavesRecebidas(nomeContrato, nomeLocatario) {
+      // Alerta visual grande no centro
+      const alertaEspecial = document.createElement('div');
+      alertaEspecial.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+        color: white;
+        padding: 50px;
+        border-radius: 15px;
+        font-size: 24px;
+        font-weight: bold;
+        z-index: 9999;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+        animation: scaleIn 0.5s ease;
+        text-align: center;
+        min-width: 400px;
+        border: 5px solid #1e8449;
+      `;
+      alertaEspecial.innerHTML = `
+        <div style="font-size: 60px; margin-bottom: 20px;">🔑</div>
+        <div style="font-size: 28px; margin-bottom: 10px;">CHAVES RECEBIDAS!</div>
+        <div style="font-size: 18px; margin-top: 15px; opacity: 0.95;">
+          ${nomeContrato}<br/>
+          ${nomeLocatario}
+        </div>
+      `;
+      document.body.appendChild(alertaEspecial);
+      
+      // Som de sucesso (beep)
+      try {
+        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+        const oscillator = audioContext.createOscillator();
+        const gainNode = audioContext.createGain();
+        oscillator.connect(gainNode);
+        gainNode.connect(audioContext.destination);
+        oscillator.frequency.value = 1000;
+        oscillator.type = 'sine';
+        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        oscillator.start(audioContext.currentTime);
+        oscillator.stop(audioContext.currentTime + 0.5);
+      } catch (e) {
+        console.log('Som não disponível');
+      }
+      
+      // Piscar
+      let piscar = 0;
+      const intervalo = setInterval(() => {
+        piscar++;
+        alertaEspecial.style.opacity = piscar % 2 === 0 ? '1' : '0.7';
+        if (piscar >= 4) {
+          clearInterval(intervalo);
+          alertaEspecial.style.opacity = '1';
+        }
+      }, 200);
+      
+      // Remover após 4 segundos
+      setTimeout(() => alertaEspecial.remove(), 4000);
+      
+      // Toast também
+      mostrarToast(`🔑 ✅ CHAVES RECEBIDAS! ${nomeContrato}`, false);
     }
 
     function abrirModalReparo(contratoId) {
@@ -1696,7 +1749,7 @@
           ${tabelaHTML}
 
           <p style="margin-top: 40px; font-size: 8pt; color: #999; text-align: center;">
-            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.4.1
+            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.4.2
           </p>
         </div>
       `;
