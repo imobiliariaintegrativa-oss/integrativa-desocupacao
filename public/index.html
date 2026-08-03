@@ -1211,12 +1211,7 @@
       const agendamento = document.getElementById('edit-agendamento').value;
       const entrega = document.getElementById('edit-entrega').value;
 
-      // Validação removida em V25.3 - Usuário pode digitar datas livremente
-      document.getElementById('erro-agendamento').textContent = '';
-      document.getElementById('erro-entrega').textContent = '';
-      document.getElementById('edit-agendamento').classList.remove('form-error');
-      document.getElementById('edit-entrega').classList.remove('form-error');
-
+      // Sem validação em V25.3.1 - Salvando diretamente
       atualizarSyncStatus('syncing');
 
       const dados = {
