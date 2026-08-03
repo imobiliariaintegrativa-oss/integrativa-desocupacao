@@ -1,12 +1,20 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ========= MONGOOSE SCHEMA COM TIPO DESOCUPACAO =========
+// Servir arquivos estáticos
+app.use(express.static(path.join(__dirname, 'public')));
+
+// SCHEMA COM TIPO DESOCUPACAO
 const contractSchema = new mongoose.Schema({
   contrato: String,
   locatario: String,
@@ -17,82 +25,60 @@ const contractSchema = new mongoose.Schema({
   entregaChaves: Date,
   statusChaves: { type: String, enum: ['pendente', 'recebidas', 'nao-recebidas'], default: 'pendente' },
   finalizado: { type: String, enum: ['sim', 'nao'], default: 'nao' },
-  reparos: [
-    {
-      descricao: String,
-      urgencia: String,
-      responsavel: String,
-      dataLimite: Date,
-      status: String,
-      dataCriacao: { type: Date, default: Date.now },
-      dataConclusao: Date
-    }
-  ],
+  reparos: [{
+    descricao: String,
+    urgencia: String,
+    responsavel: String,
+    dataLimite: Date,
+    status: String,
+    dataCriacao: { type: Date, default: Date.now },
+    dataConclusao: Date
+  }],
   dataCriacao: { type: Date, default: Date.now },
   dataAtualizacao: { type: Date, default: Date.now }
 });
 
 const Contract = mongoose.model('Contract', contractSchema);
 
-// ========= CONEXÃO MONGODB =========
-const MONGODB_URI = process.env.MONGODB_URI;
-
-mongoose.connect(MONGODB_URI)
+// CONECTAR MONGODB
+mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB conectado'))
-  .catch(err => console.error('❌ Erro MongoDB:', err));
+  .catch(err => console.error('❌ Erro:', err));
 
-// ========= ROTAS =========
+// ROTAS
 
-// Rota raiz
+// Servir HTML na raiz
 app.get('/', (req, res) => {
-  res.json({ 
-    mensagem: '✅ Servidor Integrativa Desocupação rodando',
-    versao: 'V28-TipoDesocupacao',
-    endpoints: [
-      'GET /api/health',
-      'GET /api/contracts',
-      'POST /api/contracts',
-      'PUT /api/contracts/:id',
-      'DELETE /api/contracts/:id'
-    ]
-  });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-// Health check
+// Health
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    version: 'V28-TipoDesocupacao',
-    timestamp: new Date()
-  });
+  res.json({ status: 'ok', version: 'V28-TipoDesocupacao' });
 });
 
-// ========= GET TODOS OS CONTRATOS =========
+// GET contratos
 app.get('/api/contracts', async (req, res) => {
   try {
     const contratos = await Contract.find();
     res.json({ sucesso: true, contratos });
   } catch (erro) {
-    console.error('❌ Erro ao buscar:', erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// ========= GET UM CONTRATO =========
+// GET um contrato
 app.get('/api/contracts/:id', async (req, res) => {
   try {
     const contrato = await Contract.findById(req.params.id);
-    if (!contrato) {
-      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
-    }
+    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
     res.json({ sucesso: true, contrato });
   } catch (erro) {
-    console.error('❌ Erro:', erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// ========= CREATE CONTRATO =========
+// CREATE contrato
 app.post('/api/contracts', async (req, res) => {
   try {
     const novoContrato = new Contract({
@@ -106,24 +92,19 @@ app.post('/api/contracts', async (req, res) => {
       statusChaves: req.body.statusChaves || 'pendente',
       reparos: req.body.reparos || []
     });
-
     await novoContrato.save();
     res.status(201).json({ sucesso: true, contrato: novoContrato });
   } catch (erro) {
-    console.error('❌ Erro ao criar:', erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// ========= UPDATE CONTRATO (IMPORTANTE: INCLUI TIPO) =========
+// UPDATE contrato (COM TIPO!)
 app.put('/api/contracts/:id', async (req, res) => {
   try {
     const contrato = await Contract.findById(req.params.id);
-    if (!contrato) {
-      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
-    }
+    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
 
-    // Atualizar TODOS os campos, incluindo tipoDesocupacao
     contrato.locatario = req.body.locatario || contrato.locatario;
     contrato.endereco = req.body.endereco || contrato.endereco;
     contrato.tipoDesocupacao = req.body.tipoDesocupacao || contrato.tipoDesocupacao;
@@ -137,46 +118,39 @@ app.put('/api/contracts/:id', async (req, res) => {
     await contrato.save();
     res.json({ sucesso: true, contrato });
   } catch (erro) {
-    console.error('❌ Erro ao atualizar:', erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// ========= DELETE CONTRATO =========
+// DELETE contrato
 app.delete('/api/contracts/:id', async (req, res) => {
   try {
     await Contract.findByIdAndDelete(req.params.id);
-    res.json({ sucesso: true, mensagem: 'Contrato deletado' });
+    res.json({ sucesso: true, mensagem: 'Deletado' });
   } catch (erro) {
-    console.error('❌ Erro ao deletar:', erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// ========= REPAROS =========
+// REPAROS
 app.post('/api/repairs/:contractId', async (req, res) => {
   try {
     const contrato = await Contract.findById(req.params.contractId);
-    if (!contrato) {
-      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
-    }
+    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
 
-    const novoReparo = {
+    contrato.reparos.push({
       descricao: req.body.descricao,
       urgencia: req.body.urgencia,
       responsavel: req.body.responsavel,
       dataLimite: req.body.dataLimite,
       status: 'PENDENTE',
       dataCriacao: new Date()
-    };
-
-    contrato.reparos.push(novoReparo);
+    });
     contrato.dataAtualizacao = new Date();
     await contrato.save();
 
     res.status(201).json({ sucesso: true, contrato });
   } catch (erro) {
-    console.error('❌ Erro:', erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
@@ -184,9 +158,7 @@ app.post('/api/repairs/:contractId', async (req, res) => {
 app.get('/api/repairs/:contractId', async (req, res) => {
   try {
     const contrato = await Contract.findById(req.params.contractId);
-    if (!contrato) {
-      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
-    }
+    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
     res.json({ sucesso: true, reparos: contrato.reparos });
   } catch (erro) {
     res.status(500).json({ sucesso: false, erro: erro.message });
@@ -196,14 +168,10 @@ app.get('/api/repairs/:contractId', async (req, res) => {
 app.put('/api/repairs/:contractId/:reparoId', async (req, res) => {
   try {
     const contrato = await Contract.findById(req.params.contractId);
-    if (!contrato) {
-      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
-    }
+    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
 
     const reparo = contrato.reparos.id(req.params.reparoId);
-    if (!reparo) {
-      return res.status(404).json({ sucesso: false, erro: 'Reparo não encontrado' });
-    }
+    if (!reparo) return res.status(404).json({ sucesso: false, erro: 'Reparo não encontrado' });
 
     reparo.status = req.body.status || reparo.status;
     reparo.dataConclusao = req.body.status === 'CONCLUIDO' ? new Date() : null;
@@ -220,9 +188,7 @@ app.put('/api/repairs/:contractId/:reparoId', async (req, res) => {
 app.delete('/api/repairs/:contractId/:reparoId', async (req, res) => {
   try {
     const contrato = await Contract.findById(req.params.contractId);
-    if (!contrato) {
-      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
-    }
+    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
 
     contrato.reparos.id(req.params.reparoId).deleteOne();
     contrato.dataAtualizacao = new Date();
@@ -234,13 +200,11 @@ app.delete('/api/repairs/:contractId/:reparoId', async (req, res) => {
   }
 });
 
-// ========= SEED - POPULAR BANCO COM DADOS TESTE =========
+// SEED
 app.post('/api/seed', async (req, res) => {
   try {
     const existe = await Contract.findOne({ contrato: 'CA0535/1' });
-    if (existe) {
-      return res.json({ sucesso: false, mensagem: 'Banco já populado. Delete tudo para refazer seed.' });
-    }
+    if (existe) return res.json({ sucesso: false, mensagem: 'Banco já populado' });
 
     const contratos = [
       { contrato: 'CA0535/1', locatario: 'Município de Olímpia', endereco: 'R. Conselheiro Antônio Prado 230', tipoDesocupacao: 'comum' },
@@ -256,19 +220,14 @@ app.post('/api/seed', async (req, res) => {
     ];
 
     await Contract.insertMany(contratos);
-    res.json({ sucesso: true, mensagem: `✅ ${contratos.length} contratos inseridos com tipoDesocupacao!` });
+    res.json({ sucesso: true, mensagem: '✅ Banco populado!' });
   } catch (erro) {
-    console.error('❌ Erro ao fazer seed:', erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// ========= START SERVER =========
+// START
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`
-  ✅ Servidor rodando em http://localhost:${PORT}
-  📦 MongoDB: ${MONGODB_URI ? 'Conectado' : 'Não configurado'}
-  🚀 Versão: V28-TipoDesocupacao
-  `);
+  console.log(`✅ Servidor V28-TipoDesocupacao rodando na porta ${PORT}`);
 });
