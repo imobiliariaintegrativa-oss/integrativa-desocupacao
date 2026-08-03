@@ -373,6 +373,17 @@
       to { transform: translateX(0); }
     }
 
+    @keyframes scaleIn {
+      from {
+        transform: translate(-50%, -50%) scale(0);
+        opacity: 0;
+      }
+      to {
+        transform: translate(-50%, -50%) scale(1);
+        opacity: 1;
+      }
+    }
+
     .modal {
       display: none;
       position: fixed;
@@ -585,7 +596,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.3.1 🚀 Modal Editar Corrigido</div>
+    <div class="version-badge">V25.4 🚀 KPI Clicáveis + Alertas</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -601,19 +612,19 @@
       <h2 class="section-title">📊 RESUMO DA DESOCUPAÇÃO <span class="sync-status synced" id="syncStatus">✅ Sincronizado</span></h2>
 
       <div class="kpi-grid">
-        <div class="kpi-card total">
+        <div class="kpi-card total" onclick="filtrarPor('total')" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <h3>📋 Total de Contratos</h3>
           <div class="number" id="totalContratos">0</div>
         </div>
-        <div class="kpi-card chaves">
+        <div class="kpi-card chaves" onclick="filtrarPor('chaves')" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <h3>🔑 Chaves Recebidas</h3>
           <div class="number" id="chavesRecebidas">0</div>
         </div>
-        <div class="kpi-card finalizados">
+        <div class="kpi-card finalizados" onclick="filtrarPor('finalizados')" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <h3>✅ Finalizados</h3>
           <div class="number" id="finalizados">0</div>
         </div>
-        <div class="kpi-card manutencao">
+        <div class="kpi-card manutencao" onclick="filtrarPor('manutencao')" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <h3>🚨 Em Manutenção</h3>
           <div class="number" id="emManutencao">0</div>
         </div>
@@ -825,6 +836,30 @@
     let contratos = [];
     let contratoEmEdicao = null;
     let contratoEmReparo = null;
+    let filtroAtivo = null;
+
+    // ========= FUNÇÕES DE FILTRO =========
+    function filtrarPor(tipo) {
+      filtroAtivo = tipo;
+      mudarAba('contratos');
+      mostrarToast(`🔍 Filtrando: ${tipo}`, false);
+      
+      let dados = contratos;
+      
+      if (tipo === 'total') {
+        dados = contratos;
+        filtroAtivo = null;
+      } else if (tipo === 'chaves') {
+        dados = contratos.filter(c => c.statusChaves === 'recebidas');
+      } else if (tipo === 'finalizados') {
+        dados = contratos.filter(c => c.finalizado === 'sim');
+      } else if (tipo === 'manutencao') {
+        dados = contratos.filter(c => c.reparos && c.reparos.some(r => r.status !== 'CONCLUIDO'));
+      }
+      
+      renderizarTabela(dados);
+      document.getElementById('busca').value = '';
+    }
 
     function mudarAba(abaName) {
       document.querySelectorAll('.tab-content').forEach(tab => {
@@ -930,13 +965,15 @@
       document.getElementById('loading').style.display = 'block';
       document.getElementById('tabela').style.display = 'none';
       atualizarSyncStatus('syncing');
+      filtroAtivo = null;
+      document.getElementById('busca').value = '';
 
       fetch(`${API_URL}/contracts`)
         .then(r => r.json())
         .then(data => {
           console.log('📦 Dados recebidos:', data);
           contratos = data.contratos || [];
-          console.log('✅ V25.2 - Contratos carregados:', contratos.length);
+          console.log('✅ V25.4 - Contratos carregados:', contratos.length);
           
           atualizarDashboard();
           atualizarAlertas();
@@ -1210,6 +1247,7 @@
       const comunicacao = document.getElementById('edit-comunicacao').value;
       const agendamento = document.getElementById('edit-agendamento').value;
       const entrega = document.getElementById('edit-entrega').value;
+      const novoStatus = document.getElementById('edit-statusChaves').value;
 
       // Sem validação em V25.3.1 - Salvando diretamente
       atualizarSyncStatus('syncing');
@@ -1220,7 +1258,7 @@
         comunicacaoInquilino: comunicacao ? new Date(comunicacao + 'T00:00:00Z').toISOString() : null,
         agendamentoVistoria: agendamento ? new Date(agendamento + 'T00:00:00Z').toISOString() : null,
         entregaChaves: entrega ? new Date(entrega + 'T00:00:00Z').toISOString() : null,
-        statusChaves: document.getElementById('edit-statusChaves').value
+        statusChaves: novoStatus
       };
 
       fetch(`${API_URL}/contracts/${contratoEmEdicao}`, {
@@ -1231,7 +1269,34 @@
       .then(r => r.json())
       .then(data => {
         if (data.sucesso) {
-          mostrarToast('✅ Contrato atualizado!');
+          // Alerta especial se recebeu chaves
+          const contratoAntigo = contratos.find(c => c._id === contratoEmEdicao);
+          if (contratoAntigo && contratoAntigo.statusChaves !== 'recebidas' && novoStatus === 'recebidas') {
+            mostrarToast(`🔑 ✅ CHAVES RECEBIDAS! ${data.contrato.contrato}`, false);
+            // Mostrar alerta visual
+            const alertaEspecial = document.createElement('div');
+            alertaEspecial.style.cssText = `
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              background: linear-gradient(135deg, #27ae60 0%, #229954 100%);
+              color: white;
+              padding: 30px 40px;
+              border-radius: 10px;
+              font-size: 18px;
+              font-weight: bold;
+              z-index: 9999;
+              box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+              animation: scaleIn 0.5s ease;
+              text-align: center;
+            `;
+            alertaEspecial.innerHTML = `🔑 CHAVES RECEBIDAS!<br/>${data.contrato.contrato}`;
+            document.body.appendChild(alertaEspecial);
+            setTimeout(() => alertaEspecial.remove(), 3000);
+          } else {
+            mostrarToast('✅ Contrato atualizado!');
+          }
           fecharModalEditar();
           carregarDados();
         } else {
@@ -1577,7 +1642,7 @@
           ${tabelaHTML}
 
           <p style="margin-top: 40px; font-size: 8pt; color: #999; text-align: center;">
-            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.3.1
+            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.4
           </p>
         </div>
       `;
