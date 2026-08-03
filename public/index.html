@@ -585,7 +585,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.3 🚀 Sem Validação de Datas</div>
+    <div class="version-badge">V25.3.1 🚀 Modal Editar Corrigido</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -1195,11 +1195,7 @@
       document.getElementById('edit-entrega').value = c.entregaChaves ? c.entregaChaves.split('T')[0] : '';
       document.getElementById('edit-statusChaves').value = c.statusChaves || 'pendente';
 
-      document.getElementById('erro-agendamento').textContent = '';
-      document.getElementById('erro-entrega').textContent = '';
-      document.getElementById('edit-agendamento').classList.remove('form-error');
-      document.getElementById('edit-entrega').classList.remove('form-error');
-
+      // Elementos de erro removidos em V25.3.1
       document.getElementById('modalEditar').classList.add('show');
     }
 
@@ -1586,7 +1582,7 @@
           ${tabelaHTML}
 
           <p style="margin-top: 40px; font-size: 8pt; color: #999; text-align: center;">
-            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.3
+            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.3.1
           </p>
         </div>
       `;
