@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Integrativa Desocupação - Painel de Gerenciamento</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -514,6 +513,119 @@
       min-width: 120px;
     }
 
+    /* ESTILO PDF */
+    #pdfContent {
+      display: none;
+    }
+
+    .pdf-page {
+      background: white;
+      padding: 40px;
+      page-break-after: always;
+      font-family: Arial, sans-serif;
+      font-size: 11pt;
+      color: #333;
+    }
+
+    .pdf-header {
+      border-bottom: 3px solid #2c5aa0;
+      padding-bottom: 15px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+
+    .pdf-header h1 {
+      font-size: 24pt;
+      color: #2c5aa0;
+      margin-bottom: 5px;
+    }
+
+    .pdf-header p {
+      font-size: 9pt;
+      color: #666;
+    }
+
+    .pdf-section-title {
+      font-size: 13pt;
+      font-weight: bold;
+      color: #2c5aa0;
+      margin-top: 20px;
+      margin-bottom: 15px;
+      border-bottom: 2px solid #2c5aa0;
+      padding-bottom: 8px;
+    }
+
+    .pdf-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .pdf-kpi-card {
+      border: 1px solid #ddd;
+      padding: 15px;
+      text-align: center;
+      border-radius: 5px;
+      background: #f9f9f9;
+    }
+
+    .pdf-kpi-card h3 {
+      font-size: 9pt;
+      font-weight: bold;
+      color: #666;
+      margin-bottom: 8px;
+    }
+
+    .pdf-kpi-card .number {
+      font-size: 24pt;
+      font-weight: bold;
+      color: #2c5aa0;
+    }
+
+    .pdf-alert {
+      border-left: 4px solid #ffc107;
+      background: #fff9e6;
+      padding: 10px;
+      margin-bottom: 10px;
+      font-size: 9pt;
+    }
+
+    .pdf-alert.danger {
+      border-left-color: #e74c3c;
+      background: #ffe6e6;
+    }
+
+    .pdf-alert.success {
+      border-left-color: #27ae60;
+      background: #e6ffe6;
+    }
+
+    .pdf-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 9pt;
+    }
+
+    .pdf-table th {
+      background: #2c5aa0;
+      color: white;
+      padding: 8px;
+      text-align: left;
+      font-weight: bold;
+      border: 1px solid #999;
+    }
+
+    .pdf-table td {
+      padding: 6px 8px;
+      border: 1px solid #ddd;
+    }
+
+    .pdf-table tbody tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
     @media (max-width: 768px) {
       .header h1 {
         font-size: 20px;
@@ -577,7 +689,7 @@
       <div id="alertasContainer"></div>
 
       <div class="controls">
-        <button onclick="exportarParaExcel()" style="background-color: #27ae60; font-size: 13px;">📊 Exportar Excel</button>
+        <button onclick="gerarRelatorioPDF()" style="background-color: #e74c3c; font-size: 13px;">📄 Gerar Relatório PDF</button>
       </div>
     </div>
 
@@ -722,6 +834,9 @@
     </div>
   </div>
 
+  <!-- CONTEÚDO PDF (ESCONDIDO) -->
+  <div id="pdfContent"></div>
+
   <script>
     const API_URL = window.location.hostname === 'localhost' ? '/api' : 'https://integrativa-desocupacao.onrender.com/api';
     let contratos = [];
@@ -841,7 +956,7 @@
         .then(r => r.json())
         .then(data => {
           contratos = data.contratos || [];
-          console.log('✅ V23 - Contratos carregados:', contratos.length);
+          console.log('✅ V24 - Contratos carregados:', contratos.length);
           
           carregarReparosDoLocalStorage();
           atualizarDashboard();
@@ -893,7 +1008,6 @@
     function atualizarAlertas() {
       let alerts = [];
 
-      // ALERTA 1: Chaves entregues
       const chavasEntregues = contratos.filter(c => {
         if (!c.entregaChaves) return false;
         const dias = calcularDiasAte(c.entregaChaves);
@@ -909,7 +1023,6 @@
         });
       }
 
-      // ALERTA 2: Vistorias próximas
       const vistoriasProximas = contratos.filter(c => {
         if (!c.agendamentoVistoria) return false;
         const dias = calcularDiasAte(c.agendamentoVistoria);
@@ -928,7 +1041,6 @@
         });
       }
 
-      // ALERTA 3: Desocupações lentas
       const diasAltos = contratos.filter(c => {
         if (!c.comunicacaoInquilino) return false;
         const dias = calcularDiasDesde(c.comunicacaoInquilino);
@@ -947,7 +1059,6 @@
         });
       }
 
-      // ALERTA 4: Manutenção bloqueando
       const repEmManutencao = [];
       Object.keys(reparos).forEach(cid => {
         const c = contratos.find(x => x._id === cid);
@@ -1056,7 +1167,6 @@
       document.getElementById('edit-entrega').value = c.entregaChaves ? c.entregaChaves.split('T')[0] : '';
       document.getElementById('edit-statusChaves').value = c.statusChaves || 'pendente';
 
-      // Limpar mensagens de erro
       document.getElementById('erro-agendamento').textContent = '';
       document.getElementById('erro-entrega').textContent = '';
       document.getElementById('edit-agendamento').classList.remove('form-error');
@@ -1077,16 +1187,13 @@
       const agendamento = document.getElementById('edit-agendamento').value;
       const entrega = document.getElementById('edit-entrega').value;
 
-      // Validar sequência de datas
       const erros = validarSequenciaDatas(comunicacao, agendamento, entrega);
 
-      // Limpar mensagens anteriores
       document.getElementById('erro-agendamento').textContent = '';
       document.getElementById('erro-entrega').textContent = '';
       document.getElementById('edit-agendamento').classList.remove('form-error');
       document.getElementById('edit-entrega').classList.remove('form-error');
 
-      // Mostrar erros
       if (erros.vistoria) {
         document.getElementById('erro-agendamento').textContent = erros.vistoria;
         document.getElementById('edit-agendamento').classList.add('form-error');
@@ -1281,18 +1388,14 @@
       }
     }
 
-    function exportarParaExcel() {
-      carregarReparosDoLocalStorage();
+    function gerarRelatorioPDF() {
+      const hoje = new Date();
+      const dataFormatada = `${hoje.getDate().toString().padStart(2, '0')}/${(hoje.getMonth() + 1).toString().padStart(2, '0')}/${hoje.getFullYear()}`;
 
-      // Preparar dados da planilha
-      const dados = [];
-      dados.push(['📊 RELATÓRIO DE DESOCUPAÇÃO - ' + new Date().toLocaleDateString('pt-BR')]);
-      dados.push([]);
-
-      // Resumo
       const total = contratos.length;
       const chaves = contratos.filter(c => c.statusChaves === 'recebidas').length;
       const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
+
       let emManutencao = 0;
       Object.keys(reparos).forEach(cid => {
         const repsDoC = reparos[cid] || [];
@@ -1301,40 +1404,166 @@
         }
       });
 
-      dados.push(['RESUMO EXECUTIVO']);
-      dados.push(['Total de Contratos', total]);
-      dados.push(['Chaves Recebidas', chaves]);
-      dados.push(['Finalizados', finalizados]);
-      dados.push(['Em Manutenção', emManutencao]);
-      dados.push([]);
+      // Preparar alertas
+      let alertasHTML = '';
 
-      // Detalhes de contratos
-      dados.push(['Contrato', 'Locatário', 'Endereço', 'Comunicação', 'Vistoria', 'Ent.Chaves', 'Status', 'Reparos']);
-      contratos.forEach(c => {
-        const repsDoC = reparos[c._id] || [];
-        const totalReps = repsDoC.filter(r => r.status !== 'CONCLUIDO').length;
-        const reparosTxt = totalReps > 0 ? totalReps + ' reparo(s)' : 'Nenhum';
-
-        dados.push([
-          c.contrato,
-          c.locatario,
-          c.endereco || '-',
-          formatarDataCompleta(c.comunicacaoInquilino),
-          formatarDataCompleta(c.agendamentoVistoria),
-          formatarDataCompleta(c.entregaChaves),
-          c.statusChaves === 'recebidas' ? 'Recebidas' : 'Pendente',
-          reparosTxt
-        ]);
+      const chavasEntregues = contratos.filter(c => {
+        if (!c.entregaChaves) return false;
+        const dias = calcularDiasAte(c.entregaChaves);
+        return dias !== null && dias <= 7 && dias >= 0;
       });
 
-      // Criar workbook
-      const ws = XLSX.utils.aoa_to_sheet(dados);
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Desocupação');
+      if (chavasEntregues.length > 0) {
+        alertasHTML += `<div class="pdf-alert success">
+          <strong>🔑 CHAVES ENTREGUES (esta semana):</strong><br/>
+          ${chavasEntregues.map(c => `• ${c.contrato} (${c.locatario}) - ${formatarDataCompleta(c.entregaChaves)}`).join('<br/>')}
+        </div>`;
+      }
 
-      // Fazer download
-      XLSX.writeFile(wb, `Relatorio-Desocupacao-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`);
-      mostrarToast('✅ Excel exportado!');
+      const vistoriasProximas = contratos.filter(c => {
+        if (!c.agendamentoVistoria) return false;
+        const dias = calcularDiasAte(c.agendamentoVistoria);
+        return dias !== null && dias <= 7 && dias >= 0;
+      });
+
+      if (vistoriasProximas.length > 0) {
+        alertasHTML += `<div class="pdf-alert">
+          <strong>⏰ VISTORIAS PRÓXIMAS (7 dias):</strong><br/>
+          ${vistoriasProximas.map(c => {
+            const dias = calcularDiasAte(c.agendamentoVistoria);
+            return `• ${c.contrato} (${c.locatario}) - ${dias}d`;
+          }).join('<br/>')}
+        </div>`;
+      }
+
+      const diasAltos = contratos.filter(c => {
+        if (!c.comunicacaoInquilino) return false;
+        const dias = calcularDiasDesde(c.comunicacaoInquilino);
+        return dias !== null && dias > 45;
+      });
+
+      if (diasAltos.length > 0) {
+        alertasHTML += `<div class="pdf-alert danger">
+          <strong>📅 DESOCUPAÇÕES LENTAS (45+ dias):</strong><br/>
+          ${diasAltos.map(c => {
+            const dias = calcularDiasDesde(c.comunicacaoInquilino);
+            return `• ${c.contrato} (${c.locatario}) - ${dias} dias!`;
+          }).join('<br/>')}
+        </div>`;
+      }
+
+      const repEmManutencao = [];
+      Object.keys(reparos).forEach(cid => {
+        const c = contratos.find(x => x._id === cid);
+        if (c) {
+          const repsDoC = reparos[cid] || [];
+          const temUrgente = repsDoC.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
+          if (temUrgente) {
+            const urgentes = repsDoC.filter(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO').length;
+            repEmManutencao.push(`• ${c.contrato} (${c.locatario}) - ${urgentes} reparo(s) urgente(s)`);
+          }
+        }
+      });
+
+      if (repEmManutencao.length > 0) {
+        alertasHTML += `<div class="pdf-alert danger">
+          <strong>🚨 MANUTENÇÃO BLOQUEANDO ALUGUEL:</strong><br/>
+          ${repEmManutencao.join('<br/>')}
+        </div>`;
+      }
+
+      if (alertasHTML === '') {
+        alertasHTML = '<div class="pdf-alert success"><strong>✅ Tudo em dia!</strong> Nenhum alerta crítico.</div>';
+      }
+
+      // Preparar tabela de contratos
+      const tabelaHTML = `
+        <table class="pdf-table">
+          <thead>
+            <tr>
+              <th>Contrato</th>
+              <th>Locatário</th>
+              <th>Comunicação</th>
+              <th>Vistoria</th>
+              <th>Ent.Chaves</th>
+              <th>Status</th>
+              <th>Reparos</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${contratos.map(c => {
+              const repsDoC = reparos[c._id] || [];
+              const totalReps = repsDoC.filter(r => r.status !== 'CONCLUIDO').length;
+              const reparosTxt = totalReps > 0 ? totalReps + ' rep.' : 'Nenhum';
+              return `
+                <tr>
+                  <td>${c.contrato}</td>
+                  <td>${c.locatario}</td>
+                  <td>${formatarDataCompleta(c.comunicacaoInquilino)}</td>
+                  <td>${formatarDataCompleta(c.agendamentoVistoria)}</td>
+                  <td>${formatarDataCompleta(c.entregaChaves)}</td>
+                  <td>${c.statusChaves === 'recebidas' ? 'OK' : 'Pendente'}</td>
+                  <td>${reparosTxt}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+
+      const pdfHTML = `
+        <div class="pdf-page">
+          <div class="pdf-header">
+            <h1>🏢 Integrativa Desocupação</h1>
+            <p>Relatório de Desocupações e Manutenção</p>
+            <p>Data: ${dataFormatada}</p>
+          </div>
+
+          <div class="pdf-section-title">📊 Resumo Executivo</div>
+          <div class="pdf-kpi-grid">
+            <div class="pdf-kpi-card">
+              <h3>📋 Total de Contratos</h3>
+              <div class="number">${total}</div>
+            </div>
+            <div class="pdf-kpi-card">
+              <h3>🔑 Chaves Recebidas</h3>
+              <div class="number">${chaves}</div>
+            </div>
+            <div class="pdf-kpi-card">
+              <h3>✅ Finalizados</h3>
+              <div class="number">${finalizados}</div>
+            </div>
+            <div class="pdf-kpi-card">
+              <h3>🚨 Em Manutenção</h3>
+              <div class="number">${emManutencao}</div>
+            </div>
+          </div>
+
+          <div class="pdf-section-title">🚨 Alertas Críticos</div>
+          ${alertasHTML}
+
+          <div class="pdf-section-title">📋 Contratos Detalhados</div>
+          ${tabelaHTML}
+
+          <p style="margin-top: 40px; font-size: 8pt; color: #999; text-align: center;">
+            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação
+          </p>
+        </div>
+      `;
+
+      const elemento = document.createElement('div');
+      elemento.innerHTML = pdfHTML;
+
+      const opt = {
+        margin: 0,
+        filename: `Relatorio-Desocupacao-${dataFormatada.replace(/\//g, '-')}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
+      };
+
+      html2pdf().set(opt).from(elemento).save();
+      mostrarToast('✅ PDF gerado e baixado!');
     }
 
     function recarregarDados() {
