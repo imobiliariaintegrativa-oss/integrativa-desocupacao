@@ -43,6 +43,21 @@ mongoose.connect(MONGODB_URI)
 
 // ========= ROTAS =========
 
+// Rota raiz
+app.get('/', (req, res) => {
+  res.json({ 
+    mensagem: '✅ Servidor Integrativa Desocupação rodando',
+    versao: 'V28-TipoDesocupacao',
+    endpoints: [
+      'GET /api/health',
+      'GET /api/contracts',
+      'POST /api/contracts',
+      'PUT /api/contracts/:id',
+      'DELETE /api/contracts/:id'
+    ]
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ 
