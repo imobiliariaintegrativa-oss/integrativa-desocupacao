@@ -602,7 +602,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.5.2 🚀 Carregamento Automático de Dados</div>
+    <div class="version-badge">V25.5.3 🚀 Novo Contrato Corrigido</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -1306,6 +1306,8 @@
         reparos: []
       };
 
+      console.log('📤 Enviando novo contrato:', dados);
+
       fetch(`${API_URL}/contracts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1313,17 +1315,27 @@
       })
       .then(r => r.json())
       .then(data => {
-        if (data.sucesso) {
+        console.log('📥 Resposta do servidor:', data);
+        
+        if (data && data.sucesso) {
+          console.log('✅ Sucesso! Contrato criado:', data.contrato.contrato);
+          mostrarToast('✅ Contrato criado!');
+          fecharModalNovoContrato();
+          carregarDados();
+        } else if (data && data.contrato) {
+          // Mesmo que sucesso seja undefined, se contrato existe foi criado
+          console.log('✅ Contrato criado (sem sucesso flag)');
           mostrarToast('✅ Contrato criado!');
           fecharModalNovoContrato();
           carregarDados();
         } else {
+          console.error('❌ Erro:', data);
           mostrarToast('❌ Erro ao criar contrato!', true);
           atualizarSyncStatus('error');
         }
       })
       .catch(erro => {
-        console.error('Erro:', erro);
+        console.error('❌ Erro de rede:', erro);
         mostrarToast('❌ Erro ao criar contrato!', true);
         atualizarSyncStatus('error');
       });
