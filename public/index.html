@@ -41,16 +41,6 @@
       background-color: #2a2a2a;
     }
 
-    body.dark-mode .card {
-      background-color: #333;
-      border-color: #444;
-    }
-
-    body.dark-mode .kpi-card {
-      background-color: #333;
-      border-color: #555;
-    }
-
     .header {
       background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
       color: var(--white);
@@ -120,7 +110,7 @@
     }
 
     .container {
-      max-width: 1600px;
+      max-width: 1800px;
       margin: 20px auto;
       padding: 20px;
       background: var(--white);
@@ -146,111 +136,46 @@
       padding-bottom: 10px;
     }
 
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 15px;
-      margin-bottom: 30px;
-    }
-
-    .kpi-card {
-      background: #f8f9fa;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 20px;
-      text-align: center;
-    }
-
-    body.dark-mode .kpi-card {
-      background: #333;
-      border-color: #555;
-    }
-
-    .kpi-card h3 {
-      font-size: 12px;
-      color: #7f8c8d;
-      margin-bottom: 10px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
-
-    .kpi-card .value {
-      font-size: 32px;
-      font-weight: bold;
-      color: var(--primary);
-      margin-bottom: 5px;
-    }
-
-    .kpi-card .unit {
-      font-size: 12px;
-      color: #95a5a6;
-    }
-
-    .kpi-card.urgente .value {
-      color: var(--danger);
-    }
-
-    .kpi-card.sucesso .value {
-      color: var(--success);
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 15px;
-      margin-bottom: 30px;
-    }
-
-    .card {
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: var(--white);
-      padding: 20px;
-      border-radius: 8px;
-      text-align: center;
-      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-      border: 1px solid var(--border);
-    }
-
-    .card.agendada { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
-    .card.recebidas { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
-    .card.manutencao { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); }
-    .card.total { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-
-    .card h3 {
-      font-size: 12px;
-      opacity: 0.9;
-      margin-bottom: 10px;
-    }
-
-    .card .number {
-      font-size: 32px;
-      font-weight: bold;
-    }
-
-    .alert {
-      background-color: #e7f3ff;
-      border-left: 4px solid #2196F3;
-      padding: 15px 20px;
+    .alert-box {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
       border-radius: 5px;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       display: flex;
-      align-items: center;
       gap: 15px;
+      align-items: flex-start;
+    }
+
+    .alert-box.danger {
+      background: #f8d7da;
+      border-left-color: #e74c3c;
+    }
+
+    .alert-box.success {
+      background: #d4edda;
+      border-left-color: #27ae60;
+    }
+
+    .alert-box.info {
+      background: #d1ecf1;
+      border-left-color: #3498db;
     }
 
     .alert-icon {
       font-size: 24px;
+      min-width: 30px;
     }
 
-    .alert-content h3 {
-      margin-bottom: 5px;
-      color: #1976D2;
+    .alert-content h4 {
+      margin-bottom: 8px;
+      font-size: 14px;
     }
 
     .alert-content p {
-      margin: 0;
-      color: #1976D2;
+      margin: 4px 0;
       font-size: 12px;
+      line-height: 1.5;
     }
 
     .controls {
@@ -260,7 +185,7 @@
       flex-wrap: wrap;
     }
 
-    input, select, button, textarea {
+    input, select, button {
       padding: 10px 15px;
       border: 1px solid var(--border);
       border-radius: 5px;
@@ -268,8 +193,8 @@
       font-family: inherit;
     }
 
-    input, select, textarea {
-      min-width: 200px;
+    input, select {
+      min-width: 150px;
     }
 
     button {
@@ -303,7 +228,7 @@
       width: 100%;
       border-collapse: collapse;
       background: var(--white);
-      min-width: 1200px;
+      font-size: 12px;
     }
 
     thead {
@@ -319,6 +244,7 @@
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
       font-size: 11px;
+      font-weight: bold;
     }
 
     td {
@@ -330,7 +256,6 @@
 
     tbody tr:hover {
       background-color: #f8f9fa;
-      cursor: pointer;
     }
 
     body.dark-mode table {
@@ -338,13 +263,14 @@
       color: #ecf0f1;
     }
 
-    tr.urgente-vencido {
-      background: #ffe7e7;
+    .alert-row {
+      background: #ffe7e7 !important;
       border-left: 4px solid #e74c3c;
     }
 
-    body.dark-mode tr.urgente-vencido {
-      background: rgba(231, 76, 60, 0.2);
+    .warning-row {
+      background: #fff3cd !important;
+      border-left: 4px solid #ffc107;
     }
 
     .toast {
@@ -373,7 +299,6 @@
       }
     }
 
-    /* MODAL STYLES */
     .modal {
       display: none;
       position: fixed;
@@ -441,6 +366,7 @@
       margin-bottom: 5px;
       font-weight: bold;
       color: var(--dark);
+      font-size: 12px;
     }
 
     body.dark-mode .modal-form-group label {
@@ -451,10 +377,10 @@
     .modal-form-group select,
     .modal-form-group textarea {
       width: 100%;
-      padding: 10px;
+      padding: 8px;
       border: 1px solid var(--border);
-      border-radius: 5px;
-      font-size: 14px;
+      border-radius: 4px;
+      font-size: 12px;
     }
 
     .modal-buttons {
@@ -465,12 +391,11 @@
 
     .modal-buttons button {
       flex: 1;
-      padding: 12px;
-      font-size: 14px;
+      padding: 10px;
+      font-size: 12px;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-      transition: background-color 0.3s;
       font-weight: bold;
     }
 
@@ -494,9 +419,9 @@
 
     .badge {
       display: inline-block;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 10px;
       font-weight: bold;
       white-space: nowrap;
     }
@@ -516,77 +441,33 @@
       color: white;
     }
 
-    .badge.pendente {
-      background: #95a5a6;
-      color: white;
-    }
-
-    .badge.em-andamento {
-      background: #3498db;
-      color: white;
-    }
-
-    .badge.concluido {
-      background: #27ae60;
-      color: white;
-    }
-
-    .reparo-item {
+    .reparo-simples {
       background: #f8f9fa;
       border-left: 4px solid #3498db;
-      padding: 15px;
-      border-radius: 5px;
-      margin-bottom: 15px;
+      padding: 12px;
+      border-radius: 4px;
+      margin-bottom: 10px;
+      font-size: 12px;
     }
 
-    body.dark-mode .reparo-item {
+    body.dark-mode .reparo-simples {
       background: #444;
-      border-left-color: #3498db;
     }
 
-    .reparo-item.urgente {
+    .reparo-simples.urgente {
       border-left-color: #e74c3c;
       background: #ffebee;
     }
 
-    body.dark-mode .reparo-item.urgente {
-      background: rgba(231, 76, 60, 0.2);
-    }
-
-    .reparo-header {
+    .reparo-linha {
       display: flex;
       justify-content: space-between;
-      align-items: start;
-      margin-bottom: 10px;
+      margin-bottom: 4px;
     }
 
-    .reparo-titulo {
+    .reparo-label {
       font-weight: bold;
-      font-size: 14px;
-      color: var(--dark);
-    }
-
-    body.dark-mode .reparo-titulo {
-      color: #ecf0f1;
-    }
-
-    .reparo-info {
-      font-size: 12px;
-      color: #7f8c8d;
-      line-height: 1.6;
-      margin-bottom: 10px;
-    }
-
-    .reparo-actions {
-      display: flex;
-      gap: 5px;
-      flex-wrap: wrap;
-    }
-
-    .reparo-actions button {
-      padding: 4px 12px;
-      font-size: 11px;
-      white-space: nowrap;
+      min-width: 120px;
     }
 
     @media (max-width: 768px) {
@@ -598,12 +479,12 @@
         flex-direction: column;
       }
 
-      .kpi-grid {
-        grid-template-columns: repeat(2, 1fr);
+      table {
+        font-size: 10px;
       }
 
-      .stats {
-        grid-template-columns: 1fr;
+      th, td {
+        padding: 6px 4px;
       }
     }
   </style>
@@ -615,7 +496,6 @@
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
         <button class="tab-btn" onclick="mudarAba('contratos')">📋 Contratos</button>
-        <button class="tab-btn" onclick="mudarAba('manutencao')">🔧 Manutenção</button>
       </div>
       <button class="theme-toggle" onclick="toggleDarkMode()">🌙</button>
     </div>
@@ -624,74 +504,16 @@
   <div class="container">
     <!-- ABA DASHBOARD -->
     <div id="dashboard" class="tab-content active">
-      <h2 class="section-title">📊 DASHBOARD EXECUTIVO</h2>
+      <h2 class="section-title">📊 ALERTAS CRÍTICOS</h2>
 
-      <div class="alert">
-        <div class="alert-icon">🔧</div>
-        <div class="alert-content">
-          <h3>V22 - Módulo Completo de Manutenção</h3>
-          <p>Controle total de reparos, urgências e impacto no aluguel. Sistema de bloqueio automático ativado!</p>
-        </div>
-      </div>
-
-      <div class="kpi-grid">
-        <div class="kpi-card sucesso">
-          <h3>📈 Taxa de Conclusão</h3>
-          <div class="value" id="taxaConclusao">0%</div>
-          <div class="unit">Finalizadas / Comunicadas</div>
-        </div>
-        
-        <div class="kpi-card">
-          <h3>⏱️ Tempo Médio</h3>
-          <div class="value" id="tempoMedio">0</div>
-          <div class="unit">dias até finalização</div>
-        </div>
-        
-        <div class="kpi-card urgente">
-          <h3>🚨 Manutenção Urgente</h3>
-          <div class="value" id="manutencaoUrgente">0</div>
-          <div class="unit">reparos bloqueando aluguel</div>
-        </div>
-
-        <div class="kpi-card">
-          <h3>💰 Impacto Financeiro</h3>
-          <div class="value" id="impactoFinanceiro">R$ 0</div>
-          <div class="unit">custo + receita perdida</div>
-        </div>
-      </div>
-
-      <h2 class="section-title">📊 Resumo de Contratos</h2>
-      <div class="stats">
-        <div class="card total">
-          <h3>Total de Contratos</h3>
-          <div class="number" id="totalContratos">0</div>
-        </div>
-        <div class="card agendada">
-          <h3>📋 Prontos para Alugar</h3>
-          <div class="number" id="prontosAlugar">0</div>
-        </div>
-        <div class="card recebidas">
-          <h3>🔑 Chaves Recebidas</h3>
-          <div class="number" id="chavesRecebidas">0</div>
-        </div>
-        <div class="card manutencao">
-          <h3>⚠️ Em Manutenção</h3>
-          <div class="number" id="emManutencao">0</div>
-        </div>
-      </div>
+      <div id="alertasContainer"></div>
     </div>
 
     <!-- ABA CONTRATOS -->
     <div id="contratos" class="tab-content">
-      <h2 class="section-title">📋 Contratos</h2>
+      <h2 class="section-title">📋 Contratos em Desocupação</h2>
       <div class="controls">
         <input type="text" id="busca" placeholder="🔍 Buscar contrato..." onkeyup="filtrarDados()">
-        <select id="filtroStatus" onchange="filtrarDados()">
-          <option value="">Filtrar: Todos</option>
-          <option value="manutencao">⚠️ Em Manutenção</option>
-          <option value="pronto">✅ Pronto para Alugar</option>
-          <option value="chaves">🔑 Aguardando Vistoria</option>
-        </select>
         <button onclick="recarregarDados()" style="background-color: #95a5a6;">🔄 Atualizar</button>
       </div>
 
@@ -702,9 +524,12 @@
             <tr>
               <th>Contrato</th>
               <th>Locatário</th>
-              <th>Status Chaves</th>
-              <th>Manutenção</th>
-              <th>Urgência</th>
+              <th>Endereço</th>
+              <th>Com.</th>
+              <th>Vistoria</th>
+              <th>Ent.Chaves</th>
+              <th>Status</th>
+              <th>Manu.</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -713,59 +538,12 @@
         </table>
       </div>
     </div>
-
-    <!-- ABA MANUTENÇÃO -->
-    <div id="manutencao" class="tab-content">
-      <h2 class="section-title">🔧 Controle de Manutenção</h2>
-
-      <div class="controls">
-        <select id="filtroUrgencia" onchange="filtrarManutencao()">
-          <option value="">Filtrar: Todos os Reparos</option>
-          <option value="URGENTE">🔴 URGENTE</option>
-          <option value="MEDIA">🟡 MÉDIA</option>
-          <option value="PEQUENA">🟢 PEQUENA</option>
-        </select>
-        <select id="filtroStatusRep" onchange="filtrarManutencao()">
-          <option value="">Status: Todos</option>
-          <option value="PENDENTE">⏳ Pendente</option>
-          <option value="EM_ANDAMENTO">🔨 Em Andamento</option>
-          <option value="CONCLUIDO">✅ Concluído</option>
-        </select>
-        <button onclick="recarregarDados()" style="background-color: #95a5a6;">🔄 Atualizar</button>
-      </div>
-
-      <h3 class="section-title" style="margin-top: 20px;">📊 RESUMO DE MANUTENÇÃO</h3>
-      <div class="stats">
-        <div class="card manutencao">
-          <h3>🚨 URGENTES</h3>
-          <div class="number" id="totalUrgente">0</div>
-        </div>
-        <div class="card">
-          <h3>🟡 MÉDIAS</h3>
-          <div class="number" id="totalMedia">0</div>
-        </div>
-        <div class="card recebidas">
-          <h3>🟢 PEQUENAS</h3>
-          <div class="number" id="totalPequena">0</div>
-        </div>
-        <div class="card agendada">
-          <h3>✅ CONCLUÍDAS</h3>
-          <div class="number" id="totalConcluidas">0</div>
-        </div>
-      </div>
-
-      <h3 class="section-title" style="margin-top: 20px;">📋 REPAROS PRÓXIMOS A VENCER</h3>
-      <div id="proximosVencer"></div>
-
-      <h3 class="section-title" style="margin-top: 20px;">📋 TODOS OS REPAROS</h3>
-      <div id="listaReparos"></div>
-    </div>
   </div>
 
-  <!-- MODAL: REGISTRAR REPARO -->
+  <!-- MODAL: REGISTRAR REPARO SIMPLES -->
   <div id="modalReparo" class="modal">
     <div class="modal-content">
-      <div class="modal-header">🔧 Registrar Novo Reparo</div>
+      <div class="modal-header">🔧 Registrar Reparo</div>
       
       <form id="formReparo">
         <div class="modal-form-group">
@@ -774,106 +552,45 @@
         </div>
 
         <div class="modal-form-group">
-          <label>👤 Locatário:</label>
-          <input type="text" id="rep-locatario" readonly>
-        </div>
-
-        <div class="modal-form-group">
-          <label>📝 Descrição do Reparo:</label>
-          <textarea id="rep-descricao" rows="3" placeholder="Ex: Vidro quebrado na porta da sala..."></textarea>
+          <label>📝 Descrição:</label>
+          <textarea id="rep-descricao" rows="2" placeholder="Ex: Vidro quebrado..."></textarea>
         </div>
 
         <div class="modal-form-group">
           <label>⚠️ Urgência:</label>
           <select id="rep-urgencia" required>
             <option value="">-- Selecione --</option>
-            <option value="URGENTE">🔴 URGENTE (Impede aluguel - até 3 dias)</option>
-            <option value="MEDIA">🟡 MÉDIA (Limita aluguel - até 10 dias)</option>
-            <option value="PEQUENA">🟢 PEQUENA (Cosmética - até 30 dias)</option>
+            <option value="URGENTE">🔴 URGENTE (até 3 dias)</option>
+            <option value="MEDIA">🟡 MÉDIA (até 10 dias)</option>
+            <option value="PEQUENA">🟢 PEQUENA (até 30 dias)</option>
           </select>
         </div>
 
         <div class="modal-form-group">
-          <label>💰 Custo Estimado (R$):</label>
-          <input type="number" id="rep-custo" min="0" step="0.01" placeholder="150.00">
+          <label>📅 Data-Limite:</label>
+          <input type="date" id="rep-data" required>
         </div>
 
         <div class="modal-form-group">
           <label>👨‍🔧 Responsável:</label>
-          <input type="text" id="rep-responsavel" placeholder="Ex: Integrativa, Vidraçaria XYZ, Proprietário...">
-        </div>
-
-        <div class="modal-form-group">
-          <label>📅 Data-Limite de Conclusão:</label>
-          <input type="date" id="rep-data-limite" required>
-        </div>
-
-        <div class="modal-form-group">
-          <label>🔗 Link Pleno Vistorias (opcional):</label>
-          <input type="url" id="rep-link-pleno" placeholder="https://pleno.com.br/vistorias/...">
-        </div>
-
-        <div class="modal-form-group">
-          <label>💬 Notas:</label>
-          <textarea id="rep-notas" rows="2" placeholder="Observações adicionais..."></textarea>
+          <input type="text" id="rep-responsavel" placeholder="Ex: Integrativa, Vidraçaria, Proprietário...">
         </div>
 
         <div class="modal-buttons">
-          <button type="button" class="btn-primary" onclick="salvarReparo()">💾 Registrar</button>
+          <button type="button" class="btn-primary" onclick="salvarReparo()">💾 Salvar</button>
           <button type="button" class="btn-secondary" onclick="fecharModalReparo()">❌ Cancelar</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: DETALH REPARO -->
-  <div id="modalDetalhes" class="modal">
+  <!-- MODAL: VER REPAROS -->
+  <div id="modalReparos" class="modal">
     <div class="modal-content">
-      <div class="modal-header">🔧 Detalhes do Reparo</div>
-      
-      <div style="font-size: 13px; line-height: 1.8;">
-        <div style="margin-bottom: 15px;">
-          <strong>Contrato:</strong> <span id="det-contrato"></span>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <strong>Locatário:</strong> <span id="det-locatario"></span>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <strong>Descrição:</strong> <span id="det-descricao"></span>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <strong>Urgência:</strong> <span id="det-urgencia"></span>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <strong>Custo:</strong> R$ <span id="det-custo"></span>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <strong>Responsável:</strong> <span id="det-responsavel"></span>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <strong>Data-Limite:</strong> <span id="det-data-limite"></span>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <strong>Status:</strong> <span id="det-status"></span>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <strong>Notas:</strong> <span id="det-notas" style="font-style: italic; color: #7f8c8d;"></span>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <strong>Histórico:</strong>
-          <div id="det-historico" style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 5px; font-size: 12px;"></div>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <strong>Link Pleno:</strong>
-          <div>
-            <a id="det-link" href="#" target="_blank" style="color: #3498db; text-decoration: none;">Abrir em nova aba ↗️</a>
-          </div>
-        </div>
-      </div>
-
-      <div class="modal-buttons" style="margin-top: 25px;">
-        <button type="button" class="btn-primary" onclick="marcarComoConcluido()">✅ Marcar Concluído</button>
-        <button type="button" class="btn-secondary" onclick="fecharModalDetalhes()">Fechar</button>
+      <div class="modal-header">🔧 Reparos Registrados</div>
+      <div id="listaReparosModal"></div>
+      <div class="modal-buttons">
+        <button type="button" class="btn-secondary" onclick="fecharModalReparos()">Fechar</button>
       </div>
     </div>
   </div>
@@ -882,7 +599,6 @@
     const API_URL = window.location.hostname === 'localhost' ? '/api' : 'https://integrativa-desocupacao.onrender.com/api';
     let contratos = [];
     let reparos = {};
-    let reparoAtualSelecionado = null;
     let contratoEmReparo = null;
 
     function mudarAba(abaName) {
@@ -896,7 +612,7 @@
       document.getElementById(abaName).classList.add('active');
       event.target.classList.add('active');
 
-      if (abaName === 'contratos' || abaName === 'manutencao') {
+      if (abaName === 'contratos') {
         carregarDados();
       }
     }
@@ -906,7 +622,7 @@
       try {
         let dataParts = dataISO.split('T')[0].split('-');
         if (dataParts.length !== 3) return '-';
-        return `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`;
+        return `${dataParts[2]}/${dataParts[1]}`;
       } catch (e) {
         return '-';
       }
@@ -934,6 +650,28 @@
       }
     }
 
+    function calcularDiasDesde(dataISO) {
+      if (!dataISO) return null;
+      try {
+        let dataParts = dataISO.split('T')[0].split('-');
+        let ano = parseInt(dataParts[0], 10);
+        let mes = parseInt(dataParts[1], 10);
+        let dia = parseInt(dataParts[2], 10);
+
+        const data = new Date(ano, mes - 1, dia, 0, 0, 0, 0);
+        const hoje = new Date();
+        hoje.setHours(0, 0, 0, 0);
+
+        const diferenca = hoje - data;
+        const diasMs = 1000 * 60 * 60 * 24;
+        const dias = Math.floor(diferenca / diasMs);
+
+        return dias >= 0 ? dias : null;
+      } catch (e) {
+        return null;
+      }
+    }
+
     function carregarDados() {
       document.getElementById('loading').style.display = 'block';
       document.getElementById('tabela').style.display = 'none';
@@ -942,11 +680,11 @@
         .then(r => r.json())
         .then(data => {
           contratos = data.contratos || [];
-          console.log('✅ V22 - Contratos carregados:', contratos.length);
+          console.log('✅ V22.1 - Contratos carregados:', contratos.length);
           
-          atualizarDashboard();
-          atualizarTabelaContratos();
-          atualizarManutencao();
+          carregarReparosDoLocalStorage();
+          atualizarAlertas();
+          atualizarTabela();
           document.getElementById('loading').style.display = 'none';
           document.getElementById('tabela').style.display = 'table';
         })
@@ -971,265 +709,157 @@
       localStorage.setItem('integrativa_reparos', JSON.stringify(reparos));
     }
 
-    function atualizarDashboard() {
-      carregarReparosDoLocalStorage();
+    function atualizarAlertas() {
+      let alerts = [];
 
-      const comComunicacao = contratos.filter(c => c.comunicacaoInquilino).length;
-      const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
-      const taxaConclusao = comComunicacao > 0 ? Math.round((finalizados / comComunicacao) * 100) : 0;
-      document.getElementById('taxaConclusao').textContent = `${taxaConclusao}%`;
+      // ALERTA 1: Chaves entregues (esta semana)
+      const chavasEntregues = contratos.filter(c => {
+        if (!c.entregaChaves) return false;
+        const dias = calcularDiasAte(c.entregaChaves);
+        return dias !== null && dias <= 7 && dias >= 0;
+      });
 
-      let tempoTotal = 0;
-      let contador = 0;
-      contratos.forEach(c => {
-        if (c.comunicacaoInquilino && c.finalizado === 'sim') {
-          const d = c.entregaChaves ? calcularDiasAte(c.entregaChaves) : 0;
-          if (d) {
-            tempoTotal += Math.abs(d);
-            contador++;
+      if (chavasEntregues.length > 0) {
+        alerts.push({
+          tipo: 'success',
+          icone: '🔑',
+          titulo: 'Chaves Entregues (esta semana)',
+          items: chavasEntregues.map(c => `${c.contrato} (${c.locatario}) - ${formatarData(c.entregaChaves)}`)
+        });
+      }
+
+      // ALERTA 2: Vistorias próximas (7 dias)
+      const vistoriasProximas = contratos.filter(c => {
+        if (!c.agendamentoVistoria) return false;
+        const dias = calcularDiasAte(c.agendamentoVistoria);
+        return dias !== null && dias <= 7 && dias >= 0;
+      });
+
+      if (vistoriasProximas.length > 0) {
+        alerts.push({
+          tipo: 'warning',
+          icone: '⏰',
+          titulo: 'Vistorias Próximas (7 dias)',
+          items: vistoriasProximas.map(c => {
+            const dias = calcularDiasAte(c.agendamentoVistoria);
+            return `${c.contrato} (${c.locatario}) - ${dias}d`;
+          })
+        });
+      }
+
+      // ALERTA 3: Dias para entrega (desde comunicação)
+      const diasAltos = contratos.filter(c => {
+        if (!c.comunicacaoInquilino) return false;
+        const dias = calcularDiasDesde(c.comunicacaoInquilino);
+        return dias !== null && dias > 45;
+      });
+
+      if (diasAltos.length > 0) {
+        alerts.push({
+          tipo: 'danger',
+          icone: '📅',
+          titulo: 'Desocupações Lentas (45+ dias)',
+          items: diasAltos.map(c => {
+            const dias = calcularDiasDesde(c.comunicacaoInquilino);
+            return `${c.contrato} (${c.locatario}) - ${dias} dias!`;
+          })
+        });
+      }
+
+      // ALERTA 4: Manutenção bloqueando
+      const repEmManutencao = [];
+      Object.keys(reparos).forEach(cid => {
+        const c = contratos.find(x => x._id === cid);
+        if (c) {
+          const repsDoC = reparos[cid] || [];
+          const temUrgente = repsDoC.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
+          if (temUrgente) {
+            const urgentes = repsDoC.filter(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO').length;
+            repEmManutencao.push(`${c.contrato} (${c.locatario}) - ${urgentes} reparo(s) urgente(s)`);
           }
         }
       });
-      const tempoMedio = contador > 0 ? Math.round(tempoTotal / contador) : 0;
-      document.getElementById('tempoMedio').textContent = tempoMedio;
 
-      // Calcular manutenção urgente
-      let urgentesNaoConcluidas = 0;
-      Object.keys(reparos).forEach(contratoId => {
-        const reparosDoContrato = reparos[contratoId] || [];
-        reparosDoContrato.forEach(rep => {
-          if (rep.urgencia === 'URGENTE' && rep.status !== 'CONCLUIDO') {
-            urgentesNaoConcluidas++;
-          }
+      if (repEmManutencao.length > 0) {
+        alerts.push({
+          tipo: 'danger',
+          icone: '🚨',
+          titulo: 'Manutenção Bloqueando Aluguel',
+          items: repEmManutencao
         });
-      });
-      document.getElementById('manutencaoUrgente').textContent = urgentesNaoConcluidas;
+      }
 
-      // Calcular impacto financeiro
-      let custTotal = 0;
-      let diasParados = 0;
-      Object.keys(reparos).forEach(contratoId => {
-        const reparosDoContrato = reparos[contratoId] || [];
-        reparosDoContrato.forEach(rep => {
-          if (rep.status !== 'CONCLUIDO') {
-            custTotal += rep.custo || 0;
-            const diasAte = calcularDiasAte(rep.dataLimite);
-            if (diasAte && diasAte > 0) {
-              diasParados += diasAte;
-            }
-          }
-        });
-      });
-      const impactoTotal = custTotal + (diasParados * 100); // R$ 100/dia de aluguel perdido
-      document.getElementById('impactoFinanceiro').textContent = `R$ ${impactoTotal.toLocaleString('pt-BR')}`;
+      // Renderizar alertas
+      const html = alerts.length > 0
+        ? alerts.map(a => `
+          <div class="alert-box ${a.tipo}">
+            <div class="alert-icon">${a.icone}</div>
+            <div class="alert-content">
+              <h4>${a.titulo}</h4>
+              ${a.items.map(item => `<p>• ${item}</p>`).join('')}
+            </div>
+          </div>
+        `).join('')
+        : '<div class="alert-box success"><div class="alert-icon">✅</div><div class="alert-content"><h4>Tudo em dia!</h4><p>Nenhum alerta crítico no momento.</p></div></div>';
 
-      const prontosAlugar = contratos.filter(c => {
-        const repC = reparos[c._id] || [];
-        const temUrgente = repC.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
-        return !temUrgente && c.entregaChaves;
-      }).length;
-      document.getElementById('prontosAlugar').textContent = prontosAlugar;
-
-      const chavesRec = contratos.filter(c => c.statusChaves === 'recebidas').length;
-      document.getElementById('chavesRecebidas').textContent = chavesRec;
-
-      const emManu = Object.keys(reparos).filter(cid => {
-        const repsDoC = reparos[cid] || [];
-        return repsDoC.some(r => r.status !== 'CONCLUIDO');
-      }).length;
-      document.getElementById('emManutencao').textContent = emManu;
-
-      document.getElementById('totalContratos').textContent = contratos.length;
+      document.getElementById('alertasContainer').innerHTML = html;
     }
 
-    function atualizarTabelaContratos() {
-      renderizarTabelaContratos(contratos);
+    function atualizarTabela() {
+      renderizarTabela(contratos);
     }
 
     function filtrarDados() {
       const busca = document.getElementById('busca').value.toLowerCase();
-      const status = document.getElementById('filtroStatus').value;
-
-      let filtrados = contratos.filter(c => {
-        const matchBusca = !busca || c.contrato.toLowerCase().includes(busca) || c.locatario.toLowerCase().includes(busca);
-        let matchStatus = true;
-
-        if (status === 'manutencao') {
-          const repsDoC = reparos[c._id] || [];
-          matchStatus = repsDoC.some(r => r.status !== 'CONCLUIDO');
-        } else if (status === 'pronto') {
-          const repsDoC = reparos[c._id] || [];
-          const temUrgente = repsDoC.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
-          matchStatus = !temUrgente && c.entregaChaves;
-        } else if (status === 'chaves') {
-          matchStatus = c.entregaChaves && c.statusChaves === 'recebidas';
-        }
-
-        return matchBusca && matchStatus;
+      const filtrados = contratos.filter(c => {
+        return busca === '' || 
+               c.contrato.toLowerCase().includes(busca) || 
+               c.locatario.toLowerCase().includes(busca) ||
+               (c.endereco && c.endereco.toLowerCase().includes(busca));
       });
-
-      renderizarTabelaContratos(filtrados);
+      renderizarTabela(filtrados);
     }
 
-    function renderizarTabelaContratos(dados) {
+    function renderizarTabela(dados) {
       const tbody = document.getElementById('tabelaCorpo');
-      tbody.innerHTML = dados.length === 0 ? '<tr><td colspan="6" style="text-align: center; padding: 40px;">Nenhum contrato encontrado</td></tr>' : dados.map(c => {
+      tbody.innerHTML = dados.length === 0 
+        ? '<tr><td colspan="9" style="text-align: center; padding: 40px;">Nenhum contrato encontrado</td></tr>' 
+        : dados.map(c => {
         const repsDoC = reparos[c._id] || [];
-        const temUrgente = repsDoC.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
         const totalReps = repsDoC.filter(r => r.status !== 'CONCLUIDO').length;
+        const temUrgente = repsDoC.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
 
-        let statusManu = '✅ Sem reparos';
+        let classeAlerta = '';
         if (temUrgente) {
-          statusManu = `🚨 ${totalReps} reparos (URGENTE!)`;
+          classeAlerta = 'alert-row';
+        } else if (calcularDiasAte(c.agendamentoVistoria) && calcularDiasAte(c.agendamentoVistoria) <= 7 && calcularDiasAte(c.agendamentoVistoria) >= 0) {
+          classeAlerta = 'warning-row';
+        }
+
+        let manuTexto = '✅';
+        if (temUrgente) {
+          manuTexto = `🚨 ${totalReps}`;
         } else if (totalReps > 0) {
-          statusManu = `⚠️ ${totalReps} reparos`;
+          manuTexto = `⚠️ ${totalReps}`;
         }
 
         return `
-        <tr>
+        <tr class="${classeAlerta}">
           <td><strong>${c.contrato}</strong></td>
           <td>${c.locatario}</td>
-          <td>${c.statusChaves === 'recebidas' ? '🔑 Recebidas' : '⏳ Pendente'}</td>
-          <td>${statusManu}</td>
-          <td>${temUrgente ? '🔴' : totalReps > 0 ? '🟡' : '✅'}</td>
+          <td>${c.endereco || '-'}</td>
+          <td>${formatarData(c.comunicacaoInquilino)}</td>
+          <td>${formatarData(c.agendamentoVistoria)}</td>
+          <td>${formatarData(c.entregaChaves)}</td>
+          <td>${c.statusChaves === 'recebidas' ? '✅' : '⏳'}</td>
+          <td style="cursor: pointer;" onclick="abrirModalReparos('${c._id}')">${manuTexto}</td>
           <td>
-            <button onclick="abrirModalReparo('${c._id}')" style="font-size: 11px; padding: 4px 8px;">➕ Adicionar</button>
+            <button onclick="abrirModalReparo('${c._id}')" style="font-size: 10px; padding: 3px 6px;">➕</button>
+            <button onclick="abrirModalEditar('${c._id}')" style="font-size: 10px; padding: 3px 6px; background-color: #3498db;">✏️</button>
           </td>
         </tr>
       `;
       }).join('');
-    }
-
-    function atualizarManutencao() {
-      carregarReparosDoLocalStorage();
-
-      let todosReparos = [];
-      Object.keys(reparos).forEach(contratoId => {
-        const c = contratos.find(x => x._id === contratoId);
-        if (c) {
-          const repsDoC = reparos[contratoId] || [];
-          repsDoC.forEach(rep => {
-            todosReparos.push({
-              ...rep,
-              contratoId,
-              contratoNome: c.contrato,
-              locatario: c.locatario
-            });
-          });
-        }
-      });
-
-      // Totais
-      const urgentes = todosReparos.filter(r => r.urgencia === 'URGENTE').length;
-      const medias = todosReparos.filter(r => r.urgencia === 'MEDIA').length;
-      const pequenas = todosReparos.filter(r => r.urgencia === 'PEQUENA').length;
-      const concluidas = todosReparos.filter(r => r.status === 'CONCLUIDO').length;
-
-      document.getElementById('totalUrgente').textContent = urgentes;
-      document.getElementById('totalMedia').textContent = medias;
-      document.getElementById('totalPequena').textContent = pequenas;
-      document.getElementById('totalConcluidas').textContent = concluidas;
-
-      // Próximos a vencer (urgentes com menos de 3 dias)
-      const proximos = todosReparos
-        .filter(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO')
-        .map(r => ({...r, diasAte: calcularDiasAte(r.dataLimite)}))
-        .sort((a, b) => (a.diasAte || 999) - (b.diasAte || 999))
-        .slice(0, 5);
-
-      const htmlProximos = proximos.length > 0
-        ? proximos.map(r => {
-          const diasAte = r.diasAte;
-          const classe = diasAte <= 0 ? 'urgente-vencido' : '';
-          return `
-            <div class="reparo-item urgente">
-              <div class="reparo-header">
-                <span class="reparo-titulo">🔴 ${r.contratoNome} - ${r.descricao}</span>
-                <span class="badge urgente">${diasAte <= 0 ? '⏰ VENCIDO!' : diasAte + 'd'}</span>
-              </div>
-              <div class="reparo-info">
-                <div><strong>Locatário:</strong> ${r.locatario}</div>
-                <div><strong>Responsável:</strong> ${r.responsavel}</div>
-                <div><strong>Vence:</strong> ${formatarData(r.dataLimite)}</div>
-              </div>
-              <div class="reparo-actions">
-                <button onclick="abrirModalDetalhes('${r.contratoId}', '${r._id}')">Detalhes</button>
-              </div>
-            </div>
-          `;
-        }).join('')
-        : '<div style="padding: 20px; text-align: center; color: #7f8c8d;">Nenhum reparo urgente próximo a vencer</div>';
-
-      document.getElementById('proximosVencer').innerHTML = htmlProximos;
-
-      // Lista completa de reparos
-      renderizarListaReparos(todosReparos);
-    }
-
-    function filtrarManutencao() {
-      carregarReparosDoLocalStorage();
-
-      let todosReparos = [];
-      Object.keys(reparos).forEach(contratoId => {
-        const c = contratos.find(x => x._id === contratoId);
-        if (c) {
-          const repsDoC = reparos[contratoId] || [];
-          repsDoC.forEach(rep => {
-            todosReparos.push({
-              ...rep,
-              contratoId,
-              contratoNome: c.contrato,
-              locatario: c.locatario
-            });
-          });
-        }
-      });
-
-      const urgencia = document.getElementById('filtroUrgencia').value;
-      const statusRep = document.getElementById('filtroStatusRep').value;
-
-      let filtrados = todosReparos;
-      if (urgencia) filtrados = filtrados.filter(r => r.urgencia === urgencia);
-      if (statusRep) filtrados = filtrados.filter(r => r.status === statusRep);
-
-      renderizarListaReparos(filtrados);
-    }
-
-    function renderizarListaReparos(reparos) {
-      const html = reparos.length > 0
-        ? reparos.map(rep => {
-          const urgenciaClass = rep.urgencia === 'URGENTE' ? 'urgente' : '';
-          let urgenciaLabel = '🟢 PEQUENA';
-          if (rep.urgencia === 'URGENTE') urgenciaLabel = '🔴 URGENTE';
-          if (rep.urgencia === 'MEDIA') urgenciaLabel = '🟡 MÉDIA';
-
-          let statusLabel = '⏳ Pendente';
-          if (rep.status === 'EM_ANDAMENTO') statusLabel = '🔨 Em Andamento';
-          if (rep.status === 'CONCLUIDO') statusLabel = '✅ Concluído';
-
-          return `
-            <div class="reparo-item ${urgenciaClass}">
-              <div class="reparo-header">
-                <span class="reparo-titulo">${rep.contratoNome} - ${rep.descricao}</span>
-                <span class="badge ${rep.urgencia.toLowerCase()}">${urgenciaLabel}</span>
-              </div>
-              <div class="reparo-info">
-                <div><strong>Locatário:</strong> ${rep.locatario}</div>
-                <div><strong>Status:</strong> ${statusLabel}</div>
-                <div><strong>Responsável:</strong> ${rep.responsavel}</div>
-                <div><strong>Custo:</strong> R$ ${rep.custo.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
-                <div><strong>Data-Limite:</strong> ${formatarData(rep.dataLimite)}</div>
-              </div>
-              <div class="reparo-actions">
-                <button onclick="abrirModalDetalhes('${rep.contratoId}', '${rep._id}')">Detalhes</button>
-                ${rep.status !== 'CONCLUIDO' ? `<button onclick="marcarComoConcluido('${rep.contratoId}', '${rep._id}')" style="background-color: #27ae60;">✅ Concluir</button>` : ''}
-              </div>
-            </div>
-          `;
-        }).join('')
-        : '<div style="padding: 20px; text-align: center; color: #7f8c8d;">Nenhum reparo encontrado</div>';
-
-      document.getElementById('listaReparos').innerHTML = html;
     }
 
     function abrirModalReparo(contratoId) {
@@ -1238,20 +868,15 @@
 
       contratoEmReparo = contratoId;
       document.getElementById('rep-contrato').value = c.contrato;
-      document.getElementById('rep-locatario').value = c.locatario;
       document.getElementById('rep-descricao').value = '';
       document.getElementById('rep-urgencia').value = '';
-      document.getElementById('rep-custo').value = '';
       document.getElementById('rep-responsavel').value = '';
-      document.getElementById('rep-data-limite').value = '';
-      document.getElementById('rep-link-pleno').value = '';
-      document.getElementById('rep-notas').value = '';
 
-      // Propor data limite baseado na urgência
+      // Propor data-limite em 7 dias
       const hoje = new Date();
       const proposta = new Date(hoje);
       proposta.setDate(proposta.getDate() + 7);
-      document.getElementById('rep-data-limite').value = proposta.toISOString().split('T')[0];
+      document.getElementById('rep-data').value = proposta.toISOString().split('T')[0];
 
       document.getElementById('modalReparo').classList.add('show');
     }
@@ -1266,14 +891,11 @@
 
       const descricao = document.getElementById('rep-descricao').value;
       const urgencia = document.getElementById('rep-urgencia').value;
-      const custo = parseFloat(document.getElementById('rep-custo').value) || 0;
       const responsavel = document.getElementById('rep-responsavel').value;
-      const dataLimite = document.getElementById('rep-data-limite').value;
-      const linkPleno = document.getElementById('rep-link-pleno').value;
-      const notas = document.getElementById('rep-notas').value;
+      const dataLimite = document.getElementById('rep-data').value;
 
-      if (!descricao || !urgencia || !responsavel || !dataLimite) {
-        mostrarToast('❌ Preencha todos os campos obrigatórios!', true);
+      if (!descricao || !urgencia || !dataLimite) {
+        mostrarToast('❌ Preencha os campos obrigatórios!', true);
         return;
       }
 
@@ -1287,113 +909,111 @@
         _id: Date.now().toString(),
         descricao,
         urgencia,
-        custo,
         responsavel,
         dataLimite: new Date(dataLimite + 'T00:00:00Z').toISOString(),
-        linkPleno,
-        notas,
         status: 'PENDENTE',
-        dataCriacao: new Date().toISOString(),
-        historico: [`${new Date().toLocaleString('pt-BR')} - Reparo registrado`]
+        dataCriacao: new Date().toISOString()
       };
 
       reparos[contratoEmReparo].push(novoReparo);
       salvarReparosNoLocalStorage();
 
-      mostrarToast('✅ Reparo registrado com sucesso!');
+      mostrarToast('✅ Reparo registrado!');
       fecharModalReparo();
-      atualizarManutencao();
-      atualizarDashboard();
-
-      // Notificação WhatsApp (simulada)
-      notificarWhatsApp(`Novo reparo registrado: ${descricao} (${urgencia})`);
+      carregarDados();
     }
 
-    function abrirModalDetalhes(contratoId, reparoId) {
+    function abrirModalReparos(contratoId) {
       carregarReparosDoLocalStorage();
 
+      const c = contratos.find(x => x._id === contratoId);
       const repsDoC = reparos[contratoId] || [];
-      const reparo = repsDoC.find(r => r._id === reparoId);
-      const contrato = contratos.find(c => c._id === contratoId);
 
-      if (!reparo || !contrato) return;
-
-      reparoAtualSelecionado = { contratoId, reparoId };
-
-      document.getElementById('det-contrato').textContent = contrato.contrato;
-      document.getElementById('det-locatario').textContent = contrato.locatario;
-      document.getElementById('det-descricao').textContent = reparo.descricao;
-      
-      let urgenciaLabel = '🟢 PEQUENA';
-      if (reparo.urgencia === 'URGENTE') urgenciaLabel = '🔴 URGENTE';
-      if (reparo.urgencia === 'MEDIA') urgenciaLabel = '🟡 MÉDIA';
-      document.getElementById('det-urgencia').textContent = urgenciaLabel;
-      
-      document.getElementById('det-custo').textContent = reparo.custo.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-      document.getElementById('det-responsavel').textContent = reparo.responsavel;
-      document.getElementById('det-data-limite').textContent = formatarData(reparo.dataLimite);
-      
-      let statusLabel = '⏳ Pendente';
-      if (reparo.status === 'EM_ANDAMENTO') statusLabel = '🔨 Em Andamento';
-      if (reparo.status === 'CONCLUIDO') statusLabel = '✅ Concluído';
-      document.getElementById('det-status').textContent = statusLabel;
-      
-      document.getElementById('det-notas').textContent = reparo.notas || '(nenhuma nota)';
-      
-      const historico = (reparo.historico || []).join('<br>');
-      document.getElementById('det-historico').innerHTML = historico;
-      
-      if (reparo.linkPleno) {
-        document.getElementById('det-link').href = reparo.linkPleno;
-        document.getElementById('det-link').style.display = 'inline';
-      } else {
-        document.getElementById('det-link').style.display = 'none';
-      }
-
-      document.getElementById('modalDetalhes').classList.add('show');
-    }
-
-    function fecharModalDetalhes() {
-      document.getElementById('modalDetalhes').classList.remove('show');
-      reparoAtualSelecionado = null;
-    }
-
-    function marcarComoConcluido(contratoId, reparoId) {
-      if (!reparoAtualSelecionado && (!contratoId || !reparoId)) {
-        mostrarToast('❌ Erro ao marcar como concluído', true);
+      if (repsDoC.length === 0) {
+        alert('Nenhum reparo registrado para este contrato');
         return;
       }
 
-      if (reparoAtualSelecionado) {
-        contratoId = reparoAtualSelecionado.contratoId;
-        reparoId = reparoAtualSelecionado.reparoId;
-      }
+      const html = repsDoC.map(rep => {
+        let urgenciaClass = 'pequena';
+        let urgenciaLabel = '🟢 PEQUENA';
+        if (rep.urgencia === 'URGENTE') {
+          urgenciaClass = 'urgente';
+          urgenciaLabel = '🔴 URGENTE';
+        } else if (rep.urgencia === 'MEDIA') {
+          urgenciaClass = 'media';
+          urgenciaLabel = '🟡 MÉDIA';
+        }
 
+        let statusLabel = '⏳ Pendente';
+        if (rep.status === 'EM_ANDAMENTO') statusLabel = '🔨 Em Andamento';
+        if (rep.status === 'CONCLUIDO') statusLabel = '✅ Concluído';
+
+        return `
+          <div class="reparo-simples ${urgenciaClass}">
+            <div class="reparo-linha">
+              <strong>${rep.descricao}</strong>
+              <span class="badge ${rep.urgencia.toLowerCase()}">${urgenciaLabel}</span>
+            </div>
+            <div class="reparo-linha">
+              <span class="reparo-label">Status:</span> ${statusLabel}
+            </div>
+            <div class="reparo-linha">
+              <span class="reparo-label">Responsável:</span> ${rep.responsavel}
+            </div>
+            <div class="reparo-linha">
+              <span class="reparo-label">Vence:</span> ${formatarData(rep.dataLimite)}
+            </div>
+            <div style="margin-top: 8px;">
+              ${rep.status !== 'CONCLUIDO' 
+                ? `<button onclick="marcarComoConcluido('${contratoId}', '${rep._id}')" style="font-size: 11px; padding: 4px 8px; background-color: #27ae60; margin-right: 5px;">✅ Concluir</button>` 
+                : ''}
+              <button onclick="deletarReparo('${contratoId}', '${rep._id}')" style="font-size: 11px; padding: 4px 8px; background-color: #e74c3c;">🗑️</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('listaReparosModal').innerHTML = html;
+      document.getElementById('modalReparos').classList.add('show');
+    }
+
+    function fecharModalReparos() {
+      document.getElementById('modalReparos').classList.remove('show');
+    }
+
+    function marcarComoConcluido(contratoId, reparoId) {
       carregarReparosDoLocalStorage();
 
       const repsDoC = reparos[contratoId] || [];
       const reparo = repsDoC.find(r => r._id === reparoId);
 
-      if (!reparo) return;
-
-      reparo.status = 'CONCLUIDO';
-      reparo.dataConclusao = new Date().toISOString();
-      reparo.historico = reparo.historico || [];
-      reparo.historico.push(`${new Date().toLocaleString('pt-BR')} - Marcado como concluído`);
-
-      salvarReparosNoLocalStorage();
-
-      mostrarToast('✅ Reparo marcado como concluído!');
-      fecharModalDetalhes();
-      atualizarManutencao();
-      atualizarDashboard();
-
-      notificarWhatsApp(`Reparo concluído: ${reparo.descricao}`);
+      if (reparo) {
+        reparo.status = 'CONCLUIDO';
+        reparo.dataConclusao = new Date().toISOString();
+        salvarReparosNoLocalStorage();
+        mostrarToast('✅ Reparo marcado como concluído!');
+        carregarDados();
+        abrirModalReparos(contratoId);
+      }
     }
 
-    function notificarWhatsApp(msg) {
-      // Simulado - em produção integraria com Evolution API
-      console.log('📱 WhatsApp notificação:', msg);
+    function deletarReparo(contratoId, reparoId) {
+      if (!confirm('Tem certeza que deseja deletar este reparo?')) return;
+
+      carregarReparosDoLocalStorage();
+
+      if (reparos[contratoId]) {
+        reparos[contratoId] = reparos[contratoId].filter(r => r._id !== reparoId);
+        salvarReparosNoLocalStorage();
+        mostrarToast('✅ Reparo deletado!');
+        carregarDados();
+        abrirModalReparos(contratoId);
+      }
+    }
+
+    function abrirModalEditar(contratoId) {
+      alert('Editar contrato - implementar em V23');
     }
 
     function recarregarDados() {
