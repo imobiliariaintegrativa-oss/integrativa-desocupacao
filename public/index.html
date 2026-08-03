@@ -596,7 +596,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.4 🚀 KPI Clicáveis + Alertas</div>
+    <div class="version-badge">V25.4.1 🚀 Filtros Corrigidos</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -642,7 +642,13 @@
     <div id="contratos" class="tab-content">
       <h2 class="section-title">📋 Contratos em Desocupação</h2>
       <div class="controls">
-        <input type="text" id="busca" placeholder="🔍 Buscar contrato..." onkeyup="filtrarDados()">
+        <div style="display: flex; gap: 10px; align-items: center; flex: 1;">
+          <input type="text" id="busca" placeholder="🔍 Buscar contrato..." onkeyup="filtrarDados()" style="flex: 1;">
+          <span id="filtroAtivo" style="display: none; padding: 8px 12px; background: #3498db; color: white; border-radius: 5px; font-size: 12px; font-weight: bold; white-space: nowrap;">
+            Filtro: <span id="nomesFiltro"></span>
+            <button onclick="limparFiltro()" style="background: none; border: none; color: white; cursor: pointer; margin-left: 5px; font-weight: bold; font-size: 14px;">✕</button>
+          </span>
+        </div>
         <button onclick="abrirModalNovoContrato()" class="btn-success" style="background-color: #27ae60;">➕ Novo Contrato</button>
         <button onclick="recarregarDados()" style="background-color: #95a5a6;">🔄 Atualizar</button>
       </div>
@@ -841,24 +847,54 @@
     // ========= FUNÇÕES DE FILTRO =========
     function filtrarPor(tipo) {
       filtroAtivo = tipo;
-      mudarAba('contratos');
-      mostrarToast(`🔍 Filtrando: ${tipo}`, false);
-      
       let dados = contratos;
+      let titulo = '';
       
       if (tipo === 'total') {
         dados = contratos;
+        titulo = 'Todos os contratos';
         filtroAtivo = null;
       } else if (tipo === 'chaves') {
         dados = contratos.filter(c => c.statusChaves === 'recebidas');
+        titulo = 'Chaves Recebidas';
       } else if (tipo === 'finalizados') {
         dados = contratos.filter(c => c.finalizado === 'sim');
+        titulo = 'Finalizados';
       } else if (tipo === 'manutencao') {
         dados = contratos.filter(c => c.reparos && c.reparos.some(r => r.status !== 'CONCLUIDO'));
+        titulo = 'Em Manutenção';
       }
       
-      renderizarTabela(dados);
+      console.log(`🔍 Filtro ativado: ${titulo}`);
+      console.log(`📊 Mostrando ${dados.length} de ${contratos.length} contratos`);
+      
+      // Limpar busca
       document.getElementById('busca').value = '';
+      
+      // Renderizar com os dados filtrados
+      renderizarTabela(dados);
+      
+      // Mudar para aba de contratos
+      mudarAba('contratos');
+      
+      // Mostrar indicador de filtro ativo
+      if (filtroAtivo) {
+        document.getElementById('filtroAtivo').style.display = 'inline-block';
+        document.getElementById('nomesFiltro').textContent = titulo;
+      } else {
+        document.getElementById('filtroAtivo').style.display = 'none';
+      }
+      
+      mostrarToast(`📊 ${titulo}: ${dados.length} contrato(s)`, false);
+    }
+    
+    function limparFiltro() {
+      filtroAtivo = null;
+      document.getElementById('filtroAtivo').style.display = 'none';
+      document.getElementById('busca').value = '';
+      console.log('✅ Filtro removido');
+      mostrarToast('✅ Filtro removido', false);
+      atualizarTabela();
     }
 
     function mudarAba(abaName) {
@@ -965,7 +1001,10 @@
       document.getElementById('loading').style.display = 'block';
       document.getElementById('tabela').style.display = 'none';
       atualizarSyncStatus('syncing');
+      
+      // Reset do filtro
       filtroAtivo = null;
+      document.getElementById('filtroAtivo').style.display = 'none';
       document.getElementById('busca').value = '';
 
       fetch(`${API_URL}/contracts`)
@@ -1104,12 +1143,27 @@
 
     function filtrarDados() {
       const busca = document.getElementById('busca').value.toLowerCase();
-      const filtrados = contratos.filter(c => {
+      
+      // Primeiro aplicar o filtro ativo (se existir)
+      let baseData = contratos;
+      if (filtroAtivo) {
+        if (filtroAtivo === 'chaves') {
+          baseData = contratos.filter(c => c.statusChaves === 'recebidas');
+        } else if (filtroAtivo === 'finalizados') {
+          baseData = contratos.filter(c => c.finalizado === 'sim');
+        } else if (filtroAtivo === 'manutencao') {
+          baseData = contratos.filter(c => c.reparos && c.reparos.some(r => r.status !== 'CONCLUIDO'));
+        }
+      }
+      
+      // Depois filtrar por texto de busca
+      const filtrados = baseData.filter(c => {
         return busca === '' || 
                c.contrato.toLowerCase().includes(busca) || 
                c.locatario.toLowerCase().includes(busca) ||
                (c.endereco && c.endereco.toLowerCase().includes(busca));
       });
+      
       renderizarTabela(filtrados);
     }
 
@@ -1642,7 +1696,7 @@
           ${tabelaHTML}
 
           <p style="margin-top: 40px; font-size: 8pt; color: #999; text-align: center;">
-            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.4
+            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.4.1
           </p>
         </div>
       `;
