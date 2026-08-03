@@ -1,323 +1,259 @@
 import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
-import dotenv from 'dotenv';
-
-dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://imobiliariaintegrativa_db_user:FFRlnAqwA38UxRvK@cluster0.e5md0jn.mongodb.net/integrativa-desocupacao?retryWrites=true&w=majority&appName=Cluster0';
-
-// ============= MIDDLEWARE =============
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
 
-// ============= MONGOOSE SCHEMAS =============
-
-// Schema para Reparos (embutido em Contrato)
-const reparoSchema = new mongoose.Schema({
-  _id: { type: String, default: () => new mongoose.Types.ObjectId().toString() },
-  descricao: String,
-  urgencia: { type: String, enum: ['URGENTE', 'MEDIA', 'PEQUENA'], default: 'MEDIA' },
-  responsavel: String,
-  dataLimite: Date,
-  status: { type: String, enum: ['PENDENTE', 'EM_ANDAMENTO', 'CONCLUIDO'], default: 'PENDENTE' },
-  dataCriacao: { type: Date, default: Date.now },
-  dataConclusao: Date
-});
-
-// Schema para Contratos
-const contratoSchema = new mongoose.Schema({
-  contrato: { type: String, required: true, unique: true },
-  endereco: String,
+// ========= MONGOOSE SCHEMA COM TIPO DESOCUPACAO =========
+const contractSchema = new mongoose.Schema({
+  contrato: String,
   locatario: String,
+  endereco: String,
+  tipoDesocupacao: { type: String, enum: ['comum', 'despejo'], default: 'comum' },
   comunicacaoInquilino: Date,
-  comunicacaoProprietario: Date,
   agendamentoVistoria: Date,
   entregaChaves: Date,
-  retiradaChaves: Date,
-  reparosConstatados: String,
-  status: String,
   statusChaves: { type: String, enum: ['pendente', 'recebidas', 'nao-recebidas'], default: 'pendente' },
-  finalizado: String,
-  responsavelComunicacao: String,
-  responsavelVistoria: String,
-  responsavelEntregaChaves: String,
-  responsavelFinalizacao: String,
-  reparos: [reparoSchema],
+  finalizado: { type: String, enum: ['sim', 'nao'], default: 'nao' },
+  reparos: [
+    {
+      descricao: String,
+      urgencia: String,
+      responsavel: String,
+      dataLimite: Date,
+      status: String,
+      dataCriacao: { type: Date, default: Date.now },
+      dataConclusao: Date
+    }
+  ],
   dataCriacao: { type: Date, default: Date.now },
   dataAtualizacao: { type: Date, default: Date.now }
 });
 
-const Contrato = mongoose.model('Contrato', contratoSchema);
+const Contract = mongoose.model('Contract', contractSchema);
 
-// ============= CONEXÃO MONGODB =============
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true
-})
-.then(() => {
-  console.log('✅ MongoDB conectado com sucesso!');
-})
-.catch(err => {
-  console.error('❌ Erro ao conectar MongoDB:', err.message);
-});
+// ========= CONEXÃO MONGODB =========
+const MONGODB_URI = process.env.MONGODB_URI;
 
-// ============= ROTAS DE HEALTH CHECK =============
+mongoose.connect(MONGODB_URI)
+  .then(() => console.log('✅ MongoDB conectado'))
+  .catch(err => console.error('❌ Erro MongoDB:', err));
+
+// ========= ROTAS =========
+
+// Health check
 app.get('/api/health', (req, res) => {
-  res.json({
-    status: '✅ Server OK',
-    version: 'V27-ES-Seed',
-    mongodb: mongoose.connection.readyState === 1 ? 'Conectado' : 'Desconectado'
+  res.json({ 
+    status: 'ok', 
+    version: 'V28-TipoDesocupacao',
+    timestamp: new Date()
   });
 });
 
-// ============= ROTA DE SEED (Popular banco com dados) =============
-app.post('/api/seed', async (req, res) => {
-  try {
-    console.log('🌱 Iniciando seed de dados...');
-
-    // Deletar contratos antigos
-    await Contrato.deleteMany({});
-    console.log('🗑️  Contratos antigos deletados');
-
-    // 10 contratos originais
-    const contratos = [
-      { contrato: 'CA0535/1', endereco: 'R. Conselheiro Antônio Prado 230', locatario: 'Município de Olímpia', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA1814/2', endereco: 'Rua Ilda Carrara Canevarollo 205', locatario: 'Andre Ruiz Spegiorin', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA1374/3', endereco: 'Rua Expedicionário Lonildo Porcionato 42', locatario: 'Maria de Lourdes Barriento', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA1979/1', endereco: 'Rua do Tico-tico 308', locatario: 'Leonilda São Jose da Silva', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA1338/2', endereco: 'Rua Paschoal Michelli 82', locatario: 'Richard Alexssander de Matos', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'AP0208/2', endereco: 'Alameda das Orquídeas 125, Apto 12', locatario: 'Aléxia Andreia Lomba', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA2796/1', endereco: 'Rua Adevar José de Castro 48', locatario: 'Olivia Aparecida Pimenta', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA2762/1', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', locatario: 'Daniel Costa Paraguassu', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA2902/1', endereco: 'Rua Alexandre Bonini 85', locatario: 'Naila Aparecida de Sá Gimente', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA2458/1', endereco: 'Rua Sebastião Marins 149', locatario: 'Dionatan Vieira Costa', statusChaves: 'pendente', reparos: [] }
-    ];
-
-    // Inserir contratos
-    const resultado = await Contrato.insertMany(contratos);
-    console.log(`✅ ${resultado.length} contratos inseridos!`);
-
-    res.json({
-      sucesso: true,
-      mensagem: `${resultado.length} contratos carregados com sucesso!`,
-      contratos: resultado
-    });
-  } catch (erro) {
-    console.error('❌ Erro ao fazer seed:', erro);
-    res.status(500).json({ sucesso: false, erro: erro.message });
-  }
-});
-// ============= ROTA DE SEED =============
-app.post('/api/seed', async (req, res) => {
-  try {
-    await Contrato.deleteMany({});
-    const dados = [
-      { contrato: 'CA0535/1', endereco: 'R. Conselheiro Antônio Prado 230', locatario: 'Município de Olímpia', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA1814/2', endereco: 'Rua Ilda Carrara Canevarollo 205', locatario: 'Andre Ruiz Spegiorin', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA1374/3', endereco: 'Rua Expedicionário Lonildo Porcionato 42', locatario: 'Maria de Lourdes Barriento', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA1979/1', endereco: 'Rua do Tico-tico 308', locatario: 'Leonilda São Jose da Silva', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA1338/2', endereco: 'Rua Paschoal Michelli 82', locatario: 'Richard Alexssander de Matos', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'AP0208/2', endereco: 'Alameda das Orquídeas 125, Apto 12', locatario: 'Aléxia Andreia Lomba', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA2796/1', endereco: 'Rua Adevar José de Castro 48', locatario: 'Olivia Aparecida Pimenta', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA2762/1', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', locatario: 'Daniel Costa Paraguassu', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA2902/1', endereco: 'Rua Alexandre Bonini 85', locatario: 'Naila Aparecida de Sá Gimente', statusChaves: 'pendente', reparos: [] },
-      { contrato: 'CA2458/1', endereco: 'Rua Sebastião Marins 149', locatario: 'Dionatan Vieira Costa', statusChaves: 'pendente', reparos: [] }
-    ];
-    const r = await Contrato.insertMany(dados);
-    res.json({ sucesso: true, mensagem: r.length + ' contratos carregados!' });
-  } catch (e) {
-    res.status(500).json({ sucesso: false, erro: e.message });
-  }
-});
-// ============= ROTAS DE CONTRATOS =============
-
-// GET - Listar todos os contratos (SEM autenticação)
+// ========= GET TODOS OS CONTRATOS =========
 app.get('/api/contracts', async (req, res) => {
   try {
-    console.log('📥 GET /api/contracts');
-    const contratos = await Contrato.find().sort({ dataCriacao: -1 });
-    console.log(`✅ ${contratos.length} contratos encontrados`);
+    const contratos = await Contract.find();
     res.json({ sucesso: true, contratos });
   } catch (erro) {
-    console.error('❌ Erro ao buscar contratos:', erro);
+    console.error('❌ Erro ao buscar:', erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// GET - Buscar contrato por ID (SEM autenticação)
+// ========= GET UM CONTRATO =========
 app.get('/api/contracts/:id', async (req, res) => {
   try {
-    const contrato = await Contrato.findById(req.params.id);
+    const contrato = await Contract.findById(req.params.id);
     if (!contrato) {
       return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
     }
     res.json({ sucesso: true, contrato });
   } catch (erro) {
+    console.error('❌ Erro:', erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// POST - Criar contrato (SEM autenticação)
+// ========= CREATE CONTRATO =========
 app.post('/api/contracts', async (req, res) => {
   try {
-    const novoContrato = new Contrato(req.body);
+    const novoContrato = new Contract({
+      contrato: req.body.contrato,
+      locatario: req.body.locatario,
+      endereco: req.body.endereco,
+      tipoDesocupacao: req.body.tipoDesocupacao || 'comum',
+      comunicacaoInquilino: req.body.comunicacaoInquilino,
+      agendamentoVistoria: req.body.agendamentoVistoria,
+      entregaChaves: req.body.entregaChaves,
+      statusChaves: req.body.statusChaves || 'pendente',
+      reparos: req.body.reparos || []
+    });
+
     await novoContrato.save();
-    console.log(`✅ Contrato criado: ${novoContrato.contrato}`);
     res.status(201).json({ sucesso: true, contrato: novoContrato });
   } catch (erro) {
-    console.error('❌ Erro ao criar contrato:', erro);
-    res.status(400).json({ sucesso: false, erro: erro.message });
+    console.error('❌ Erro ao criar:', erro);
+    res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// PUT - Atualizar contrato (SEM autenticação)
+// ========= UPDATE CONTRATO (IMPORTANTE: INCLUI TIPO) =========
 app.put('/api/contracts/:id', async (req, res) => {
   try {
-    const contrato = await Contrato.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body, dataAtualizacao: new Date() },
-      { new: true, runValidators: true }
-    );
+    const contrato = await Contract.findById(req.params.id);
     if (!contrato) {
       return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
     }
-    console.log(`✅ Contrato atualizado: ${contrato.contrato}`);
+
+    // Atualizar TODOS os campos, incluindo tipoDesocupacao
+    contrato.locatario = req.body.locatario || contrato.locatario;
+    contrato.endereco = req.body.endereco || contrato.endereco;
+    contrato.tipoDesocupacao = req.body.tipoDesocupacao || contrato.tipoDesocupacao;
+    contrato.comunicacaoInquilino = req.body.comunicacaoInquilino || contrato.comunicacaoInquilino;
+    contrato.agendamentoVistoria = req.body.agendamentoVistoria || contrato.agendamentoVistoria;
+    contrato.entregaChaves = req.body.entregaChaves || contrato.entregaChaves;
+    contrato.statusChaves = req.body.statusChaves || contrato.statusChaves;
+    contrato.finalizado = req.body.finalizado || contrato.finalizado;
+    contrato.dataAtualizacao = new Date();
+
+    await contrato.save();
     res.json({ sucesso: true, contrato });
   } catch (erro) {
-    console.error('❌ Erro ao atualizar contrato:', erro);
-    res.status(400).json({ sucesso: false, erro: erro.message });
+    console.error('❌ Erro ao atualizar:', erro);
+    res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// DELETE - Deletar contrato (SEM autenticação)
+// ========= DELETE CONTRATO =========
 app.delete('/api/contracts/:id', async (req, res) => {
   try {
-    const contrato = await Contrato.findByIdAndDelete(req.params.id);
-    if (!contrato) {
-      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
-    }
-    console.log(`✅ Contrato deletado: ${contrato.contrato}`);
+    await Contract.findByIdAndDelete(req.params.id);
     res.json({ sucesso: true, mensagem: 'Contrato deletado' });
   } catch (erro) {
+    console.error('❌ Erro ao deletar:', erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// ============= ROTAS DE REPAROS =============
-
-// GET - Listar reparos de um contrato (SEM autenticação)
-app.get('/api/repairs/:contractId', async (req, res) => {
-  try {
-    const contrato = await Contrato.findById(req.params.contractId);
-    if (!contrato) {
-      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
-    }
-    res.json({ sucesso: true, reparos: contrato.reparos || [] });
-  } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
-  }
-});
-
-// POST - Criar reparo (SEM autenticação)
+// ========= REPAROS =========
 app.post('/api/repairs/:contractId', async (req, res) => {
   try {
-    const contrato = await Contrato.findById(req.params.contractId);
+    const contrato = await Contract.findById(req.params.contractId);
     if (!contrato) {
       return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
     }
 
     const novoReparo = {
-      _id: new mongoose.Types.ObjectId().toString(),
       descricao: req.body.descricao,
-      urgencia: req.body.urgencia || 'MEDIA',
-      responsavel: req.body.responsavel || '',
-      dataLimite: req.body.dataLimite ? new Date(req.body.dataLimite) : null,
+      urgencia: req.body.urgencia,
+      responsavel: req.body.responsavel,
+      dataLimite: req.body.dataLimite,
       status: 'PENDENTE',
-      dataCriacao: new Date(),
-      dataConclusao: null
+      dataCriacao: new Date()
     };
 
     contrato.reparos.push(novoReparo);
     contrato.dataAtualizacao = new Date();
     await contrato.save();
 
-    console.log(`✅ Reparo criado: ${novoReparo.descricao} (Contrato: ${contrato.contrato})`);
-    res.status(201).json({ sucesso: true, reparo: novoReparo });
+    res.status(201).json({ sucesso: true, contrato });
   } catch (erro) {
-    console.error('❌ Erro ao criar reparo:', erro);
-    res.status(400).json({ sucesso: false, erro: erro.message });
-  }
-});
-
-// PUT - Atualizar reparo (SEM autenticação)
-app.put('/api/repairs/:contractId/:repairId', async (req, res) => {
-  try {
-    const contrato = await Contrato.findById(req.params.contractId);
-    if (!contrato) {
-      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
-    }
-
-    const reparo = contrato.reparos.id(req.params.repairId);
-    if (!reparo) {
-      return res.status(404).json({ sucesso: false, erro: 'Reparo não encontrado' });
-    }
-
-    if (req.body.status) reparo.status = req.body.status;
-    if (req.body.descricao) reparo.descricao = req.body.descricao;
-    if (req.body.urgencia) reparo.urgencia = req.body.urgencia;
-    if (req.body.responsavel) reparo.responsavel = req.body.responsavel;
-    if (req.body.dataLimite) reparo.dataLimite = new Date(req.body.dataLimite);
-    
-    if (req.body.status === 'CONCLUIDO' && !reparo.dataConclusao) {
-      reparo.dataConclusao = new Date();
-    }
-
-    contrato.dataAtualizacao = new Date();
-    await contrato.save();
-
-    console.log(`✅ Reparo atualizado: ${req.params.repairId}`);
-    res.json({ sucesso: true, reparo });
-  } catch (erro) {
-    console.error('❌ Erro ao atualizar reparo:', erro);
-    res.status(400).json({ sucesso: false, erro: erro.message });
-  }
-});
-
-// DELETE - Deletar reparo (SEM autenticação)
-app.delete('/api/repairs/:contractId/:repairId', async (req, res) => {
-  try {
-    const contrato = await Contrato.findById(req.params.contractId);
-    if (!contrato) {
-      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
-    }
-
-    const reparo = contrato.reparos.id(req.params.repairId);
-    if (!reparo) {
-      return res.status(404).json({ sucesso: false, erro: 'Reparo não encontrado' });
-    }
-
-    reparo.deleteOne();
-    contrato.dataAtualizacao = new Date();
-    await contrato.save();
-
-    console.log(`✅ Reparo deletado: ${req.params.repairId}`);
-    res.json({ sucesso: true, mensagem: 'Reparo deletado' });
-  } catch (erro) {
-    console.error('❌ Erro ao deletar reparo:', erro);
+    console.error('❌ Erro:', erro);
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// ============= INICIAR SERVIDOR =============
-app.listen(PORT, () => {
-  console.log(`\n🚀 Servidor rodando em porta ${PORT}`);
-  console.log(`📍 URL: http://localhost:${PORT}`);
-  console.log(`📊 API Health: http://localhost:${PORT}/api/health`);
-  console.log(`📋 Contratos: http://localhost:${PORT}/api/contracts\n`);
+app.get('/api/repairs/:contractId', async (req, res) => {
+  try {
+    const contrato = await Contract.findById(req.params.contractId);
+    if (!contrato) {
+      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
+    }
+    res.json({ sucesso: true, reparos: contrato.reparos });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
 });
 
-export default app;
+app.put('/api/repairs/:contractId/:reparoId', async (req, res) => {
+  try {
+    const contrato = await Contract.findById(req.params.contractId);
+    if (!contrato) {
+      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
+    }
+
+    const reparo = contrato.reparos.id(req.params.reparoId);
+    if (!reparo) {
+      return res.status(404).json({ sucesso: false, erro: 'Reparo não encontrado' });
+    }
+
+    reparo.status = req.body.status || reparo.status;
+    reparo.dataConclusao = req.body.status === 'CONCLUIDO' ? new Date() : null;
+
+    contrato.dataAtualizacao = new Date();
+    await contrato.save();
+
+    res.json({ sucesso: true, contrato });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+app.delete('/api/repairs/:contractId/:reparoId', async (req, res) => {
+  try {
+    const contrato = await Contract.findById(req.params.contractId);
+    if (!contrato) {
+      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
+    }
+
+    contrato.reparos.id(req.params.reparoId).deleteOne();
+    contrato.dataAtualizacao = new Date();
+    await contrato.save();
+
+    res.json({ sucesso: true, contrato });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// ========= SEED - POPULAR BANCO COM DADOS TESTE =========
+app.post('/api/seed', async (req, res) => {
+  try {
+    const existe = await Contract.findOne({ contrato: 'CA0535/1' });
+    if (existe) {
+      return res.json({ sucesso: false, mensagem: 'Banco já populado. Delete tudo para refazer seed.' });
+    }
+
+    const contratos = [
+      { contrato: 'CA0535/1', locatario: 'Município de Olímpia', endereco: 'R. Conselheiro Antônio Prado 230', tipoDesocupacao: 'comum' },
+      { contrato: 'CA1814/2', locatario: 'Andre Ruiz Spegiorin', endereco: 'Rua Ilda Carrara Canevarollo 205', tipoDesocupacao: 'comum' },
+      { contrato: 'CA1374/3', locatario: 'Maria de Lourdes Barriento', endereco: 'Rua Expedicionário Lonildo Porcionato 42', tipoDesocupacao: 'comum' },
+      { contrato: 'CA1979/1', locatario: 'Leonilda São Jose da Silva', endereco: 'Rua do Tico-tico 308', tipoDesocupacao: 'comum' },
+      { contrato: 'CA1338/2', locatario: 'Richard Alexssander de Matos', endereco: 'Rua Paschoal Michelli 82', tipoDesocupacao: 'comum' },
+      { contrato: 'AP0208/2', locatario: 'Aléxia Andreia Lomba', endereco: 'Alameda das Orquídeas 125, Apto 12', tipoDesocupacao: 'comum' },
+      { contrato: 'CA2796/1', locatario: 'Olivia Aparecida Pimenta', endereco: 'Rua Adevar José de Castro 48', tipoDesocupacao: 'comum' },
+      { contrato: 'CA2762/1', locatario: 'Daniel Costa Paraguassu', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', tipoDesocupacao: 'comum' },
+      { contrato: 'CA2902/1', locatario: 'Naila Aparecida de Sá Gimente', endereco: 'Rua Alexandre Bonini 85', tipoDesocupacao: 'comum' },
+      { contrato: 'CA2458/1', locatario: 'Dionatan Vieira Costa', endereco: 'Rua Sebastião Marins 149', tipoDesocupacao: 'comum' }
+    ];
+
+    await Contract.insertMany(contratos);
+    res.json({ sucesso: true, mensagem: `✅ ${contratos.length} contratos inseridos com tipoDesocupacao!` });
+  } catch (erro) {
+    console.error('❌ Erro ao fazer seed:', erro);
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// ========= START SERVER =========
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => {
+  console.log(`
+  ✅ Servidor rodando em http://localhost:${PORT}
+  📦 MongoDB: ${MONGODB_URI ? 'Conectado' : 'Não configurado'}
+  🚀 Versão: V28-TipoDesocupacao
+  `);
+});
