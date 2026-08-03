@@ -251,6 +251,14 @@
       background-color: var(--secondary);
     }
 
+    button.btn-success {
+      background-color: var(--success);
+    }
+
+    button.btn-success:hover {
+      background-color: #229954;
+    }
+
     .loading {
       text-align: center;
       padding: 20px;
@@ -577,7 +585,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.1 🚀 MongoDB Sync Corrigida</div>
+    <div class="version-badge">V25.3 🚀 Sem Validação de Datas</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -624,6 +632,7 @@
       <h2 class="section-title">📋 Contratos em Desocupação</h2>
       <div class="controls">
         <input type="text" id="busca" placeholder="🔍 Buscar contrato..." onkeyup="filtrarDados()">
+        <button onclick="abrirModalNovoContrato()" class="btn-success" style="background-color: #27ae60;">➕ Novo Contrato</button>
         <button onclick="recarregarDados()" style="background-color: #95a5a6;">🔄 Atualizar</button>
       </div>
 
@@ -647,6 +656,59 @@
           </tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: NOVO CONTRATO -->
+  <div id="modalNovoContrato" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">➕ Novo Contrato</div>
+      
+      <form id="formNovoContrato">
+        <div class="modal-form-group">
+          <label>📋 Contrato (ex: CA0001/1):</label>
+          <input type="text" id="novo-contrato" required>
+        </div>
+
+        <div class="modal-form-group">
+          <label>👤 Locatário:</label>
+          <input type="text" id="novo-locatario" required>
+        </div>
+
+        <div class="modal-form-group">
+          <label>📍 Endereço:</label>
+          <input type="text" id="novo-endereco" required>
+        </div>
+
+        <div class="modal-form-group">
+          <label>📱 Comunicação Inquilino:</label>
+          <input type="date" id="novo-comunicacao">
+        </div>
+
+        <div class="modal-form-group">
+          <label>📅 Agendamento Vistoria:</label>
+          <input type="date" id="novo-agendamento">
+        </div>
+
+        <div class="modal-form-group">
+          <label>🔑 Entrega de Chaves:</label>
+          <input type="date" id="novo-entrega">
+        </div>
+
+        <div class="modal-form-group">
+          <label>🔑 Status Chaves:</label>
+          <select id="novo-statusChaves">
+            <option value="pendente">⏳ Pendente</option>
+            <option value="recebidas">✅ Recebidas</option>
+            <option value="nao-recebidas">❌ Não Recebidas</option>
+          </select>
+        </div>
+
+        <div class="modal-buttons">
+          <button type="button" class="btn-primary" onclick="salvarNovoContrato()">💾 Salvar</button>
+          <button type="button" class="btn-secondary" onclick="fecharModalNovoContrato()">❌ Cancelar</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -679,13 +741,11 @@
         <div class="modal-form-group">
           <label>📅 Agendamento Vistoria:</label>
           <input type="date" id="edit-agendamento">
-          <div id="erro-agendamento" class="error-message"></div>
         </div>
 
         <div class="modal-form-group">
           <label>🔑 Entrega de Chaves:</label>
           <input type="date" id="edit-entrega">
-          <div id="erro-entrega" class="error-message"></div>
         </div>
 
         <div class="modal-form-group">
@@ -864,27 +924,7 @@
       }
     }
 
-    function validarSequenciaDatas(comunicacao, vistoria, entrega) {
-      const erros = {};
-
-      if (vistoria && comunicacao && new Date(vistoria) < new Date(comunicacao)) {
-        erros.vistoria = '⚠️ Vistoria não pode ser antes da comunicação!';
-      }
-
-      if (entrega && vistoria && new Date(entrega) < new Date(vistoria)) {
-        erros.entrega = '⚠️ Entrega não pode ser antes da vistoria!';
-      }
-
-      if (vistoria) {
-        const hoje = new Date();
-        const dataVistoria = new Date(vistoria);
-        if (dataVistoria < hoje && calcularDiasAte(vistoria) < 0) {
-          erros.vistoria = '🔴 VENCIDA! Vistoria no passado!';
-        }
-      }
-
-      return erros;
-    }
+    // Validação removida em V25.3 - Usuário pode digitar datas livremente
 
     function carregarDados() {
       document.getElementById('loading').style.display = 'block';
@@ -896,7 +936,7 @@
         .then(data => {
           console.log('📦 Dados recebidos:', data);
           contratos = data.contratos || [];
-          console.log('✅ V25.1 - Contratos carregados:', contratos.length);
+          console.log('✅ V25.2 - Contratos carregados:', contratos.length);
           
           atualizarDashboard();
           atualizarAlertas();
@@ -1078,6 +1118,69 @@
       }).join('');
     }
 
+    // ========= NOVO CONTRATO =========
+    function abrirModalNovoContrato() {
+      document.getElementById('novo-contrato').value = '';
+      document.getElementById('novo-locatario').value = '';
+      document.getElementById('novo-endereco').value = '';
+      document.getElementById('novo-comunicacao').value = '';
+      document.getElementById('novo-agendamento').value = '';
+      document.getElementById('novo-entrega').value = '';
+      document.getElementById('novo-statusChaves').value = 'pendente';
+      document.getElementById('modalNovoContrato').classList.add('show');
+    }
+
+    function fecharModalNovoContrato() {
+      document.getElementById('modalNovoContrato').classList.remove('show');
+    }
+
+    function salvarNovoContrato() {
+      const contrato = document.getElementById('novo-contrato').value;
+      const locatario = document.getElementById('novo-locatario').value;
+      const endereco = document.getElementById('novo-endereco').value;
+
+      if (!contrato || !locatario || !endereco) {
+        mostrarToast('❌ Preencha os campos obrigatórios!', true);
+        return;
+      }
+
+      atualizarSyncStatus('syncing');
+
+      const dados = {
+        contrato,
+        locatario,
+        endereco,
+        comunicacaoInquilino: document.getElementById('novo-comunicacao').value ? new Date(document.getElementById('novo-comunicacao').value + 'T00:00:00Z').toISOString() : null,
+        agendamentoVistoria: document.getElementById('novo-agendamento').value ? new Date(document.getElementById('novo-agendamento').value + 'T00:00:00Z').toISOString() : null,
+        entregaChaves: document.getElementById('novo-entrega').value ? new Date(document.getElementById('novo-entrega').value + 'T00:00:00Z').toISOString() : null,
+        statusChaves: document.getElementById('novo-statusChaves').value,
+        reparos: []
+      };
+
+      fetch(`${API_URL}/contracts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.sucesso) {
+          mostrarToast('✅ Contrato criado!');
+          fecharModalNovoContrato();
+          carregarDados();
+        } else {
+          mostrarToast('❌ Erro ao criar contrato!', true);
+          atualizarSyncStatus('error');
+        }
+      })
+      .catch(erro => {
+        console.error('Erro:', erro);
+        mostrarToast('❌ Erro ao criar contrato!', true);
+        atualizarSyncStatus('error');
+      });
+    }
+
+    // ========= EDITAR CONTRATO =========
     function abrirModalEditar(contratoId) {
       const c = contratos.find(x => x._id === contratoId);
       if (!c) return;
@@ -1112,27 +1215,11 @@
       const agendamento = document.getElementById('edit-agendamento').value;
       const entrega = document.getElementById('edit-entrega').value;
 
-      const erros = validarSequenciaDatas(comunicacao, agendamento, entrega);
-
+      // Validação removida em V25.3 - Usuário pode digitar datas livremente
       document.getElementById('erro-agendamento').textContent = '';
       document.getElementById('erro-entrega').textContent = '';
       document.getElementById('edit-agendamento').classList.remove('form-error');
       document.getElementById('edit-entrega').classList.remove('form-error');
-
-      if (erros.vistoria) {
-        document.getElementById('erro-agendamento').textContent = erros.vistoria;
-        document.getElementById('edit-agendamento').classList.add('form-error');
-      }
-
-      if (erros.entrega) {
-        document.getElementById('erro-entrega').textContent = erros.entrega;
-        document.getElementById('edit-entrega').classList.add('form-error');
-      }
-
-      if (Object.keys(erros).length > 0) {
-        mostrarToast('❌ Verifique as datas!', true);
-        return;
-      }
 
       atualizarSyncStatus('syncing');
 
@@ -1499,7 +1586,7 @@
           ${tabelaHTML}
 
           <p style="margin-top: 40px; font-size: 8pt; color: #999; text-align: center;">
-            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.1
+            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.3
           </p>
         </div>
       `;
