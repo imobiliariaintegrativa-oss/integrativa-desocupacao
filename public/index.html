@@ -351,6 +351,12 @@
       border-left: 4px solid #ffc107;
     }
 
+    .despejo-row {
+      background: #ffcccc !important;
+      border-left: 4px solid #c0392b;
+      font-weight: bold;
+    }
+
     .toast {
       position: fixed;
       bottom: 20px;
@@ -596,7 +602,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.4.2 🚀 Filtros Funcionando + Alerta Melhorado</div>
+    <div class="version-badge">V25.5 🚀 Tipo de Desocupação (Comum/Despejo)</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -627,6 +633,10 @@
         <div class="kpi-card manutencao" onclick="filtrarPor('manutencao')" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <h3>🚨 Em Manutenção</h3>
           <div class="number" id="emManutencao">0</div>
+        </div>
+        <div class="kpi-card" onclick="filtrarPor('despejos')" style="cursor: pointer; transition: transform 0.2s; background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          <h3>⚖️ Despejos</h3>
+          <div class="number" id="despejos" style="color: white;">0</div>
         </div>
       </div>
 
@@ -666,6 +676,7 @@
               <th>Ent.Chaves</th>
               <th>Status</th>
               <th>Manu.</th>
+              <th>Tipo</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -710,6 +721,14 @@
         <div class="modal-form-group">
           <label>🔑 Entrega de Chaves:</label>
           <input type="date" id="novo-entrega">
+        </div>
+
+        <div class="modal-form-group">
+          <label>📌 Tipo de Desocupação:</label>
+          <select id="novo-tipoDesocupacao">
+            <option value="comum">🏠 Comum (Locatário comunica)</option>
+            <option value="despejo">⚖️ Despejo (Jurídico)</option>
+          </select>
         </div>
 
         <div class="modal-form-group">
@@ -763,6 +782,14 @@
         <div class="modal-form-group">
           <label>🔑 Entrega de Chaves:</label>
           <input type="date" id="edit-entrega">
+        </div>
+
+        <div class="modal-form-group">
+          <label>📌 Tipo de Desocupação:</label>
+          <select id="edit-tipoDesocupacao">
+            <option value="comum">🏠 Comum (Locatário comunica)</option>
+            <option value="despejo">⚖️ Despejo (Jurídico)</option>
+          </select>
         </div>
 
         <div class="modal-form-group">
@@ -840,6 +867,7 @@
   <script>
     const API_URL = window.location.hostname === 'localhost' ? '/api' : 'https://integrativa-desocupacao.onrender.com/api';
     let contratos = [];
+    let dadosAtivos = []; // Armazena os dados sendo mostrados (com filtro aplicado)
     let contratoEmEdicao = null;
     let contratoEmReparo = null;
     let filtroAtivo = null;
@@ -863,10 +891,17 @@
       } else if (tipo === 'manutencao') {
         dados = contratos.filter(c => c.reparos && c.reparos.some(r => r.status !== 'CONCLUIDO'));
         titulo = 'Em Manutenção';
+      } else if (tipo === 'despejos') {
+        dados = contratos.filter(c => c.tipoDesocupacao === 'despejo');
+        titulo = 'Despejos (Jurídico)';
       }
+      
+      // MUITO IMPORTANTE: Armazenar dados filtrados
+      dadosAtivos = dados;
       
       console.log(`🔍 Filtro ativado: ${titulo}`);
       console.log(`📊 Mostrando ${dados.length} de ${contratos.length} contratos`);
+      console.log(`📋 dadosAtivos = ${dados.length}`);
       
       // Limpar busca
       document.getElementById('busca').value = '';
@@ -890,11 +925,12 @@
     
     function limparFiltro() {
       filtroAtivo = null;
+      dadosAtivos = contratos;
       document.getElementById('filtroAtivo').style.display = 'none';
       document.getElementById('busca').value = '';
       console.log('✅ Filtro removido');
       mostrarToast('✅ Filtro removido', false);
-      atualizarTabela();
+      renderizarTabela(contratos);
     }
 
     function mudarAba(abaName) {
@@ -1004,6 +1040,7 @@
       
       // Reset do filtro
       filtroAtivo = null;
+      dadosAtivos = [];
       document.getElementById('filtroAtivo').style.display = 'none';
       document.getElementById('busca').value = '';
 
@@ -1012,7 +1049,9 @@
         .then(data => {
           console.log('📦 Dados recebidos:', data);
           contratos = data.contratos || [];
-          console.log('✅ V25.4 - Contratos carregados:', contratos.length);
+          dadosAtivos = contratos; // Inicializar dadosAtivos com todos os contratos
+          console.log('✅ V25.4.2 - Contratos carregados:', contratos.length);
+          console.log(`📋 dadosAtivos = ${dadosAtivos.length}`);
           
           atualizarDashboard();
           atualizarAlertas();
@@ -1034,6 +1073,7 @@
       const total = contratos.length;
       const chaves = contratos.filter(c => c.statusChaves === 'recebidas').length;
       const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
+      const despejos = contratos.filter(c => c.tipoDesocupacao === 'despejo').length;
 
       let emManutencao = 0;
       contratos.forEach(c => {
@@ -1046,6 +1086,7 @@
       document.getElementById('chavesRecebidas').textContent = chaves;
       document.getElementById('finalizados').textContent = finalizados;
       document.getElementById('emManutencao').textContent = emManutencao;
+      document.getElementById('despejos').textContent = despejos;
     }
 
     function atualizarAlertas() {
@@ -1138,14 +1179,9 @@
     }
 
     function atualizarTabela() {
-      // Respeita o filtro ativo se houver
-      if (filtroAtivo) {
-        console.log(`📊 Atualizando tabela com filtro ativo: ${filtroAtivo}`);
-        filtrarDados(); // Reaplica o filtro
-      } else {
-        console.log('📊 Atualizando tabela: todos os contratos');
-        renderizarTabela(contratos);
-      }
+      // Usar dadosAtivos que contém os dados com filtro aplicado
+      console.log(`📊 atualizarTabela: renderizando ${dadosAtivos.length} contratos`);
+      renderizarTabela(dadosAtivos);
     }
 
     function filtrarDados() {
@@ -1171,20 +1207,27 @@
                (c.endereco && c.endereco.toLowerCase().includes(busca));
       });
       
+      // IMPORTANTE: Armazenar em dadosAtivos
+      dadosAtivos = filtrados;
+      console.log(`🔎 Busca aplicada: ${filtrados.length} resultados`);
+      
       renderizarTabela(filtrados);
     }
 
     function renderizarTabela(dados) {
       const tbody = document.getElementById('tabelaCorpo');
       tbody.innerHTML = dados.length === 0 
-        ? '<tr><td colspan="9" style="text-align: center; padding: 40px;">Nenhum contrato encontrado</td></tr>' 
+        ? '<tr><td colspan="10" style="text-align: center; padding: 40px;">Nenhum contrato encontrado</td></tr>' 
         : dados.map(c => {
         const reparos = c.reparos || [];
         const totalReps = reparos.filter(r => r.status !== 'CONCLUIDO').length;
         const temUrgente = reparos.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
+        const isDespejo = c.tipoDesocupacao === 'despejo';
 
         let classeAlerta = '';
-        if (temUrgente) {
+        if (isDespejo) {
+          classeAlerta = 'despejo-row'; // Classe especial para despejos
+        } else if (temUrgente) {
           classeAlerta = 'alert-row';
         } else if (calcularDiasAte(c.agendamentoVistoria) && calcularDiasAte(c.agendamentoVistoria) <= 7 && calcularDiasAte(c.agendamentoVistoria) >= 0) {
           classeAlerta = 'warning-row';
@@ -1197,6 +1240,8 @@
           manuTexto = `⚠️ ${totalReps}`;
         }
 
+        let tipoTexto = isDespejo ? '⚖️ Despejo' : '🏠 Comum';
+
         return `
         <tr class="${classeAlerta}">
           <td><strong>${c.contrato}</strong></td>
@@ -1207,6 +1252,7 @@
           <td>${formatarData(c.entregaChaves)}</td>
           <td>${c.statusChaves === 'recebidas' ? '✅' : '⏳'}</td>
           <td style="cursor: pointer;" onclick="abrirModalReparos('${c._id}')">${manuTexto}</td>
+          <td>${tipoTexto}</td>
           <td>
             <button onclick="abrirModalReparo('${c._id}')" style="font-size: 10px; padding: 3px 6px;">➕</button>
             <button onclick="abrirModalEditar('${c._id}')" style="font-size: 10px; padding: 3px 6px; background-color: #3498db;">✏️</button>
@@ -1224,6 +1270,7 @@
       document.getElementById('novo-comunicacao').value = '';
       document.getElementById('novo-agendamento').value = '';
       document.getElementById('novo-entrega').value = '';
+      document.getElementById('novo-tipoDesocupacao').value = 'comum';
       document.getElementById('novo-statusChaves').value = 'pendente';
       document.getElementById('modalNovoContrato').classList.add('show');
     }
@@ -1248,6 +1295,7 @@
         contrato,
         locatario,
         endereco,
+        tipoDesocupacao: document.getElementById('novo-tipoDesocupacao').value,
         comunicacaoInquilino: document.getElementById('novo-comunicacao').value ? new Date(document.getElementById('novo-comunicacao').value + 'T00:00:00Z').toISOString() : null,
         agendamentoVistoria: document.getElementById('novo-agendamento').value ? new Date(document.getElementById('novo-agendamento').value + 'T00:00:00Z').toISOString() : null,
         entregaChaves: document.getElementById('novo-entrega').value ? new Date(document.getElementById('novo-entrega').value + 'T00:00:00Z').toISOString() : null,
@@ -1291,6 +1339,7 @@
       document.getElementById('edit-comunicacao').value = c.comunicacaoInquilino ? c.comunicacaoInquilino.split('T')[0] : '';
       document.getElementById('edit-agendamento').value = c.agendamentoVistoria ? c.agendamentoVistoria.split('T')[0] : '';
       document.getElementById('edit-entrega').value = c.entregaChaves ? c.entregaChaves.split('T')[0] : '';
+      document.getElementById('edit-tipoDesocupacao').value = c.tipoDesocupacao || 'comum';
       document.getElementById('edit-statusChaves').value = c.statusChaves || 'pendente';
 
       // Elementos de erro removidos em V25.3.1
@@ -1316,6 +1365,7 @@
       const dados = {
         locatario: document.getElementById('edit-locatario').value,
         endereco: document.getElementById('edit-endereco').value,
+        tipoDesocupacao: document.getElementById('edit-tipoDesocupacao').value,
         comunicacaoInquilino: comunicacao ? new Date(comunicacao + 'T00:00:00Z').toISOString() : null,
         agendamentoVistoria: agendamento ? new Date(agendamento + 'T00:00:00Z').toISOString() : null,
         entregaChaves: entrega ? new Date(entrega + 'T00:00:00Z').toISOString() : null,
@@ -1749,7 +1799,7 @@
           ${tabelaHTML}
 
           <p style="margin-top: 40px; font-size: 8pt; color: #999; text-align: center;">
-            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.4.2
+            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.5
           </p>
         </div>
       `;
