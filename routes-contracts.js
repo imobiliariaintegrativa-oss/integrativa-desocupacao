@@ -1,43 +1,69 @@
 import express from 'express';
 import { Contract } from './models.js';
-import { authenticate } from './middleware.js';
 
 const router = express.Router();
 
-router.get('/', authenticate, async (req, res) => {
+// GET - Listar todos os contratos (SEM autenticação)
+router.get('/', async (req, res) => {
   try {
     const contratos = await Contract.find().sort({ dataCriacao: -1 });
-    res.json({ contratos });
+    res.json({ sucesso: true, contratos });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ sucesso: false, erro: error.message });
   }
 });
 
-router.post('/', authenticate, async (req, res) => {
+// GET - Buscar contrato por ID (SEM autenticação)
+router.get('/:id', async (req, res) => {
+  try {
+    const contrato = await Contract.findById(req.params.id);
+    if (!contrato) {
+      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
+    }
+    res.json({ sucesso: true, contrato });
+  } catch (error) {
+    res.status(500).json({ sucesso: false, erro: error.message });
+  }
+});
+
+// POST - Criar contrato (SEM autenticação)
+router.post('/', async (req, res) => {
   try {
     const novoContrato = new Contract(req.body);
     await novoContrato.save();
-    res.status(201).json({ mensagem: 'Contrato criado', contrato: novoContrato });
+    res.status(201).json({ sucesso: true, mensagem: 'Contrato criado', contrato: novoContrato });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ sucesso: false, erro: error.message });
   }
 });
 
-router.put('/:id', authenticate, async (req, res) => {
+// PUT - Atualizar contrato (SEM autenticação)
+router.put('/:id', async (req, res) => {
   try {
-    const contrato = await Contract.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    res.json({ mensagem: 'Contrato atualizado', contrato });
+    const contrato = await Contract.findByIdAndUpdate(
+      req.params.id,
+      { ...req.body, dataAtualizacao: new Date() },
+      { new: true, runValidators: true }
+    );
+    if (!contrato) {
+      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
+    }
+    res.json({ sucesso: true, mensagem: 'Contrato atualizado', contrato });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ sucesso: false, erro: error.message });
   }
 });
 
-router.delete('/:id', authenticate, async (req, res) => {
+// DELETE - Deletar contrato (SEM autenticação)
+router.delete('/:id', async (req, res) => {
   try {
-    await Contract.findByIdAndDelete(req.params.id);
-    res.json({ mensagem: 'Contrato deletado' });
+    const contrato = await Contract.findByIdAndDelete(req.params.id);
+    if (!contrato) {
+      return res.status(404).json({ sucesso: false, erro: 'Contrato não encontrado' });
+    }
+    res.json({ sucesso: true, mensagem: 'Contrato deletado' });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ sucesso: false, erro: error.message });
   }
 });
 
