@@ -80,6 +80,7 @@
       background: rgba(0,0,0,0.1);
       padding: 10px;
       border-radius: 5px;
+      flex-wrap: wrap;
     }
 
     .nav-tabs button {
@@ -193,169 +194,6 @@
       color: var(--success);
     }
 
-    .funil-container {
-      background: #f8f9fa;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 30px 20px;
-      margin-bottom: 30px;
-    }
-
-    body.dark-mode .funil-container {
-      background: #333;
-      border-color: #555;
-    }
-
-    .funil-container h3 {
-      text-align: center;
-      margin-bottom: 30px;
-      color: var(--primary);
-    }
-
-    .funil {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-      gap: 10px;
-    }
-
-    .funil-etapa {
-      flex: 1;
-      text-align: center;
-    }
-
-    .funil-barra {
-      background: linear-gradient(180deg, var(--primary) 0%, var(--secondary) 100%);
-      color: white;
-      padding: 20px 10px;
-      border-radius: 8px 8px 0 0;
-      margin-bottom: 10px;
-      font-weight: bold;
-      font-size: 24px;
-      min-height: 100px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .funil-etapa:nth-child(2) .funil-barra {
-      background: linear-gradient(180deg, #3498db 0%, #2980b9 100%);
-    }
-
-    .funil-etapa:nth-child(3) .funil-barra {
-      background: linear-gradient(180deg, #1abc9c 0%, #16a085 100%);
-    }
-
-    .funil-etapa:nth-child(4) .funil-barra {
-      background: linear-gradient(180deg, #27ae60 0%, #229954 100%);
-    }
-
-    .funil-label {
-      font-size: 12px;
-      font-weight: bold;
-      color: var(--primary);
-    }
-
-    .funil-taxa {
-      font-size: 11px;
-      color: #7f8c8d;
-      margin-top: 5px;
-    }
-
-    .top-vistoriadores {
-      background: #f8f9fa;
-      border: 2px solid #e0e0e0;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 30px;
-    }
-
-    body.dark-mode .top-vistoriadores {
-      background: #333;
-      border-color: #555;
-    }
-
-    .top-vistoriadores h3 {
-      color: var(--primary);
-      margin-bottom: 20px;
-    }
-
-    .vistoriador-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px;
-      border-bottom: 1px solid #e0e0e0;
-    }
-
-    body.dark-mode .vistoriador-item {
-      border-bottom-color: #555;
-    }
-
-    .vistoriador-item:last-child {
-      border-bottom: none;
-    }
-
-    .vistoriador-nome {
-      font-weight: bold;
-      flex: 1;
-    }
-
-    .vistoriador-tempo {
-      background: var(--success);
-      color: white;
-      padding: 4px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      font-weight: bold;
-    }
-
-    .proximas-vencer {
-      background: #fff3cd;
-      border: 2px solid #ffc107;
-      border-radius: 8px;
-      padding: 20px;
-      margin-bottom: 30px;
-    }
-
-    body.dark-mode .proximas-vencer {
-      background: #3d3d1f;
-      border-color: #ffc107;
-    }
-
-    .proximas-vencer h3 {
-      color: #856404;
-      margin-bottom: 15px;
-    }
-
-    body.dark-mode .proximas-vencer h3 {
-      color: #ffc107;
-    }
-
-    .proxima-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 10px;
-      background: rgba(255,255,255,0.5);
-      border-radius: 4px;
-      margin-bottom: 8px;
-      font-size: 12px;
-    }
-
-    body.dark-mode .proxima-item {
-      background: rgba(0,0,0,0.3);
-    }
-
-    .proxima-dias {
-      background: var(--danger);
-      color: white;
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-weight: bold;
-      font-size: 11px;
-    }
-
     .stats {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -375,9 +213,8 @@
 
     .card.agendada { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
     .card.recebidas { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
-    .card.pendentes-chaves { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); }
+    .card.manutencao { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); }
     .card.total { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
-    .card.finalizados { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
 
     .card h3 {
       font-size: 12px;
@@ -423,7 +260,7 @@
       flex-wrap: wrap;
     }
 
-    input, select, button {
+    input, select, button, textarea {
       padding: 10px 15px;
       border: 1px solid var(--border);
       border-radius: 5px;
@@ -431,7 +268,7 @@
       font-family: inherit;
     }
 
-    input, select {
+    input, select, textarea {
       min-width: 200px;
     }
 
@@ -466,7 +303,7 @@
       width: 100%;
       border-collapse: collapse;
       background: var(--white);
-      min-width: 1300px;
+      min-width: 1200px;
     }
 
     thead {
@@ -481,65 +318,14 @@
       text-align: left;
       border-bottom: 1px solid var(--border);
       white-space: nowrap;
-      cursor: pointer;
-      user-select: none;
-      transition: background-color 0.3s;
       font-size: 11px;
-    }
-
-    th:hover {
-      background-color: var(--secondary);
     }
 
     td {
       padding: 8px;
       text-align: left;
       border-bottom: 1px solid var(--border);
-      white-space: nowrap;
       font-size: 11px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    /* DESTAQUE PARA CHAVES RECEBIDAS */
-    tr.chaves-recebidas {
-      background: linear-gradient(90deg, #d4edda 0%, transparent 100%);
-      border-left: 4px solid #28a745 !important;
-      animation: pulse-verde 2s infinite;
-    }
-
-    @keyframes pulse-verde {
-      0%, 100% {
-        box-shadow: inset -4px 0 0 #28a745;
-      }
-      50% {
-        box-shadow: inset -4px 0 0 #1e7e34;
-      }
-    }
-
-    body.dark-mode tr.chaves-recebidas {
-      background: linear-gradient(90deg, rgba(40, 167, 69, 0.3) 0%, transparent 100%);
-    }
-
-    .dias-badge {
-      display: inline-block;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-weight: bold;
-      font-size: 11px;
-      color: var(--white);
-    }
-
-    .dias-verde {
-      background-color: var(--success);
-    }
-
-    .dias-amarelo {
-      background-color: var(--warning);
-    }
-
-    .dias-vermelho {
-      background-color: var(--danger);
     }
 
     tbody tr:hover {
@@ -547,13 +333,18 @@
       cursor: pointer;
     }
 
-    body.dark-mode tbody tr:hover {
-      background-color: #444;
-    }
-
     body.dark-mode table {
       background-color: #333;
       color: #ecf0f1;
+    }
+
+    tr.urgente-vencido {
+      background: #ffe7e7;
+      border-left: 4px solid #e74c3c;
+    }
+
+    body.dark-mode tr.urgente-vencido {
+      background: rgba(231, 76, 60, 0.2);
     }
 
     .toast {
@@ -593,6 +384,7 @@
       height: 100%;
       background-color: rgba(0, 0, 0, 0.5);
       animation: fadeIn 0.3s ease;
+      overflow-y: auto;
     }
 
     @keyframes fadeIn {
@@ -611,9 +403,10 @@
       padding: 30px;
       border-radius: 8px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-      max-width: 500px;
+      max-width: 600px;
       width: 90%;
       animation: slideUp 0.3s ease;
+      margin: auto;
     }
 
     body.dark-mode .modal-content {
@@ -655,7 +448,8 @@
     }
 
     .modal-form-group input,
-    .modal-form-group select {
+    .modal-form-group select,
+    .modal-form-group textarea {
       width: 100%;
       padding: 10px;
       border: 1px solid var(--border);
@@ -698,13 +492,99 @@
       background-color: #7f8c8d;
     }
 
-    .action-buttons {
-      display: flex;
-      gap: 5px;
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: bold;
+      white-space: nowrap;
     }
 
-    .action-buttons button {
-      padding: 4px 8px;
+    .badge.urgente {
+      background: #e74c3c;
+      color: white;
+    }
+
+    .badge.media {
+      background: #f39c12;
+      color: white;
+    }
+
+    .badge.pequena {
+      background: #27ae60;
+      color: white;
+    }
+
+    .badge.pendente {
+      background: #95a5a6;
+      color: white;
+    }
+
+    .badge.em-andamento {
+      background: #3498db;
+      color: white;
+    }
+
+    .badge.concluido {
+      background: #27ae60;
+      color: white;
+    }
+
+    .reparo-item {
+      background: #f8f9fa;
+      border-left: 4px solid #3498db;
+      padding: 15px;
+      border-radius: 5px;
+      margin-bottom: 15px;
+    }
+
+    body.dark-mode .reparo-item {
+      background: #444;
+      border-left-color: #3498db;
+    }
+
+    .reparo-item.urgente {
+      border-left-color: #e74c3c;
+      background: #ffebee;
+    }
+
+    body.dark-mode .reparo-item.urgente {
+      background: rgba(231, 76, 60, 0.2);
+    }
+
+    .reparo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 10px;
+    }
+
+    .reparo-titulo {
+      font-weight: bold;
+      font-size: 14px;
+      color: var(--dark);
+    }
+
+    body.dark-mode .reparo-titulo {
+      color: #ecf0f1;
+    }
+
+    .reparo-info {
+      font-size: 12px;
+      color: #7f8c8d;
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    .reparo-actions {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+    }
+
+    .reparo-actions button {
+      padding: 4px 12px;
       font-size: 11px;
       white-space: nowrap;
     }
@@ -722,111 +602,9 @@
         grid-template-columns: repeat(2, 1fr);
       }
 
-      .funil {
-        flex-direction: column;
+      .stats {
+        grid-template-columns: 1fr;
       }
-    }
-
-    /* ESTILOS PARA RELATÓRIO PDF */
-    .relatorio-pdf {
-      display: none;
-      background: white;
-      padding: 40px;
-      font-family: Arial, sans-serif;
-      max-width: 800px;
-    }
-
-    .relatorio-pdf.show {
-      display: block;
-    }
-
-    .relatorio-header {
-      text-align: center;
-      border-bottom: 2px solid #333;
-      padding-bottom: 20px;
-      margin-bottom: 30px;
-    }
-
-    .relatorio-titulo {
-      font-size: 24px;
-      font-weight: bold;
-      color: #2c5aa0;
-      margin-bottom: 10px;
-    }
-
-    .relatorio-info {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 30px;
-      font-size: 13px;
-    }
-
-    .relatorio-info-item {
-      padding: 10px;
-      background: #f8f9fa;
-      border-radius: 5px;
-    }
-
-    .relatorio-info-label {
-      font-weight: bold;
-      color: #2c5aa0;
-      margin-bottom: 3px;
-    }
-
-    .relatorio-info-value {
-      color: #333;
-    }
-
-    .relatorio-section {
-      margin-bottom: 25px;
-    }
-
-    .relatorio-section-titulo {
-      font-size: 14px;
-      font-weight: bold;
-      color: #2c5aa0;
-      border-bottom: 1px solid #bdc3c7;
-      padding-bottom: 8px;
-      margin-bottom: 12px;
-    }
-
-    .relatorio-cronologia {
-      font-size: 12px;
-      line-height: 1.8;
-    }
-
-    .relatorio-cronologia-item {
-      display: flex;
-      margin-bottom: 10px;
-      padding: 8px;
-      background: #f8f9fa;
-      border-radius: 4px;
-    }
-
-    .relatorio-cronologia-data {
-      font-weight: bold;
-      color: #2c5aa0;
-      min-width: 100px;
-    }
-
-    .relatorio-cronologia-descricao {
-      flex: 1;
-      color: #333;
-    }
-
-    .relatorio-assinatura {
-      margin-top: 40px;
-      padding-top: 20px;
-      border-top: 1px solid #bdc3c7;
-      text-align: center;
-      font-size: 12px;
-    }
-
-    .relatorio-assinatura-linha {
-      border-top: 1px solid #333;
-      width: 200px;
-      margin: 20px auto 5px;
     }
   </style>
 </head>
@@ -837,6 +615,7 @@
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
         <button class="tab-btn" onclick="mudarAba('contratos')">📋 Contratos</button>
+        <button class="tab-btn" onclick="mudarAba('manutencao')">🔧 Manutenção</button>
       </div>
       <button class="theme-toggle" onclick="toggleDarkMode()">🌙</button>
     </div>
@@ -848,14 +627,13 @@
       <h2 class="section-title">📊 DASHBOARD EXECUTIVO</h2>
 
       <div class="alert">
-        <div class="alert-icon">⚡</div>
+        <div class="alert-icon">🔧</div>
         <div class="alert-content">
-          <h3>V21.1 - Bug Fix + Destaque de Chaves</h3>
-          <p>Agendamento inteligente corrigido. Contratos com chaves recebidas têm destaque verde piscante!</p>
+          <h3>V22 - Módulo Completo de Manutenção</h3>
+          <p>Controle total de reparos, urgências e impacto no aluguel. Sistema de bloqueio automático ativado!</p>
         </div>
       </div>
 
-      <!-- KPIs PRINCIPAIS -->
       <div class="kpi-grid">
         <div class="kpi-card sucesso">
           <h3>📈 Taxa de Conclusão</h3>
@@ -870,79 +648,35 @@
         </div>
         
         <div class="kpi-card urgente">
-          <h3>🚨 Próximas a Vencer</h3>
-          <div class="value" id="proximasVencer">0</div>
-          <div class="unit">em 7 dias ou menos</div>
+          <h3>🚨 Manutenção Urgente</h3>
+          <div class="value" id="manutencaoUrgente">0</div>
+          <div class="unit">reparos bloqueando aluguel</div>
         </div>
 
         <div class="kpi-card">
-          <h3>🔑 Aguardando Vistoria</h3>
-          <div class="value" id="aguardandoVistoria">0</div>
-          <div class="unit">após entrega de chaves</div>
+          <h3>💰 Impacto Financeiro</h3>
+          <div class="value" id="impactoFinanceiro">R$ 0</div>
+          <div class="unit">custo + receita perdida</div>
         </div>
       </div>
 
-      <!-- GRÁFICO DE FUNIL -->
-      <div class="funil-container">
-        <h3>📊 Funil de Desocupação</h3>
-        <div class="funil">
-          <div class="funil-etapa">
-            <div class="funil-barra" id="funilComunicacoes">0</div>
-            <div class="funil-label">Comunicações</div>
-            <div class="funil-taxa" id="taxaCom">100%</div>
-          </div>
-          <div class="funil-etapa">
-            <div class="funil-barra" id="funilAgendadas">0</div>
-            <div class="funil-label">Agendadas</div>
-            <div class="funil-taxa" id="taxaAge">0%</div>
-          </div>
-          <div class="funil-etapa">
-            <div class="funil-barra" id="funilVistoriadas">0</div>
-            <div class="funil-label">Vistoriadas</div>
-            <div class="funil-taxa" id="taxaVis">0%</div>
-          </div>
-          <div class="funil-etapa">
-            <div class="funil-barra" id="funilFinalizadas">0</div>
-            <div class="funil-label">Finalizadas</div>
-            <div class="funil-taxa" id="taxaFin">0%</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TOP VISTORIADORES -->
-      <div class="top-vistoriadores">
-        <h3>🏆 Vistoriadores Mais Rápidos</h3>
-        <div id="topVistoriadores"></div>
-      </div>
-
-      <!-- PRÓXIMAS A VENCER -->
-      <div class="proximas-vencer">
-        <h3>⏰ Próximas Vistorias a Vencer (7 dias)</h3>
-        <div id="proximasVencerLista"></div>
-      </div>
-
-      <!-- RESUMO DE CONTRATOS -->
-      <h2 class="section-title">📊 Resumo do Mês</h2>
+      <h2 class="section-title">📊 Resumo de Contratos</h2>
       <div class="stats">
         <div class="card total">
           <h3>Total de Contratos</h3>
           <div class="number" id="totalContratos">0</div>
         </div>
         <div class="card agendada">
-          <h3>📋 Vistorias Agendadas</h3>
-          <div class="number" id="vistoriasAgendadas">0</div>
+          <h3>📋 Prontos para Alugar</h3>
+          <div class="number" id="prontosAlugar">0</div>
         </div>
         <div class="card recebidas">
           <h3>🔑 Chaves Recebidas</h3>
           <div class="number" id="chavesRecebidas">0</div>
         </div>
-        <div class="card pendentes-chaves">
-          <h3>⏳ Chaves Pendentes</h3>
-          <div class="number" id="chavesPendentes">0</div>
-        </div>
-        <div class="card finalizados">
-          <h3>✅ Imóveis Finalizados</h3>
-          <div class="number" id="imoveisFinal">0</div>
+        <div class="card manutencao">
+          <h3>⚠️ Em Manutenção</h3>
+          <div class="number" id="emManutencao">0</div>
         </div>
       </div>
     </div>
@@ -954,10 +688,9 @@
         <input type="text" id="busca" placeholder="🔍 Buscar contrato..." onkeyup="filtrarDados()">
         <select id="filtroStatus" onchange="filtrarDados()">
           <option value="">Filtrar: Todos</option>
-          <option value="recebidas">🔑 Chaves Recebidas</option>
-          <option value="pendente">⏳ Chaves Pendentes</option>
-          <option value="nao-recebidas">❌ Não Recebidas</option>
-          <option value="finalizado">✅ Finalizados</option>
+          <option value="manutencao">⚠️ Em Manutenção</option>
+          <option value="pronto">✅ Pronto para Alugar</option>
+          <option value="chaves">🔑 Aguardando Vistoria</option>
         </select>
         <button onclick="recarregarDados()" style="background-color: #95a5a6;">🔄 Atualizar</button>
       </div>
@@ -969,11 +702,9 @@
             <tr>
               <th>Contrato</th>
               <th>Locatário</th>
-              <th>Endereço</th>
-              <th>Vistoria</th>
-              <th>Dias</th>
               <th>Status Chaves</th>
-              <th>Finalizado</th>
+              <th>Manutenção</th>
+              <th>Urgência</th>
               <th>Ações</th>
             </tr>
           </thead>
@@ -982,121 +713,177 @@
         </table>
       </div>
     </div>
+
+    <!-- ABA MANUTENÇÃO -->
+    <div id="manutencao" class="tab-content">
+      <h2 class="section-title">🔧 Controle de Manutenção</h2>
+
+      <div class="controls">
+        <select id="filtroUrgencia" onchange="filtrarManutencao()">
+          <option value="">Filtrar: Todos os Reparos</option>
+          <option value="URGENTE">🔴 URGENTE</option>
+          <option value="MEDIA">🟡 MÉDIA</option>
+          <option value="PEQUENA">🟢 PEQUENA</option>
+        </select>
+        <select id="filtroStatusRep" onchange="filtrarManutencao()">
+          <option value="">Status: Todos</option>
+          <option value="PENDENTE">⏳ Pendente</option>
+          <option value="EM_ANDAMENTO">🔨 Em Andamento</option>
+          <option value="CONCLUIDO">✅ Concluído</option>
+        </select>
+        <button onclick="recarregarDados()" style="background-color: #95a5a6;">🔄 Atualizar</button>
+      </div>
+
+      <h3 class="section-title" style="margin-top: 20px;">📊 RESUMO DE MANUTENÇÃO</h3>
+      <div class="stats">
+        <div class="card manutencao">
+          <h3>🚨 URGENTES</h3>
+          <div class="number" id="totalUrgente">0</div>
+        </div>
+        <div class="card">
+          <h3>🟡 MÉDIAS</h3>
+          <div class="number" id="totalMedia">0</div>
+        </div>
+        <div class="card recebidas">
+          <h3>🟢 PEQUENAS</h3>
+          <div class="number" id="totalPequena">0</div>
+        </div>
+        <div class="card agendada">
+          <h3>✅ CONCLUÍDAS</h3>
+          <div class="number" id="totalConcluidas">0</div>
+        </div>
+      </div>
+
+      <h3 class="section-title" style="margin-top: 20px;">📋 REPAROS PRÓXIMOS A VENCER</h3>
+      <div id="proximosVencer"></div>
+
+      <h3 class="section-title" style="margin-top: 20px;">📋 TODOS OS REPAROS</h3>
+      <div id="listaReparos"></div>
+    </div>
   </div>
 
-  <!-- MODAL: AGENDAMENTO INTELIGENTE -->
-  <div id="modalAgendamento" class="modal">
+  <!-- MODAL: REGISTRAR REPARO -->
+  <div id="modalReparo" class="modal">
     <div class="modal-content">
-      <div class="modal-header">⚡ Agendamento Inteligente de Vistoria</div>
+      <div class="modal-header">🔧 Registrar Novo Reparo</div>
       
-      <p style="margin-bottom: 20px; color: #666; font-size: 13px;">
-        🔑 Chaves foram recebidas! Deseja agendar a vistoria agora?
-      </p>
-
-      <form id="formAgendamento">
+      <form id="formReparo">
         <div class="modal-form-group">
           <label>📋 Contrato:</label>
-          <input type="text" id="agend-contrato" readonly>
+          <input type="text" id="rep-contrato" readonly>
         </div>
 
         <div class="modal-form-group">
           <label>👤 Locatário:</label>
-          <input type="text" id="agend-locatario" readonly>
+          <input type="text" id="rep-locatario" readonly>
         </div>
 
         <div class="modal-form-group">
-          <label>📅 Data Proposta para Vistoria:</label>
-          <input type="date" id="agend-data" required>
+          <label>📝 Descrição do Reparo:</label>
+          <textarea id="rep-descricao" rows="3" placeholder="Ex: Vidro quebrado na porta da sala..."></textarea>
         </div>
 
         <div class="modal-form-group">
-          <label>👨‍💼 Vistoriador:</label>
-          <select id="agend-vistoriador" required>
+          <label>⚠️ Urgência:</label>
+          <select id="rep-urgencia" required>
             <option value="">-- Selecione --</option>
-            <option>Maria Santos</option>
-            <option>João Silva</option>
-            <option>Pedro Costa</option>
-            <option>Ana Paula</option>
-            <option>Carlos Mendes</option>
+            <option value="URGENTE">🔴 URGENTE (Impede aluguel - até 3 dias)</option>
+            <option value="MEDIA">🟡 MÉDIA (Limita aluguel - até 10 dias)</option>
+            <option value="PEQUENA">🟢 PEQUENA (Cosmética - até 30 dias)</option>
           </select>
         </div>
 
+        <div class="modal-form-group">
+          <label>💰 Custo Estimado (R$):</label>
+          <input type="number" id="rep-custo" min="0" step="0.01" placeholder="150.00">
+        </div>
+
+        <div class="modal-form-group">
+          <label>👨‍🔧 Responsável:</label>
+          <input type="text" id="rep-responsavel" placeholder="Ex: Integrativa, Vidraçaria XYZ, Proprietário...">
+        </div>
+
+        <div class="modal-form-group">
+          <label>📅 Data-Limite de Conclusão:</label>
+          <input type="date" id="rep-data-limite" required>
+        </div>
+
+        <div class="modal-form-group">
+          <label>🔗 Link Pleno Vistorias (opcional):</label>
+          <input type="url" id="rep-link-pleno" placeholder="https://pleno.com.br/vistorias/...">
+        </div>
+
+        <div class="modal-form-group">
+          <label>💬 Notas:</label>
+          <textarea id="rep-notas" rows="2" placeholder="Observações adicionais..."></textarea>
+        </div>
+
         <div class="modal-buttons">
-          <button type="button" class="btn-primary" onclick="confirmarAgendamento()">✅ Agendar</button>
-          <button type="button" class="btn-secondary" onclick="fecharModalAgendamento()">❌ Cancelar</button>
+          <button type="button" class="btn-primary" onclick="salvarReparo()">💾 Registrar</button>
+          <button type="button" class="btn-secondary" onclick="fecharModalReparo()">❌ Cancelar</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- MODAL: EDITAR CONTRATO -->
-  <div id="modalEditar" class="modal">
+  <!-- MODAL: DETALH REPARO -->
+  <div id="modalDetalhes" class="modal">
     <div class="modal-content">
-      <div class="modal-header">✏️ Editar Contrato</div>
+      <div class="modal-header">🔧 Detalhes do Reparo</div>
       
-      <form id="formEditar">
-        <div class="modal-form-group">
-          <label>📋 Contrato:</label>
-          <input type="text" id="edit-contrato" readonly>
+      <div style="font-size: 13px; line-height: 1.8;">
+        <div style="margin-bottom: 15px;">
+          <strong>Contrato:</strong> <span id="det-contrato"></span>
         </div>
+        <div style="margin-bottom: 15px;">
+          <strong>Locatário:</strong> <span id="det-locatario"></span>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <strong>Descrição:</strong> <span id="det-descricao"></span>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <strong>Urgência:</strong> <span id="det-urgencia"></span>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <strong>Custo:</strong> R$ <span id="det-custo"></span>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <strong>Responsável:</strong> <span id="det-responsavel"></span>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <strong>Data-Limite:</strong> <span id="det-data-limite"></span>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <strong>Status:</strong> <span id="det-status"></span>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <strong>Notas:</strong> <span id="det-notas" style="font-style: italic; color: #7f8c8d;"></span>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <strong>Histórico:</strong>
+          <div id="det-historico" style="background: #f8f9fa; padding: 10px; border-radius: 4px; margin-top: 5px; font-size: 12px;"></div>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <strong>Link Pleno:</strong>
+          <div>
+            <a id="det-link" href="#" target="_blank" style="color: #3498db; text-decoration: none;">Abrir em nova aba ↗️</a>
+          </div>
+        </div>
+      </div>
 
-        <div class="modal-form-group">
-          <label>👤 Locatário:</label>
-          <input type="text" id="edit-locatario">
-        </div>
-
-        <div class="modal-form-group">
-          <label>📍 Endereço:</label>
-          <input type="text" id="edit-endereco">
-        </div>
-
-        <div class="modal-form-group">
-          <label>📱 Comunicação Inquilino:</label>
-          <input type="date" id="edit-comunicacao">
-        </div>
-
-        <div class="modal-form-group">
-          <label>📅 Agendamento Vistoria:</label>
-          <input type="date" id="edit-agendamento">
-        </div>
-
-        <div class="modal-form-group">
-          <label>🔑 Entrega de Chaves:</label>
-          <input type="date" id="edit-entrega">
-        </div>
-
-        <div class="modal-form-group">
-          <label>🔑 Status Chaves:</label>
-          <select id="edit-statusChaves">
-            <option value="pendente">⏳ Pendente</option>
-            <option value="recebidas">✅ Recebidas</option>
-            <option value="nao-recebidas">❌ Não Recebidas</option>
-          </select>
-        </div>
-
-        <div class="modal-form-group">
-          <label>✅ Imóvel Finalizado:</label>
-          <select id="edit-finalizado">
-            <option value="nao">❌ Não</option>
-            <option value="sim">✅ Sim</option>
-          </select>
-        </div>
-
-        <div class="modal-buttons">
-          <button type="button" class="btn-primary" onclick="salvarEdicao()">💾 Salvar</button>
-          <button type="button" class="btn-secondary" onclick="fecharModalEditar()">❌ Cancelar</button>
-        </div>
-      </form>
+      <div class="modal-buttons" style="margin-top: 25px;">
+        <button type="button" class="btn-primary" onclick="marcarComoConcluido()">✅ Marcar Concluído</button>
+        <button type="button" class="btn-secondary" onclick="fecharModalDetalhes()">Fechar</button>
+      </div>
     </div>
   </div>
-
-  <!-- DIV OCULTA PARA GERAR PDF -->
-  <div id="relatorioTemporario" class="relatorio-pdf"></div>
 
   <script>
     const API_URL = window.location.hostname === 'localhost' ? '/api' : 'https://integrativa-desocupacao.onrender.com/api';
     let contratos = [];
-    let contratoAtualSelecionado = null;
+    let reparos = {};
+    let reparoAtualSelecionado = null;
+    let contratoEmReparo = null;
 
     function mudarAba(abaName) {
       document.querySelectorAll('.tab-content').forEach(tab => {
@@ -1109,7 +896,7 @@
       document.getElementById(abaName).classList.add('active');
       event.target.classList.add('active');
 
-      if (abaName === 'contratos') {
+      if (abaName === 'contratos' || abaName === 'manutencao') {
         carregarDados();
       }
     }
@@ -1119,56 +906,13 @@
       try {
         let dataParts = dataISO.split('T')[0].split('-');
         if (dataParts.length !== 3) return '-';
-        let ano = dataParts[0];
-        let mes = dataParts[1];
-        let dia = dataParts[2];
-        return `${dia}/${mes}/${ano}`;
+        return `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`;
       } catch (e) {
         return '-';
       }
     }
 
-    function converterDataParaISO(dataStr) {
-      if (!dataStr) return null;
-      return new Date(dataStr + 'T00:00:00Z').toISOString();
-    }
-
-    function calcularDias(dataISO) {
-      if (!dataISO || dataISO === '' || dataISO === 'null' || dataISO === null) {
-        return null;
-      }
-
-      try {
-        let dataParts = dataISO.split('T')[0].split('-');
-        if (dataParts.length !== 3) return null;
-
-        let ano = parseInt(dataParts[0], 10);
-        let mes = parseInt(dataParts[1], 10);
-        let dia = parseInt(dataParts[2], 10);
-
-        if (isNaN(ano) || isNaN(mes) || isNaN(dia)) return null;
-        if (mes < 1 || mes > 12 || dia < 1 || dia > 31) return null;
-
-        const vistoria = new Date(ano, mes - 1, dia, 0, 0, 0, 0);
-        
-        if (isNaN(vistoria.getTime())) return null;
-
-        const hoje = new Date();
-        hoje.setHours(0, 0, 0, 0);
-
-        const diferenca = vistoria - hoje;
-        const diasMs = 1000 * 60 * 60 * 24;
-        const dias = Math.ceil(diferenca / diasMs);
-
-        if (isNaN(dias)) return null;
-
-        return dias;
-      } catch (e) {
-        return null;
-      }
-    }
-
-    function calcularDiasDesde(dataISO) {
+    function calcularDiasAte(dataISO) {
       if (!dataISO) return null;
       try {
         let dataParts = dataISO.split('T')[0].split('-');
@@ -1180,11 +924,11 @@
         const hoje = new Date();
         hoje.setHours(0, 0, 0, 0);
 
-        const diferenca = hoje - data;
+        const diferenca = data - hoje;
         const diasMs = 1000 * 60 * 60 * 24;
-        const dias = Math.floor(diferenca / diasMs);
+        const dias = Math.ceil(diferenca / diasMs);
 
-        return dias >= 0 ? dias : null;
+        return dias;
       } catch (e) {
         return null;
       }
@@ -1198,10 +942,11 @@
         .then(r => r.json())
         .then(data => {
           contratos = data.contratos || [];
-          console.log('✅ V21.1 - Contratos carregados:', contratos.length);
+          console.log('✅ V22 - Contratos carregados:', contratos.length);
           
           atualizarDashboard();
-          atualizarTabela();
+          atualizarTabelaContratos();
+          atualizarManutencao();
           document.getElementById('loading').style.display = 'none';
           document.getElementById('tabela').style.display = 'table';
         })
@@ -1213,7 +958,22 @@
         });
     }
 
+    function carregarReparosDoLocalStorage() {
+      const stored = localStorage.getItem('integrativa_reparos');
+      if (stored) {
+        reparos = JSON.parse(stored);
+      } else {
+        reparos = {};
+      }
+    }
+
+    function salvarReparosNoLocalStorage() {
+      localStorage.setItem('integrativa_reparos', JSON.stringify(reparos));
+    }
+
     function atualizarDashboard() {
+      carregarReparosDoLocalStorage();
+
       const comComunicacao = contratos.filter(c => c.comunicacaoInquilino).length;
       const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
       const taxaConclusao = comComunicacao > 0 ? Math.round((finalizados / comComunicacao) * 100) : 0;
@@ -1223,9 +983,9 @@
       let contador = 0;
       contratos.forEach(c => {
         if (c.comunicacaoInquilino && c.finalizado === 'sim') {
-          const dias = calcularDiasDesde(c.comunicacaoInquilino);
-          if (dias !== null) {
-            tempoTotal += dias;
+          const d = c.entregaChaves ? calcularDiasAte(c.entregaChaves) : 0;
+          if (d) {
+            tempoTotal += Math.abs(d);
             contador++;
           }
         }
@@ -1233,406 +993,407 @@
       const tempoMedio = contador > 0 ? Math.round(tempoTotal / contador) : 0;
       document.getElementById('tempoMedio').textContent = tempoMedio;
 
-      const proximasVencer = contratos.filter(c => {
-        const dias = calcularDias(c.agendamentoVistoria);
-        return dias !== null && dias <= 7 && dias >= 0 && c.statusChaves !== 'recebidas';
-      }).length;
-      document.getElementById('proximasVencer').textContent = proximasVencer;
-
-      const aguardandoVistoria = contratos.filter(c => {
-        return c.entregaChaves && c.entregaChaves !== '' && 
-               (!c.agendamentoVistoria || c.agendamentoVistoria === '');
-      }).length;
-      document.getElementById('aguardandoVistoria').textContent = aguardandoVistoria;
-
-      const comCom = contratos.filter(c => c.comunicacaoInquilino).length;
-      const comAge = contratos.filter(c => c.agendamentoVistoria).length;
-      const comVis = contratos.filter(c => c.status === 'realizada').length;
-      const comFin = finalizados;
-
-      document.getElementById('funilComunicacoes').textContent = comCom;
-      document.getElementById('funilAgendadas').textContent = comAge;
-      document.getElementById('funilVistoriadas').textContent = comVis;
-      document.getElementById('funilFinalizadas').textContent = comFin;
-
-      document.getElementById('taxaCom').textContent = '100%';
-      document.getElementById('taxaAge').textContent = comCom > 0 ? `${Math.round((comAge / comCom) * 100)}%` : '0%';
-      document.getElementById('taxaVis').textContent = comCom > 0 ? `${Math.round((comVis / comCom) * 100)}%` : '0%';
-      document.getElementById('taxaFin').textContent = comCom > 0 ? `${Math.round((comFin / comCom) * 100)}%` : '0%';
-
-      const temposVistoriadores = {};
-      contratos.forEach(c => {
-        if (c.responsavelVistoria && c.agendamentoVistoria) {
-          if (!temposVistoriadores[c.responsavelVistoria]) {
-            temposVistoriadores[c.responsavelVistoria] = [];
+      // Calcular manutenção urgente
+      let urgentesNaoConcluidas = 0;
+      Object.keys(reparos).forEach(contratoId => {
+        const reparosDoContrato = reparos[contratoId] || [];
+        reparosDoContrato.forEach(rep => {
+          if (rep.urgencia === 'URGENTE' && rep.status !== 'CONCLUIDO') {
+            urgentesNaoConcluidas++;
           }
-          const dias = calcularDias(c.agendamentoVistoria);
-          if (dias !== null && dias < 30) {
-            temposVistoriadores[c.responsavelVistoria].push(dias);
-          }
-        }
+        });
       });
+      document.getElementById('manutencaoUrgente').textContent = urgentesNaoConcluidas;
 
-      const topVistoriadores = Object.entries(temposVistoriadores)
-        .map(([nome, dias]) => ({
-          nome,
-          tempoMedio: Math.round(dias.reduce((a, b) => a + b, 0) / dias.length)
-        }))
-        .sort((a, b) => a.tempoMedio - b.tempoMedio)
-        .slice(0, 5);
+      // Calcular impacto financeiro
+      let custTotal = 0;
+      let diasParados = 0;
+      Object.keys(reparos).forEach(contratoId => {
+        const reparosDoContrato = reparos[contratoId] || [];
+        reparosDoContrato.forEach(rep => {
+          if (rep.status !== 'CONCLUIDO') {
+            custTotal += rep.custo || 0;
+            const diasAte = calcularDiasAte(rep.dataLimite);
+            if (diasAte && diasAte > 0) {
+              diasParados += diasAte;
+            }
+          }
+        });
+      });
+      const impactoTotal = custTotal + (diasParados * 100); // R$ 100/dia de aluguel perdido
+      document.getElementById('impactoFinanceiro').textContent = `R$ ${impactoTotal.toLocaleString('pt-BR')}`;
 
-      const htmlTop = topVistoriadores.length > 0 
-        ? topVistoriadores.map(v => `
-          <div class="vistoriador-item">
-            <div class="vistoriador-nome">${v.nome}</div>
-            <div class="vistoriador-tempo">${v.tempoMedio} dias</div>
-          </div>
-        `).join('')
-        : '<div style="text-align: center; padding: 20px; color: #7f8c8d;">Nenhum vistoriador registrado</div>';
+      const prontosAlugar = contratos.filter(c => {
+        const repC = reparos[c._id] || [];
+        const temUrgente = repC.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
+        return !temUrgente && c.entregaChaves;
+      }).length;
+      document.getElementById('prontosAlugar').textContent = prontosAlugar;
 
-      document.getElementById('topVistoriadores').innerHTML = htmlTop;
+      const chavesRec = contratos.filter(c => c.statusChaves === 'recebidas').length;
+      document.getElementById('chavesRecebidas').textContent = chavesRec;
 
-      const proximas = contratos
-        .filter(c => {
-          const dias = calcularDias(c.agendamentoVistoria);
-          return dias !== null && dias <= 7 && dias >= 0 && c.statusChaves !== 'recebidas';
-        })
-        .sort((a, b) => calcularDias(a.agendamentoVistoria) - calcularDias(b.agendamentoVistoria))
-        .slice(0, 10);
+      const emManu = Object.keys(reparos).filter(cid => {
+        const repsDoC = reparos[cid] || [];
+        return repsDoC.some(r => r.status !== 'CONCLUIDO');
+      }).length;
+      document.getElementById('emManutencao').textContent = emManu;
 
-      const htmlProximas = proximas.length > 0
-        ? proximas.map(c => {
-          const dias = calcularDias(c.agendamentoVistoria);
-          return `
-            <div class="proxima-item">
-              <div>
-                <strong>${c.contrato}</strong> - ${c.locatario}
-                <br><small>${formatarData(c.agendamentoVistoria)}</small>
-              </div>
-              <div class="proxima-dias">${dias}d</div>
-            </div>
-          `;
-        }).join('')
-        : '<div style="text-align: center; padding: 20px; color: #7f8c8d;">Nenhuma vistoria próxima a vencer</div>';
-
-      document.getElementById('proximasVencerLista').innerHTML = htmlProximas;
-
-      const chavesRecebidas = contratos.filter(c => c.statusChaves === 'recebidas').length;
-      const chavesPendentes = contratos.filter(c => c.statusChaves === 'pendente').length;
-      const vistorias = contratos.filter(c => c.agendamentoVistoria && c.agendamentoVistoria !== '').length;
-
-      document.getElementById('chavesRecebidas').textContent = chavesRecebidas;
-      document.getElementById('chavesPendentes').textContent = chavesPendentes;
-      document.getElementById('vistoriasAgendadas').textContent = vistorias;
-      document.getElementById('imoveisFinal').textContent = finalizados;
       document.getElementById('totalContratos').textContent = contratos.length;
     }
 
-    function obterLabelStatus(status) {
-      switch(status) {
-        case 'recebidas': return '✅ Recebidas';
-        case 'nao-recebidas': return '❌ Não Recebidas';
-        default: return '⏳ Pendente';
-      }
-    }
-
-    function obterLabelFinalizado(status) {
-      return status === 'sim' ? '✅ Sim' : '❌ Não';
-    }
-
-    function obterCorDias(dias) {
-      if (dias === null) return '';
-      if (dias >= 15) return 'dias-verde';
-      if (dias >= 7) return 'dias-amarelo';
-      return 'dias-vermelho';
+    function atualizarTabelaContratos() {
+      renderizarTabelaContratos(contratos);
     }
 
     function filtrarDados() {
       const busca = document.getElementById('busca').value.toLowerCase();
       const status = document.getElementById('filtroStatus').value;
-      const filtrados = contratos.filter(c => {
+
+      let filtrados = contratos.filter(c => {
         const matchBusca = !busca || c.contrato.toLowerCase().includes(busca) || c.locatario.toLowerCase().includes(busca);
         let matchStatus = true;
-        
-        if (status === 'finalizado') {
-          matchStatus = c.finalizado === 'sim';
-        } else if (status) {
-          matchStatus = c.statusChaves === status;
+
+        if (status === 'manutencao') {
+          const repsDoC = reparos[c._id] || [];
+          matchStatus = repsDoC.some(r => r.status !== 'CONCLUIDO');
+        } else if (status === 'pronto') {
+          const repsDoC = reparos[c._id] || [];
+          const temUrgente = repsDoC.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
+          matchStatus = !temUrgente && c.entregaChaves;
+        } else if (status === 'chaves') {
+          matchStatus = c.entregaChaves && c.statusChaves === 'recebidas';
         }
-        
+
         return matchBusca && matchStatus;
       });
-      renderizarTabela(filtrados);
+
+      renderizarTabelaContratos(filtrados);
     }
 
-    function atualizarTabela() {
-      renderizarTabela(contratos);
-    }
-
-    function renderizarTabela(dados) {
+    function renderizarTabelaContratos(dados) {
       const tbody = document.getElementById('tabelaCorpo');
-      tbody.innerHTML = dados.length === 0 ? '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #7f8c8d;">Nenhum contrato encontrado</td></tr>' : dados.map(c => {
-        const dias = calcularDias(c.agendamentoVistoria);
-        const classeCor = obterCorDias(dias);
-        
-        let diasTexto = '-';
-        if (dias !== null) {
-          if (dias < 0) {
-            diasTexto = '⏳ Vencida';
-          } else if (dias === 0) {
-            diasTexto = '🔴 HOJE!';
-          } else {
-            diasTexto = `${dias}d`;
-          }
+      tbody.innerHTML = dados.length === 0 ? '<tr><td colspan="6" style="text-align: center; padding: 40px;">Nenhum contrato encontrado</td></tr>' : dados.map(c => {
+        const repsDoC = reparos[c._id] || [];
+        const temUrgente = repsDoC.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
+        const totalReps = repsDoC.filter(r => r.status !== 'CONCLUIDO').length;
+
+        let statusManu = '✅ Sem reparos';
+        if (temUrgente) {
+          statusManu = `🚨 ${totalReps} reparos (URGENTE!)`;
+        } else if (totalReps > 0) {
+          statusManu = `⚠️ ${totalReps} reparos`;
         }
 
-        // DESTAQUE PARA CHAVES RECEBIDAS
-        const classeDestaque = c.statusChaves === 'recebidas' ? 'chaves-recebidas' : '';
-
         return `
-        <tr class="${classeDestaque}">
+        <tr>
           <td><strong>${c.contrato}</strong></td>
           <td>${c.locatario}</td>
-          <td>${c.endereco || '-'}</td>
-          <td>${formatarData(c.agendamentoVistoria)}</td>
-          <td><span class="dias-badge ${classeCor}">${diasTexto}</span></td>
-          <td>${obterLabelStatus(c.statusChaves)}</td>
-          <td>${obterLabelFinalizado(c.finalizado)}</td>
+          <td>${c.statusChaves === 'recebidas' ? '🔑 Recebidas' : '⏳ Pendente'}</td>
+          <td>${statusManu}</td>
+          <td>${temUrgente ? '🔴' : totalReps > 0 ? '🟡' : '✅'}</td>
           <td>
-            <div class="action-buttons">
-              <button onclick="abrirModalEditar('${c._id}')">✏️ Editar</button>
-              <button onclick="gerarRelatorioPDF('${c._id}')" style="background-color: #27ae60;">📄 PDF</button>
-            </div>
+            <button onclick="abrirModalReparo('${c._id}')" style="font-size: 11px; padding: 4px 8px;">➕ Adicionar</button>
           </td>
         </tr>
       `;
       }).join('');
     }
 
-    function abrirModalEditar(id) {
-      const c = contratos.find(x => x._id === id);
-      if (!c) return;
+    function atualizarManutencao() {
+      carregarReparosDoLocalStorage();
 
-      contratoAtualSelecionado = id;
-
-      document.getElementById('edit-contrato').value = c.contrato;
-      document.getElementById('edit-locatario').value = c.locatario;
-      document.getElementById('edit-endereco').value = c.endereco || '';
-      document.getElementById('edit-comunicacao').value = c.comunicacaoInquilino ? c.comunicacaoInquilino.split('T')[0] : '';
-      document.getElementById('edit-agendamento').value = c.agendamentoVistoria ? c.agendamentoVistoria.split('T')[0] : '';
-      document.getElementById('edit-entrega').value = c.entregaChaves ? c.entregaChaves.split('T')[0] : '';
-      document.getElementById('edit-statusChaves').value = c.statusChaves || 'pendente';
-      document.getElementById('edit-finalizado').value = c.finalizado || 'nao';
-
-      document.getElementById('modalEditar').classList.add('show');
-    }
-
-    function fecharModalEditar() {
-      document.getElementById('modalEditar').classList.remove('show');
-      contratoAtualSelecionado = null;
-    }
-
-    function salvarEdicao() {
-      if (!contratoAtualSelecionado) return;
-
-      const dados = {
-        locatario: document.getElementById('edit-locatario').value,
-        endereco: document.getElementById('edit-endereco').value,
-        comunicacaoInquilino: document.getElementById('edit-comunicacao').value ? converterDataParaISO(document.getElementById('edit-comunicacao').value) : null,
-        agendamentoVistoria: document.getElementById('edit-agendamento').value ? converterDataParaISO(document.getElementById('edit-agendamento').value) : null,
-        entregaChaves: document.getElementById('edit-entrega').value ? converterDataParaISO(document.getElementById('edit-entrega').value) : null,
-        statusChaves: document.getElementById('edit-statusChaves').value,
-        finalizado: document.getElementById('edit-finalizado').value
-      };
-
-      console.log('📤 Enviando dados:', dados);
-
-      fetch(`${API_URL}/contracts/${contratoAtualSelecionado}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dados)
-      })
-      .then(r => r.json())
-      .then(data => {
-        console.log('📥 Resposta:', data);
-        if (data.sucesso) {
-          mostrarToast('✅ Contrato atualizado!');
-          fecharModalEditar();
-          carregarDados();
-
-          // ⚡ AGENDAMENTO INTELIGENTE: Se statusChaves virou "recebidas"
-          if (document.getElementById('edit-statusChaves').value === 'recebidas') {
-            setTimeout(() => {
-              abrirModalAgendamentoInteligente(contratoAtualSelecionado);
-            }, 500);
-          }
-        } else {
-          mostrarToast(`❌ Erro: ${data.mensagem || 'Erro ao atualizar'}`, true);
+      let todosReparos = [];
+      Object.keys(reparos).forEach(contratoId => {
+        const c = contratos.find(x => x._id === contratoId);
+        if (c) {
+          const repsDoC = reparos[contratoId] || [];
+          repsDoC.forEach(rep => {
+            todosReparos.push({
+              ...rep,
+              contratoId,
+              contratoNome: c.contrato,
+              locatario: c.locatario
+            });
+          });
         }
-      })
-      .catch(erro => {
-        console.error('❌ Erro:', erro);
-        mostrarToast('❌ Erro ao atualizar contrato!', true);
       });
+
+      // Totais
+      const urgentes = todosReparos.filter(r => r.urgencia === 'URGENTE').length;
+      const medias = todosReparos.filter(r => r.urgencia === 'MEDIA').length;
+      const pequenas = todosReparos.filter(r => r.urgencia === 'PEQUENA').length;
+      const concluidas = todosReparos.filter(r => r.status === 'CONCLUIDO').length;
+
+      document.getElementById('totalUrgente').textContent = urgentes;
+      document.getElementById('totalMedia').textContent = medias;
+      document.getElementById('totalPequena').textContent = pequenas;
+      document.getElementById('totalConcluidas').textContent = concluidas;
+
+      // Próximos a vencer (urgentes com menos de 3 dias)
+      const proximos = todosReparos
+        .filter(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO')
+        .map(r => ({...r, diasAte: calcularDiasAte(r.dataLimite)}))
+        .sort((a, b) => (a.diasAte || 999) - (b.diasAte || 999))
+        .slice(0, 5);
+
+      const htmlProximos = proximos.length > 0
+        ? proximos.map(r => {
+          const diasAte = r.diasAte;
+          const classe = diasAte <= 0 ? 'urgente-vencido' : '';
+          return `
+            <div class="reparo-item urgente">
+              <div class="reparo-header">
+                <span class="reparo-titulo">🔴 ${r.contratoNome} - ${r.descricao}</span>
+                <span class="badge urgente">${diasAte <= 0 ? '⏰ VENCIDO!' : diasAte + 'd'}</span>
+              </div>
+              <div class="reparo-info">
+                <div><strong>Locatário:</strong> ${r.locatario}</div>
+                <div><strong>Responsável:</strong> ${r.responsavel}</div>
+                <div><strong>Vence:</strong> ${formatarData(r.dataLimite)}</div>
+              </div>
+              <div class="reparo-actions">
+                <button onclick="abrirModalDetalhes('${r.contratoId}', '${r._id}')">Detalhes</button>
+              </div>
+            </div>
+          `;
+        }).join('')
+        : '<div style="padding: 20px; text-align: center; color: #7f8c8d;">Nenhum reparo urgente próximo a vencer</div>';
+
+      document.getElementById('proximosVencer').innerHTML = htmlProximos;
+
+      // Lista completa de reparos
+      renderizarListaReparos(todosReparos);
     }
 
-    // ⚡ AGENDAMENTO INTELIGENTE
-    function abrirModalAgendamentoInteligente(id) {
-      const c = contratos.find(x => x._id === id);
+    function filtrarManutencao() {
+      carregarReparosDoLocalStorage();
+
+      let todosReparos = [];
+      Object.keys(reparos).forEach(contratoId => {
+        const c = contratos.find(x => x._id === contratoId);
+        if (c) {
+          const repsDoC = reparos[contratoId] || [];
+          repsDoC.forEach(rep => {
+            todosReparos.push({
+              ...rep,
+              contratoId,
+              contratoNome: c.contrato,
+              locatario: c.locatario
+            });
+          });
+        }
+      });
+
+      const urgencia = document.getElementById('filtroUrgencia').value;
+      const statusRep = document.getElementById('filtroStatusRep').value;
+
+      let filtrados = todosReparos;
+      if (urgencia) filtrados = filtrados.filter(r => r.urgencia === urgencia);
+      if (statusRep) filtrados = filtrados.filter(r => r.status === statusRep);
+
+      renderizarListaReparos(filtrados);
+    }
+
+    function renderizarListaReparos(reparos) {
+      const html = reparos.length > 0
+        ? reparos.map(rep => {
+          const urgenciaClass = rep.urgencia === 'URGENTE' ? 'urgente' : '';
+          let urgenciaLabel = '🟢 PEQUENA';
+          if (rep.urgencia === 'URGENTE') urgenciaLabel = '🔴 URGENTE';
+          if (rep.urgencia === 'MEDIA') urgenciaLabel = '🟡 MÉDIA';
+
+          let statusLabel = '⏳ Pendente';
+          if (rep.status === 'EM_ANDAMENTO') statusLabel = '🔨 Em Andamento';
+          if (rep.status === 'CONCLUIDO') statusLabel = '✅ Concluído';
+
+          return `
+            <div class="reparo-item ${urgenciaClass}">
+              <div class="reparo-header">
+                <span class="reparo-titulo">${rep.contratoNome} - ${rep.descricao}</span>
+                <span class="badge ${rep.urgencia.toLowerCase()}">${urgenciaLabel}</span>
+              </div>
+              <div class="reparo-info">
+                <div><strong>Locatário:</strong> ${rep.locatario}</div>
+                <div><strong>Status:</strong> ${statusLabel}</div>
+                <div><strong>Responsável:</strong> ${rep.responsavel}</div>
+                <div><strong>Custo:</strong> R$ ${rep.custo.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                <div><strong>Data-Limite:</strong> ${formatarData(rep.dataLimite)}</div>
+              </div>
+              <div class="reparo-actions">
+                <button onclick="abrirModalDetalhes('${rep.contratoId}', '${rep._id}')">Detalhes</button>
+                ${rep.status !== 'CONCLUIDO' ? `<button onclick="marcarComoConcluido('${rep.contratoId}', '${rep._id}')" style="background-color: #27ae60;">✅ Concluir</button>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('')
+        : '<div style="padding: 20px; text-align: center; color: #7f8c8d;">Nenhum reparo encontrado</div>';
+
+      document.getElementById('listaReparos').innerHTML = html;
+    }
+
+    function abrirModalReparo(contratoId) {
+      const c = contratos.find(x => x._id === contratoId);
       if (!c) return;
 
-      contratoAtualSelecionado = id;
+      contratoEmReparo = contratoId;
+      document.getElementById('rep-contrato').value = c.contrato;
+      document.getElementById('rep-locatario').value = c.locatario;
+      document.getElementById('rep-descricao').value = '';
+      document.getElementById('rep-urgencia').value = '';
+      document.getElementById('rep-custo').value = '';
+      document.getElementById('rep-responsavel').value = '';
+      document.getElementById('rep-data-limite').value = '';
+      document.getElementById('rep-link-pleno').value = '';
+      document.getElementById('rep-notas').value = '';
 
-      document.getElementById('agend-contrato').value = c.contrato;
-      document.getElementById('agend-locatario').value = c.locatario;
-
-      // Propor vistoria para 1-2 dias depois
+      // Propor data limite baseado na urgência
       const hoje = new Date();
       const proposta = new Date(hoje);
-      proposta.setDate(proposta.getDate() + 2);
-      const dataProposta = proposta.toISOString().split('T')[0];
-      document.getElementById('agend-data').value = dataProposta;
-      document.getElementById('agend-vistoriador').value = '';
+      proposta.setDate(proposta.getDate() + 7);
+      document.getElementById('rep-data-limite').value = proposta.toISOString().split('T')[0];
 
-      document.getElementById('modalAgendamento').classList.add('show');
+      document.getElementById('modalReparo').classList.add('show');
     }
 
-    function fecharModalAgendamento() {
-      document.getElementById('modalAgendamento').classList.remove('show');
-      contratoAtualSelecionado = null;
+    function fecharModalReparo() {
+      document.getElementById('modalReparo').classList.remove('show');
+      contratoEmReparo = null;
     }
 
-    function confirmarAgendamento() {
-      if (!contratoAtualSelecionado) return;
+    function salvarReparo() {
+      if (!contratoEmReparo) return;
 
-      const data = document.getElementById('agend-data').value;
-      const vistoriador = document.getElementById('agend-vistoriador').value;
+      const descricao = document.getElementById('rep-descricao').value;
+      const urgencia = document.getElementById('rep-urgencia').value;
+      const custo = parseFloat(document.getElementById('rep-custo').value) || 0;
+      const responsavel = document.getElementById('rep-responsavel').value;
+      const dataLimite = document.getElementById('rep-data-limite').value;
+      const linkPleno = document.getElementById('rep-link-pleno').value;
+      const notas = document.getElementById('rep-notas').value;
 
-      if (!data || !vistoriador) {
-        mostrarToast('❌ Preencha todos os campos!', true);
+      if (!descricao || !urgencia || !responsavel || !dataLimite) {
+        mostrarToast('❌ Preencha todos os campos obrigatórios!', true);
         return;
       }
 
-      const dados = {
-        agendamentoVistoria: converterDataParaISO(data),
-        responsavelVistoria: vistoriador,
-        status: 'agendada'
+      carregarReparosDoLocalStorage();
+
+      if (!reparos[contratoEmReparo]) {
+        reparos[contratoEmReparo] = [];
+      }
+
+      const novoReparo = {
+        _id: Date.now().toString(),
+        descricao,
+        urgencia,
+        custo,
+        responsavel,
+        dataLimite: new Date(dataLimite + 'T00:00:00Z').toISOString(),
+        linkPleno,
+        notas,
+        status: 'PENDENTE',
+        dataCriacao: new Date().toISOString(),
+        historico: [`${new Date().toLocaleString('pt-BR')} - Reparo registrado`]
       };
 
-      fetch(`${API_URL}/contracts/${contratoAtualSelecionado}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(dados)
-      })
-      .then(r => r.json())
-      .then(data => {
-        if (data.sucesso) {
-          mostrarToast('✅ Vistoria agendada automaticamente!');
-          fecharModalAgendamento();
-          carregarDados();
-        } else {
-          mostrarToast('❌ Erro ao agendar!', true);
-        }
-      })
-      .catch(erro => {
-        console.error('Erro:', erro);
-        mostrarToast('❌ Erro ao agendar!', true);
-      });
+      reparos[contratoEmReparo].push(novoReparo);
+      salvarReparosNoLocalStorage();
+
+      mostrarToast('✅ Reparo registrado com sucesso!');
+      fecharModalReparo();
+      atualizarManutencao();
+      atualizarDashboard();
+
+      // Notificação WhatsApp (simulada)
+      notificarWhatsApp(`Novo reparo registrado: ${descricao} (${urgencia})`);
     }
 
-    // 📄 GERAÇÃO DE PDF (OPÇÃO 1)
-    function gerarRelatorioPDF(id) {
-      const c = contratos.find(x => x._id === id);
-      if (!c) return;
+    function abrirModalDetalhes(contratoId, reparoId) {
+      carregarReparosDoLocalStorage();
 
-      const html = `
-        <div class="relatorio-pdf show">
-          <div class="relatorio-header">
-            <div class="relatorio-titulo">TERMO DE DESOCUPAÇÃO</div>
-            <div style="font-size: 11px; color: #666;">Integrativa Negócios Imobiliários Ltda</div>
-          </div>
+      const repsDoC = reparos[contratoId] || [];
+      const reparo = repsDoC.find(r => r._id === reparoId);
+      const contrato = contratos.find(c => c._id === contratoId);
 
-          <div class="relatorio-info">
-            <div class="relatorio-info-item">
-              <div class="relatorio-info-label">Contrato:</div>
-              <div class="relatorio-info-value">${c.contrato}</div>
-            </div>
-            <div class="relatorio-info-item">
-              <div class="relatorio-info-label">Data de Emissão:</div>
-              <div class="relatorio-info-value">${new Date().toLocaleDateString('pt-BR')}</div>
-            </div>
-            <div class="relatorio-info-item">
-              <div class="relatorio-info-label">Locatário:</div>
-              <div class="relatorio-info-value">${c.locatario}</div>
-            </div>
-            <div class="relatorio-info-item">
-              <div class="relatorio-info-label">Endereço:</div>
-              <div class="relatorio-info-value">${c.endereco || '-'}</div>
-            </div>
-          </div>
+      if (!reparo || !contrato) return;
 
-          <div class="relatorio-section">
-            <div class="relatorio-section-titulo">📋 CRONOLOGIA DE EVENTOS</div>
-            <div class="relatorio-cronologia">
-              ${c.comunicacaoInquilino ? `
-                <div class="relatorio-cronologia-item">
-                  <div class="relatorio-cronologia-data">${formatarData(c.comunicacaoInquilino)}</div>
-                  <div class="relatorio-cronologia-descricao">Comunicação de Desocupação (${c.responsavelComunicacao || 'N/A'})</div>
-                </div>
-              ` : ''}
-              ${c.agendamentoVistoria ? `
-                <div class="relatorio-cronologia-item">
-                  <div class="relatorio-cronologia-data">${formatarData(c.agendamentoVistoria)}</div>
-                  <div class="relatorio-cronologia-descricao">Vistoria Agendada (${c.responsavelVistoria || 'N/A'})</div>
-                </div>
-              ` : ''}
-              ${c.entregaChaves ? `
-                <div class="relatorio-cronologia-item">
-                  <div class="relatorio-cronologia-data">${formatarData(c.entregaChaves)}</div>
-                  <div class="relatorio-cronologia-descricao">Entrega de Chaves (${c.responsavelEntregaChaves || 'N/A'})</div>
-                </div>
-              ` : ''}
-              ${c.finalizado === 'sim' ? `
-                <div class="relatorio-cronologia-item">
-                  <div class="relatorio-cronologia-data">${new Date().toLocaleDateString('pt-BR')}</div>
-                  <div class="relatorio-cronologia-descricao">Desocupação Finalizada (${c.responsavelFinalizacao || 'N/A'})</div>
-                </div>
-              ` : ''}
-            </div>
-          </div>
+      reparoAtualSelecionado = { contratoId, reparoId };
 
-          <div class="relatorio-section">
-            <div class="relatorio-section-titulo">⚠️ INFORMAÇÕES ADICIONAIS</div>
-            <div style="font-size: 12px; line-height: 1.6;">
-              <strong>Status Chaves:</strong> ${obterLabelStatus(c.statusChaves)}<br>
-              <strong>Reparos Constatados:</strong> ${c.reparosConstatados === 'sim' ? 'Sim ⚠️' : 'Não ✅'}<br>
-              <strong>Status:</strong> ${c.finalizado === 'sim' ? 'Finalizado ✅' : 'Em Andamento ⏳'}
-            </div>
-          </div>
-
-          <div class="relatorio-assinatura">
-            <p>Este documento foi gerado automaticamente pelo sistema de gerenciamento de desocupações Integrativa.</p>
-            <div class="relatorio-assinatura-linha"></div>
-            <div style="font-weight: bold; font-size: 12px;">Assinado Digitalmente</div>
-            <div style="font-size: 11px; color: #666;">${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR')}</div>
-          </div>
-        </div>
-      `;
-
-      document.getElementById('relatorioTemporario').innerHTML = html;
-
-      const element = document.getElementById('relatorioTemporario').querySelector('.relatorio-pdf');
+      document.getElementById('det-contrato').textContent = contrato.contrato;
+      document.getElementById('det-locatario').textContent = contrato.locatario;
+      document.getElementById('det-descricao').textContent = reparo.descricao;
       
-      const opt = {
-        margin: 10,
-        filename: `Termo-Desocupacao-${c.contrato}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
-      };
+      let urgenciaLabel = '🟢 PEQUENA';
+      if (reparo.urgencia === 'URGENTE') urgenciaLabel = '🔴 URGENTE';
+      if (reparo.urgencia === 'MEDIA') urgenciaLabel = '🟡 MÉDIA';
+      document.getElementById('det-urgencia').textContent = urgenciaLabel;
+      
+      document.getElementById('det-custo').textContent = reparo.custo.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+      document.getElementById('det-responsavel').textContent = reparo.responsavel;
+      document.getElementById('det-data-limite').textContent = formatarData(reparo.dataLimite);
+      
+      let statusLabel = '⏳ Pendente';
+      if (reparo.status === 'EM_ANDAMENTO') statusLabel = '🔨 Em Andamento';
+      if (reparo.status === 'CONCLUIDO') statusLabel = '✅ Concluído';
+      document.getElementById('det-status').textContent = statusLabel;
+      
+      document.getElementById('det-notas').textContent = reparo.notas || '(nenhuma nota)';
+      
+      const historico = (reparo.historico || []).join('<br>');
+      document.getElementById('det-historico').innerHTML = historico;
+      
+      if (reparo.linkPleno) {
+        document.getElementById('det-link').href = reparo.linkPleno;
+        document.getElementById('det-link').style.display = 'inline';
+      } else {
+        document.getElementById('det-link').style.display = 'none';
+      }
 
-      html2pdf().set(opt).from(element).save();
-      mostrarToast('✅ PDF gerado e baixando!');
+      document.getElementById('modalDetalhes').classList.add('show');
+    }
+
+    function fecharModalDetalhes() {
+      document.getElementById('modalDetalhes').classList.remove('show');
+      reparoAtualSelecionado = null;
+    }
+
+    function marcarComoConcluido(contratoId, reparoId) {
+      if (!reparoAtualSelecionado && (!contratoId || !reparoId)) {
+        mostrarToast('❌ Erro ao marcar como concluído', true);
+        return;
+      }
+
+      if (reparoAtualSelecionado) {
+        contratoId = reparoAtualSelecionado.contratoId;
+        reparoId = reparoAtualSelecionado.reparoId;
+      }
+
+      carregarReparosDoLocalStorage();
+
+      const repsDoC = reparos[contratoId] || [];
+      const reparo = repsDoC.find(r => r._id === reparoId);
+
+      if (!reparo) return;
+
+      reparo.status = 'CONCLUIDO';
+      reparo.dataConclusao = new Date().toISOString();
+      reparo.historico = reparo.historico || [];
+      reparo.historico.push(`${new Date().toLocaleString('pt-BR')} - Marcado como concluído`);
+
+      salvarReparosNoLocalStorage();
+
+      mostrarToast('✅ Reparo marcado como concluído!');
+      fecharModalDetalhes();
+      atualizarManutencao();
+      atualizarDashboard();
+
+      notificarWhatsApp(`Reparo concluído: ${reparo.descricao}`);
+    }
+
+    function notificarWhatsApp(msg) {
+      // Simulado - em produção integraria com Evolution API
+      console.log('📱 WhatsApp notificação:', msg);
     }
 
     function recarregarDados() {
@@ -1657,6 +1418,7 @@
       document.body.classList.add('dark-mode');
     }
 
+    carregarReparosDoLocalStorage();
     carregarDados();
   </script>
 </body>
