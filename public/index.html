@@ -361,12 +361,8 @@
     }
 
     @keyframes slideIn {
-      from {
-        transform: translateX(400px);
-      }
-      to {
-        transform: translateX(0);
-      }
+      from { transform: translateX(400px); }
+      to { transform: translateX(0); }
     }
 
     .modal {
@@ -558,7 +554,6 @@
 
       .version-badge {
         margin-left: 0;
-        margin-top: 10px;
       }
 
       .nav-tabs {
@@ -582,7 +577,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25 🚀 MongoDB Sync</div>
+    <div class="version-badge">V25.1 🚀 MongoDB Sync Corrigida</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -894,12 +889,14 @@
     function carregarDados() {
       document.getElementById('loading').style.display = 'block';
       document.getElementById('tabela').style.display = 'none';
+      atualizarSyncStatus('syncing');
 
       fetch(`${API_URL}/contracts`)
         .then(r => r.json())
         .then(data => {
+          console.log('📦 Dados recebidos:', data);
           contratos = data.contratos || [];
-          console.log('✅ V25 - Contratos carregados:', contratos.length);
+          console.log('✅ V25.1 - Contratos carregados:', contratos.length);
           
           atualizarDashboard();
           atualizarAlertas();
@@ -909,7 +906,7 @@
           atualizarSyncStatus('synced');
         })
         .catch(erro => {
-          console.error('❌ Erro:', erro);
+          console.error('❌ Erro ao carregar dados:', erro);
           mostrarToast('❌ Erro ao carregar dados!', true);
           document.getElementById('loading').style.display = 'none';
           document.getElementById('tabela').style.display = 'table';
@@ -1373,7 +1370,7 @@
       });
 
       if (chavasEntregues.length > 0) {
-        alertasHTML += `<div class="pdf-alert success">
+        alertasHTML += `<div style="border-left: 4px solid #27ae60; background: #e6ffe6; padding: 10px; margin-bottom: 10px; font-size: 9pt;">
           <strong>🔑 CHAVES ENTREGUES (esta semana):</strong><br/>
           ${chavasEntregues.map(c => `• ${c.contrato} (${c.locatario}) - ${formatarDataCompleta(c.entregaChaves)}`).join('<br/>')}
         </div>`;
@@ -1386,7 +1383,7 @@
       });
 
       if (vistoriasProximas.length > 0) {
-        alertasHTML += `<div class="pdf-alert">
+        alertasHTML += `<div style="border-left: 4px solid #ffc107; background: #fff9e6; padding: 10px; margin-bottom: 10px; font-size: 9pt;">
           <strong>⏰ VISTORIAS PRÓXIMAS (7 dias):</strong><br/>
           ${vistoriasProximas.map(c => {
             const dias = calcularDiasAte(c.agendamentoVistoria);
@@ -1402,7 +1399,7 @@
       });
 
       if (diasAltos.length > 0) {
-        alertasHTML += `<div class="pdf-alert danger">
+        alertasHTML += `<div style="border-left: 4px solid #e74c3c; background: #ffe6e6; padding: 10px; margin-bottom: 10px; font-size: 9pt;">
           <strong>📅 DESOCUPAÇÕES LENTAS (45+ dias):</strong><br/>
           ${diasAltos.map(c => {
             const dias = calcularDiasDesde(c.comunicacaoInquilino);
@@ -1423,27 +1420,27 @@
       });
 
       if (repEmManutencao.length > 0) {
-        alertasHTML += `<div class="pdf-alert danger">
+        alertasHTML += `<div style="border-left: 4px solid #e74c3c; background: #ffe6e6; padding: 10px; margin-bottom: 10px; font-size: 9pt;">
           <strong>🚨 MANUTENÇÃO BLOQUEANDO ALUGUEL:</strong><br/>
           ${repEmManutencao.join('<br/>')}
         </div>`;
       }
 
       if (alertasHTML === '') {
-        alertasHTML = '<div class="pdf-alert success"><strong>✅ Tudo em dia!</strong> Nenhum alerta crítico.</div>';
+        alertasHTML = '<div style="border-left: 4px solid #27ae60; background: #e6ffe6; padding: 10px; margin-bottom: 10px; font-size: 9pt;"><strong>✅ Tudo em dia!</strong> Nenhum alerta crítico.</div>';
       }
 
       const tabelaHTML = `
-        <table class="pdf-table">
+        <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9pt;">
           <thead>
-            <tr>
-              <th>Contrato</th>
-              <th>Locatário</th>
-              <th>Comunicação</th>
-              <th>Vistoria</th>
-              <th>Ent.Chaves</th>
-              <th>Status</th>
-              <th>Reparos</th>
+            <tr style="background: #2c5aa0; color: white;">
+              <th style="border: 1px solid #999; padding: 8px; text-align: left;">Contrato</th>
+              <th style="border: 1px solid #999; padding: 8px; text-align: left;">Locatário</th>
+              <th style="border: 1px solid #999; padding: 8px; text-align: left;">Comunicação</th>
+              <th style="border: 1px solid #999; padding: 8px; text-align: left;">Vistoria</th>
+              <th style="border: 1px solid #999; padding: 8px; text-align: left;">Ent.Chaves</th>
+              <th style="border: 1px solid #999; padding: 8px; text-align: left;">Status</th>
+              <th style="border: 1px solid #999; padding: 8px; text-align: left;">Reparos</th>
             </tr>
           </thead>
           <tbody>
@@ -1452,14 +1449,14 @@
               const totalReps = reparos.filter(r => r.status !== 'CONCLUIDO').length;
               const reparosTxt = totalReps > 0 ? totalReps + ' rep.' : 'Nenhum';
               return `
-                <tr>
-                  <td>${c.contrato}</td>
-                  <td>${c.locatario}</td>
-                  <td>${formatarDataCompleta(c.comunicacaoInquilino)}</td>
-                  <td>${formatarDataCompleta(c.agendamentoVistoria)}</td>
-                  <td>${formatarDataCompleta(c.entregaChaves)}</td>
-                  <td>${c.statusChaves === 'recebidas' ? 'OK' : 'Pendente'}</td>
-                  <td>${reparosTxt}</td>
+                <tr style="background: ${contratos.indexOf(c) % 2 === 0 ? '#f9f9f9' : 'white'};">
+                  <td style="border: 1px solid #ddd; padding: 6px 8px;">${c.contrato}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px 8px;">${c.locatario}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px 8px;">${formatarDataCompleta(c.comunicacaoInquilino)}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px 8px;">${formatarDataCompleta(c.agendamentoVistoria)}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px 8px;">${formatarDataCompleta(c.entregaChaves)}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px 8px;">${c.statusChaves === 'recebidas' ? 'OK' : 'Pendente'}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px 8px;">${reparosTxt}</td>
                 </tr>
               `;
             }).join('')}
@@ -1502,7 +1499,7 @@
           ${tabelaHTML}
 
           <p style="margin-top: 40px; font-size: 8pt; color: #999; text-align: center;">
-            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25
+            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.1
           </p>
         </div>
       `;
