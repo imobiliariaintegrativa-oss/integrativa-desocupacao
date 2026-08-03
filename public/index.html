@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Integrativa Desocupação - Painel de Gerenciamento</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -178,6 +179,38 @@
       line-height: 1.5;
     }
 
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .kpi-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: var(--white);
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .kpi-card.total { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+    .kpi-card.chaves { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+    .kpi-card.finalizados { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+    .kpi-card.manutencao { background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%); }
+
+    .kpi-card h3 {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-bottom: 10px;
+    }
+
+    .kpi-card .number {
+      font-size: 32px;
+      font-weight: bold;
+    }
+
     .controls {
       display: flex;
       gap: 10px;
@@ -185,7 +218,7 @@
       flex-wrap: wrap;
     }
 
-    input, select, button {
+    input, select, button, textarea {
       padding: 10px 15px;
       border: 1px solid var(--border);
       border-radius: 5px;
@@ -193,7 +226,7 @@
       font-family: inherit;
     }
 
-    input, select {
+    input, select, textarea {
       min-width: 150px;
     }
 
@@ -383,6 +416,17 @@
       font-size: 12px;
     }
 
+    .form-error {
+      border-color: #e74c3c !important;
+      background: #ffebee;
+    }
+
+    .error-message {
+      color: #e74c3c;
+      font-size: 11px;
+      margin-top: 3px;
+    }
+
     .modal-buttons {
       display: flex;
       gap: 10px;
@@ -486,6 +530,10 @@
       th, td {
         padding: 6px 4px;
       }
+
+      .kpi-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
     }
   </style>
 </head>
@@ -504,9 +552,33 @@
   <div class="container">
     <!-- ABA DASHBOARD -->
     <div id="dashboard" class="tab-content active">
-      <h2 class="section-title">📊 ALERTAS CRÍTICOS</h2>
+      <h2 class="section-title">📊 RESUMO DA DESOCUPAÇÃO</h2>
 
+      <div class="kpi-grid">
+        <div class="kpi-card total">
+          <h3>📋 Total de Contratos</h3>
+          <div class="number" id="totalContratos">0</div>
+        </div>
+        <div class="kpi-card chaves">
+          <h3>🔑 Chaves Recebidas</h3>
+          <div class="number" id="chavesRecebidas">0</div>
+        </div>
+        <div class="kpi-card finalizados">
+          <h3>✅ Finalizados</h3>
+          <div class="number" id="finalizados">0</div>
+        </div>
+        <div class="kpi-card manutencao">
+          <h3>🚨 Em Manutenção</h3>
+          <div class="number" id="emManutencao">0</div>
+        </div>
+      </div>
+
+      <h2 class="section-title">📊 ALERTAS CRÍTICOS</h2>
       <div id="alertasContainer"></div>
+
+      <div class="controls">
+        <button onclick="exportarParaExcel()" style="background-color: #27ae60; font-size: 13px;">📊 Exportar Excel</button>
+      </div>
     </div>
 
     <!-- ABA CONTRATOS -->
@@ -537,6 +609,61 @@
           </tbody>
         </table>
       </div>
+    </div>
+  </div>
+
+  <!-- MODAL: EDITAR CONTRATO -->
+  <div id="modalEditar" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">✏️ Editar Contrato</div>
+      
+      <form id="formEditar">
+        <div class="modal-form-group">
+          <label>📋 Contrato:</label>
+          <input type="text" id="edit-contrato" readonly>
+        </div>
+
+        <div class="modal-form-group">
+          <label>👤 Locatário:</label>
+          <input type="text" id="edit-locatario">
+        </div>
+
+        <div class="modal-form-group">
+          <label>📍 Endereço:</label>
+          <input type="text" id="edit-endereco">
+        </div>
+
+        <div class="modal-form-group">
+          <label>📱 Comunicação Inquilino:</label>
+          <input type="date" id="edit-comunicacao">
+        </div>
+
+        <div class="modal-form-group">
+          <label>📅 Agendamento Vistoria:</label>
+          <input type="date" id="edit-agendamento">
+          <div id="erro-agendamento" class="error-message"></div>
+        </div>
+
+        <div class="modal-form-group">
+          <label>🔑 Entrega de Chaves:</label>
+          <input type="date" id="edit-entrega">
+          <div id="erro-entrega" class="error-message"></div>
+        </div>
+
+        <div class="modal-form-group">
+          <label>🔑 Status Chaves:</label>
+          <select id="edit-statusChaves">
+            <option value="pendente">⏳ Pendente</option>
+            <option value="recebidas">✅ Recebidas</option>
+            <option value="nao-recebidas">❌ Não Recebidas</option>
+          </select>
+        </div>
+
+        <div class="modal-buttons">
+          <button type="button" class="btn-primary" onclick="salvarEdicao()">💾 Salvar</button>
+          <button type="button" class="btn-secondary" onclick="fecharModalEditar()">❌ Cancelar</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -599,6 +726,7 @@
     const API_URL = window.location.hostname === 'localhost' ? '/api' : 'https://integrativa-desocupacao.onrender.com/api';
     let contratos = [];
     let reparos = {};
+    let contratoEmEdicao = null;
     let contratoEmReparo = null;
 
     function mudarAba(abaName) {
@@ -623,6 +751,17 @@
         let dataParts = dataISO.split('T')[0].split('-');
         if (dataParts.length !== 3) return '-';
         return `${dataParts[2]}/${dataParts[1]}`;
+      } catch (e) {
+        return '-';
+      }
+    }
+
+    function formatarDataCompleta(dataISO) {
+      if (!dataISO || dataISO === '' || dataISO === 'null') return '-';
+      try {
+        let dataParts = dataISO.split('T')[0].split('-');
+        if (dataParts.length !== 3) return '-';
+        return `${dataParts[2]}/${dataParts[1]}/${dataParts[0]}`;
       } catch (e) {
         return '-';
       }
@@ -672,6 +811,28 @@
       }
     }
 
+    function validarSequenciaDatas(comunicacao, vistoria, entrega) {
+      const erros = {};
+
+      if (vistoria && comunicacao && new Date(vistoria) < new Date(comunicacao)) {
+        erros.vistoria = '⚠️ Vistoria não pode ser antes da comunicação!';
+      }
+
+      if (entrega && vistoria && new Date(entrega) < new Date(vistoria)) {
+        erros.entrega = '⚠️ Entrega não pode ser antes da vistoria!';
+      }
+
+      if (vistoria) {
+        const hoje = new Date();
+        const dataVistoria = new Date(vistoria);
+        if (dataVistoria < hoje && calcularDiasAte(vistoria) < 0) {
+          erros.vistoria = '🔴 VENCIDA! Vistoria no passado!';
+        }
+      }
+
+      return erros;
+    }
+
     function carregarDados() {
       document.getElementById('loading').style.display = 'block';
       document.getElementById('tabela').style.display = 'none';
@@ -680,9 +841,10 @@
         .then(r => r.json())
         .then(data => {
           contratos = data.contratos || [];
-          console.log('✅ V22.1 - Contratos carregados:', contratos.length);
+          console.log('✅ V23 - Contratos carregados:', contratos.length);
           
           carregarReparosDoLocalStorage();
+          atualizarDashboard();
           atualizarAlertas();
           atualizarTabela();
           document.getElementById('loading').style.display = 'none';
@@ -709,10 +871,29 @@
       localStorage.setItem('integrativa_reparos', JSON.stringify(reparos));
     }
 
+    function atualizarDashboard() {
+      const total = contratos.length;
+      const chaves = contratos.filter(c => c.statusChaves === 'recebidas').length;
+      const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
+
+      let emManutencao = 0;
+      Object.keys(reparos).forEach(cid => {
+        const repsDoC = reparos[cid] || [];
+        if (repsDoC.some(r => r.status !== 'CONCLUIDO')) {
+          emManutencao++;
+        }
+      });
+
+      document.getElementById('totalContratos').textContent = total;
+      document.getElementById('chavesRecebidas').textContent = chaves;
+      document.getElementById('finalizados').textContent = finalizados;
+      document.getElementById('emManutencao').textContent = emManutencao;
+    }
+
     function atualizarAlertas() {
       let alerts = [];
 
-      // ALERTA 1: Chaves entregues (esta semana)
+      // ALERTA 1: Chaves entregues
       const chavasEntregues = contratos.filter(c => {
         if (!c.entregaChaves) return false;
         const dias = calcularDiasAte(c.entregaChaves);
@@ -728,7 +909,7 @@
         });
       }
 
-      // ALERTA 2: Vistorias próximas (7 dias)
+      // ALERTA 2: Vistorias próximas
       const vistoriasProximas = contratos.filter(c => {
         if (!c.agendamentoVistoria) return false;
         const dias = calcularDiasAte(c.agendamentoVistoria);
@@ -747,7 +928,7 @@
         });
       }
 
-      // ALERTA 3: Dias para entrega (desde comunicação)
+      // ALERTA 3: Desocupações lentas
       const diasAltos = contratos.filter(c => {
         if (!c.comunicacaoInquilino) return false;
         const dias = calcularDiasDesde(c.comunicacaoInquilino);
@@ -789,7 +970,6 @@
         });
       }
 
-      // Renderizar alertas
       const html = alerts.length > 0
         ? alerts.map(a => `
           <div class="alert-box ${a.tipo}">
@@ -800,7 +980,7 @@
             </div>
           </div>
         `).join('')
-        : '<div class="alert-box success"><div class="alert-icon">✅</div><div class="alert-content"><h4>Tudo em dia!</h4><p>Nenhum alerta crítico no momento.</p></div></div>';
+        : '<div class="alert-box success"><div class="alert-icon">✅</div><div class="alert-content"><h4>Tudo em dia!</h4><p>Nenhum alerta crítico.</p></div></div>';
 
       document.getElementById('alertasContainer').innerHTML = html;
     }
@@ -862,6 +1042,96 @@
       }).join('');
     }
 
+    function abrirModalEditar(contratoId) {
+      const c = contratos.find(x => x._id === contratoId);
+      if (!c) return;
+
+      contratoEmEdicao = contratoId;
+
+      document.getElementById('edit-contrato').value = c.contrato;
+      document.getElementById('edit-locatario').value = c.locatario;
+      document.getElementById('edit-endereco').value = c.endereco || '';
+      document.getElementById('edit-comunicacao').value = c.comunicacaoInquilino ? c.comunicacaoInquilino.split('T')[0] : '';
+      document.getElementById('edit-agendamento').value = c.agendamentoVistoria ? c.agendamentoVistoria.split('T')[0] : '';
+      document.getElementById('edit-entrega').value = c.entregaChaves ? c.entregaChaves.split('T')[0] : '';
+      document.getElementById('edit-statusChaves').value = c.statusChaves || 'pendente';
+
+      // Limpar mensagens de erro
+      document.getElementById('erro-agendamento').textContent = '';
+      document.getElementById('erro-entrega').textContent = '';
+      document.getElementById('edit-agendamento').classList.remove('form-error');
+      document.getElementById('edit-entrega').classList.remove('form-error');
+
+      document.getElementById('modalEditar').classList.add('show');
+    }
+
+    function fecharModalEditar() {
+      document.getElementById('modalEditar').classList.remove('show');
+      contratoEmEdicao = null;
+    }
+
+    function salvarEdicao() {
+      if (!contratoEmEdicao) return;
+
+      const comunicacao = document.getElementById('edit-comunicacao').value;
+      const agendamento = document.getElementById('edit-agendamento').value;
+      const entrega = document.getElementById('edit-entrega').value;
+
+      // Validar sequência de datas
+      const erros = validarSequenciaDatas(comunicacao, agendamento, entrega);
+
+      // Limpar mensagens anteriores
+      document.getElementById('erro-agendamento').textContent = '';
+      document.getElementById('erro-entrega').textContent = '';
+      document.getElementById('edit-agendamento').classList.remove('form-error');
+      document.getElementById('edit-entrega').classList.remove('form-error');
+
+      // Mostrar erros
+      if (erros.vistoria) {
+        document.getElementById('erro-agendamento').textContent = erros.vistoria;
+        document.getElementById('edit-agendamento').classList.add('form-error');
+      }
+
+      if (erros.entrega) {
+        document.getElementById('erro-entrega').textContent = erros.entrega;
+        document.getElementById('edit-entrega').classList.add('form-error');
+      }
+
+      if (Object.keys(erros).length > 0) {
+        mostrarToast('❌ Verifique as datas!', true);
+        return;
+      }
+
+      const dados = {
+        locatario: document.getElementById('edit-locatario').value,
+        endereco: document.getElementById('edit-endereco').value,
+        comunicacaoInquilino: comunicacao ? new Date(comunicacao + 'T00:00:00Z').toISOString() : null,
+        agendamentoVistoria: agendamento ? new Date(agendamento + 'T00:00:00Z').toISOString() : null,
+        entregaChaves: entrega ? new Date(entrega + 'T00:00:00Z').toISOString() : null,
+        statusChaves: document.getElementById('edit-statusChaves').value
+      };
+
+      fetch(`${API_URL}/contracts/${contratoEmEdicao}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.sucesso) {
+          mostrarToast('✅ Contrato atualizado!');
+          fecharModalEditar();
+          carregarDados();
+        } else {
+          mostrarToast('❌ Erro ao atualizar!', true);
+        }
+      })
+      .catch(erro => {
+        console.error('Erro:', erro);
+        mostrarToast('❌ Erro ao atualizar!', true);
+      });
+    }
+
     function abrirModalReparo(contratoId) {
       const c = contratos.find(x => x._id === contratoId);
       if (!c) return;
@@ -872,7 +1142,6 @@
       document.getElementById('rep-urgencia').value = '';
       document.getElementById('rep-responsavel').value = '';
 
-      // Propor data-limite em 7 dias
       const hoje = new Date();
       const proposta = new Date(hoje);
       proposta.setDate(proposta.getDate() + 7);
@@ -962,7 +1231,7 @@
               <span class="reparo-label">Responsável:</span> ${rep.responsavel}
             </div>
             <div class="reparo-linha">
-              <span class="reparo-label">Vence:</span> ${formatarData(rep.dataLimite)}
+              <span class="reparo-label">Vence:</span> ${formatarDataCompleta(rep.dataLimite)}
             </div>
             <div style="margin-top: 8px;">
               ${rep.status !== 'CONCLUIDO' 
@@ -1012,8 +1281,60 @@
       }
     }
 
-    function abrirModalEditar(contratoId) {
-      alert('Editar contrato - implementar em V23');
+    function exportarParaExcel() {
+      carregarReparosDoLocalStorage();
+
+      // Preparar dados da planilha
+      const dados = [];
+      dados.push(['📊 RELATÓRIO DE DESOCUPAÇÃO - ' + new Date().toLocaleDateString('pt-BR')]);
+      dados.push([]);
+
+      // Resumo
+      const total = contratos.length;
+      const chaves = contratos.filter(c => c.statusChaves === 'recebidas').length;
+      const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
+      let emManutencao = 0;
+      Object.keys(reparos).forEach(cid => {
+        const repsDoC = reparos[cid] || [];
+        if (repsDoC.some(r => r.status !== 'CONCLUIDO')) {
+          emManutencao++;
+        }
+      });
+
+      dados.push(['RESUMO EXECUTIVO']);
+      dados.push(['Total de Contratos', total]);
+      dados.push(['Chaves Recebidas', chaves]);
+      dados.push(['Finalizados', finalizados]);
+      dados.push(['Em Manutenção', emManutencao]);
+      dados.push([]);
+
+      // Detalhes de contratos
+      dados.push(['Contrato', 'Locatário', 'Endereço', 'Comunicação', 'Vistoria', 'Ent.Chaves', 'Status', 'Reparos']);
+      contratos.forEach(c => {
+        const repsDoC = reparos[c._id] || [];
+        const totalReps = repsDoC.filter(r => r.status !== 'CONCLUIDO').length;
+        const reparosTxt = totalReps > 0 ? totalReps + ' reparo(s)' : 'Nenhum';
+
+        dados.push([
+          c.contrato,
+          c.locatario,
+          c.endereco || '-',
+          formatarDataCompleta(c.comunicacaoInquilino),
+          formatarDataCompleta(c.agendamentoVistoria),
+          formatarDataCompleta(c.entregaChaves),
+          c.statusChaves === 'recebidas' ? 'Recebidas' : 'Pendente',
+          reparosTxt
+        ]);
+      });
+
+      // Criar workbook
+      const ws = XLSX.utils.aoa_to_sheet(dados);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Desocupação');
+
+      // Fazer download
+      XLSX.writeFile(wb, `Relatorio-Desocupacao-${new Date().toLocaleDateString('pt-BR').replace(/\//g, '-')}.xlsx`);
+      mostrarToast('✅ Excel exportado!');
     }
 
     function recarregarDados() {
