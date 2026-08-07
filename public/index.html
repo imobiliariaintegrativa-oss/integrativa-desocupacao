@@ -357,6 +357,13 @@
       font-weight: bold;
     }
 
+    .finalizado-row {
+      background: #d4edda !important;
+      border-left: 4px solid #28a745;
+      font-weight: bold;
+      opacity: 0.8;
+    }
+
     .toast {
       position: fixed;
       bottom: 20px;
@@ -602,7 +609,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.5.3 🚀 Novo Contrato Corrigido</div>
+    <div class="version-badge">V25.5.5 🚀 Finalizar Desocupação + Datas de Chaves</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -801,6 +808,24 @@
           </select>
         </div>
 
+        <div class="modal-form-group">
+          <label>📅 Data Retirada de Chaves (Vistoriador):</label>
+          <input type="date" id="edit-dataRetiradaChaves">
+        </div>
+
+        <div class="modal-form-group">
+          <label>📅 Data Devolução de Chaves (Após Reparos):</label>
+          <input type="date" id="edit-dataDevolucaoChaves">
+        </div>
+
+        <div class="modal-form-group">
+          <label>✅ Desocupação Finalizada:</label>
+          <select id="edit-finalizado">
+            <option value="nao">❌ Não</option>
+            <option value="sim">✅ SIM - FINALIZADA</option>
+          </select>
+        </div>
+
         <div class="modal-buttons">
           <button type="button" class="btn-primary" onclick="salvarEdicao()">💾 Salvar</button>
           <button type="button" class="btn-secondary" onclick="fecharModalEditar()">❌ Cancelar</button>
@@ -934,6 +959,41 @@
       console.log('✅ Filtro removido');
       mostrarToast('✅ Filtro removido', false);
       renderizarTabela(contratos);
+    }
+
+    // ========= DELETAR CONTRATO =========
+    function confirmarDelete(contratoId, nomeContrato) {
+      const confirmacao = confirm(`⚠️ TEM CERTEZA?\n\nDeseja deletar o contrato:\n${nomeContrato}\n\nEsta ação NÃO pode ser desfeita!`);
+      
+      if (confirmacao) {
+        deletarContrato(contratoId, nomeContrato);
+      }
+    }
+
+    function deletarContrato(contratoId, nomeContrato) {
+      atualizarSyncStatus('syncing');
+      
+      fetch(`${API_URL}/contracts/${contratoId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.sucesso || data.mensagem) {
+          console.log('✅ Contrato deletado:', nomeContrato);
+          mostrarToast(`🗑️ ${nomeContrato} deletado!`);
+          carregarDados();
+        } else {
+          console.error('❌ Erro ao deletar:', data);
+          mostrarToast('❌ Erro ao deletar contrato!', true);
+          atualizarSyncStatus('error');
+        }
+      })
+      .catch(erro => {
+        console.error('❌ Erro:', erro);
+        mostrarToast('❌ Erro ao deletar contrato!', true);
+        atualizarSyncStatus('error');
+      });
     }
 
     function mudarAba(abaName) {
@@ -1226,9 +1286,12 @@
         const totalReps = reparos.filter(r => r.status !== 'CONCLUIDO').length;
         const temUrgente = reparos.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
         const isDespejo = c.tipoDesocupacao === 'despejo';
+        const isFinalizado = c.finalizado === 'sim';
 
         let classeAlerta = '';
-        if (isDespejo) {
+        if (isFinalizado) {
+          classeAlerta = 'finalizado-row'; // Linha verde para finalizado
+        } else if (isDespejo) {
           classeAlerta = 'despejo-row'; // Classe especial para despejos
         } else if (temUrgente) {
           classeAlerta = 'alert-row';
@@ -1244,6 +1307,7 @@
         }
 
         let tipoTexto = isDespejo ? '⚖️ Despejo' : '🏠 Comum';
+        let statusTexto = isFinalizado ? '✅ FINALIZADO' : c.statusChaves === 'recebidas' ? '✅' : '⏳';
 
         return `
         <tr class="${classeAlerta}">
@@ -1253,12 +1317,13 @@
           <td>${formatarData(c.comunicacaoInquilino)}</td>
           <td>${formatarData(c.agendamentoVistoria)}</td>
           <td>${formatarData(c.entregaChaves)}</td>
-          <td>${c.statusChaves === 'recebidas' ? '✅' : '⏳'}</td>
+          <td>${statusTexto}</td>
           <td style="cursor: pointer;" onclick="abrirModalReparos('${c._id}')">${manuTexto}</td>
           <td>${tipoTexto}</td>
           <td>
             <button onclick="abrirModalReparo('${c._id}')" style="font-size: 10px; padding: 3px 6px;">➕</button>
             <button onclick="abrirModalEditar('${c._id}')" style="font-size: 10px; padding: 3px 6px; background-color: #3498db;">✏️</button>
+            <button onclick="confirmarDelete('${c._id}', '${c.contrato}')" style="font-size: 10px; padding: 3px 6px; background-color: #e74c3c; color: white;">🗑️</button>
           </td>
         </tr>
       `;
@@ -1356,6 +1421,9 @@
       document.getElementById('edit-entrega').value = c.entregaChaves ? c.entregaChaves.split('T')[0] : '';
       document.getElementById('edit-tipoDesocupacao').value = c.tipoDesocupacao || 'comum';
       document.getElementById('edit-statusChaves').value = c.statusChaves || 'pendente';
+      document.getElementById('edit-dataRetiradaChaves').value = c.dataRetiradaChaves ? c.dataRetiradaChaves.split('T')[0] : '';
+      document.getElementById('edit-dataDevolucaoChaves').value = c.dataDevolucaoChaves ? c.dataDevolucaoChaves.split('T')[0] : '';
+      document.getElementById('edit-finalizado').value = c.finalizado || 'nao';
 
       // Elementos de erro removidos em V25.3.1
       document.getElementById('modalEditar').classList.add('show');
@@ -1372,7 +1440,10 @@
       const comunicacao = document.getElementById('edit-comunicacao').value;
       const agendamento = document.getElementById('edit-agendamento').value;
       const entrega = document.getElementById('edit-entrega').value;
+      const dataRetirada = document.getElementById('edit-dataRetiradaChaves').value;
+      const dataDevolucao = document.getElementById('edit-dataDevolucaoChaves').value;
       const novoStatus = document.getElementById('edit-statusChaves').value;
+      const finalizado = document.getElementById('edit-finalizado').value;
 
       // Sem validação em V25.3.1 - Salvando diretamente
       atualizarSyncStatus('syncing');
@@ -1384,7 +1455,10 @@
         comunicacaoInquilino: comunicacao ? new Date(comunicacao + 'T00:00:00Z').toISOString() : null,
         agendamentoVistoria: agendamento ? new Date(agendamento + 'T00:00:00Z').toISOString() : null,
         entregaChaves: entrega ? new Date(entrega + 'T00:00:00Z').toISOString() : null,
-        statusChaves: novoStatus
+        dataRetiradaChaves: dataRetirada ? new Date(dataRetirada + 'T00:00:00Z').toISOString() : null,
+        dataDevolucaoChaves: dataDevolucao ? new Date(dataDevolucao + 'T00:00:00Z').toISOString() : null,
+        statusChaves: novoStatus,
+        finalizado: finalizado
       };
 
       fetch(`${API_URL}/contracts/${contratoEmEdicao}`, {
