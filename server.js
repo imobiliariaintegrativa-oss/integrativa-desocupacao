@@ -38,7 +38,15 @@ const contractSchema = new mongoose.Schema({
     dataLimite: Date,
     status: String,
     dataCriacao: { type: Date, default: Date.now },
-    dataConclusao: Date
+    dataConclusao: Date,
+    // Campos Prestador (V25.8)
+    prestadorNome: String,
+    prestadorTelefone: String,
+    prestadorEmail: String,
+    prestadorEspecialidade: String,
+    dataRetiradaChaves: Date,
+    dataDevolucaoChaves: Date,
+    valorServico: Number
   }],
   dataCriacao: { type: Date, default: Date.now },
   dataAtualizacao: { type: Date, default: Date.now }
