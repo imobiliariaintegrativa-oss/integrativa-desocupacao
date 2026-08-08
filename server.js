@@ -27,6 +27,8 @@ const contractSchema = new mongoose.Schema({
   dataDevolucaoChaves: Date,
   statusChaves: { type: String, enum: ['pendente', 'recebidas', 'nao-recebidas'], default: 'pendente' },
   finalizado: { type: String, enum: ['sim', 'nao'], default: 'nao' },
+  nomeVistoriador: String,
+  quantidadeChaves: { type: Number, default: 2 },
   responsavel: String,
   prioridade: { type: String, enum: ['baixa', 'media', 'alta', 'critica'], default: 'media' },
   statusImovel: { type: String, enum: ['em-desocupacao', 'em-reparo', 'pronto-para-aluguel', 'alugado', 'bloqueado'], default: 'em-desocupacao' },
