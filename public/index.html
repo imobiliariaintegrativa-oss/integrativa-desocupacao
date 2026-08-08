@@ -620,7 +620,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.9 🚀 Recibos Vistoriador + Cores Tabela</div>
+    <div class="version-badge">V25.10 🚀 Nome Vistoriador + Quantidade Chaves Dinâmica</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -946,6 +946,16 @@
             <option value="recebidas">✅ Recebidas</option>
             <option value="nao-recebidas">❌ Não Recebidas</option>
           </select>
+        </div>
+
+        <div class="modal-form-group">
+          <label>👁️ Nome do Vistoriador:</label>
+          <input type="text" id="edit-nomeVistoriador" placeholder="Ex: Maria Silva da Integrativa">
+        </div>
+
+        <div class="modal-form-group">
+          <label>🔑 Quantidade de Chaves:</label>
+          <input type="number" id="edit-quantidadeChaves" placeholder="Ex: 2" min="1" value="2">
         </div>
 
         <div class="modal-form-group">
@@ -1783,6 +1793,8 @@
         prioridade: document.getElementById('novo-prioridade').value,
         statusImovel: document.getElementById('novo-statusImovel').value,
         dataDisponivelAluguel: document.getElementById('novo-dataDisponivelAluguel').value ? new Date(document.getElementById('novo-dataDisponivelAluguel').value + 'T00:00:00Z').toISOString() : null,
+        nomeVistoriador: document.getElementById('novo-nomeVistoriador') ? document.getElementById('novo-nomeVistoriador').value : '',
+        quantidadeChaves: document.getElementById('novo-quantidadeChaves') ? parseInt(document.getElementById('novo-quantidadeChaves').value) || 2 : 2,
         reparos: []
       };
 
@@ -1843,6 +1855,8 @@
       document.getElementById('edit-prioridade').value = c.prioridade || 'media';
       document.getElementById('edit-statusImovel').value = c.statusImovel || 'em-desocupacao';
       document.getElementById('edit-dataDisponivelAluguel').value = c.dataDisponivelAluguel ? c.dataDisponivelAluguel.split('T')[0] : '';
+      document.getElementById('edit-nomeVistoriador').value = c.nomeVistoriador || '';
+      document.getElementById('edit-quantidadeChaves').value = c.quantidadeChaves || 2;
 
       // Elementos de erro removidos em V25.3.1
       document.getElementById('modalEditar').classList.add('show');
@@ -1867,6 +1881,8 @@
       const prioridade = document.getElementById('edit-prioridade').value;
       const statusImovel = document.getElementById('edit-statusImovel').value;
       const dataDisponivelAluguel = document.getElementById('edit-dataDisponivelAluguel').value;
+      const nomeVistoriador = document.getElementById('edit-nomeVistoriador').value;
+      const quantidadeChaves = parseInt(document.getElementById('edit-quantidadeChaves').value) || 2;
 
       // Sem validação em V25.3.1 - Salvando diretamente
       atualizarSyncStatus('syncing');
@@ -1885,7 +1901,9 @@
         responsavel: responsavel,
         prioridade: prioridade,
         statusImovel: statusImovel,
-        dataDisponivelAluguel: dataDisponivelAluguel ? new Date(dataDisponivelAluguel + 'T00:00:00Z').toISOString() : null
+        dataDisponivelAluguel: dataDisponivelAluguel ? new Date(dataDisponivelAluguel + 'T00:00:00Z').toISOString() : null,
+        nomeVistoriador: nomeVistoriador,
+        quantidadeChaves: quantidadeChaves
       };
 
       fetch(`${API_URL}/contracts/${contratoEmEdicao}`, {
@@ -2116,6 +2134,9 @@ Protocolo: REC-${new Date().getTime()}
         return;
       }
 
+      const nomeVistoriador = document.getElementById('edit-nomeVistoriador').value || 'Integrativa Negócios Imobiliários';
+      const quantidadeChaves = parseInt(document.getElementById('edit-quantidadeChaves').value) || 2;
+
       const agora = new Date().toLocaleString('pt-BR');
       const html = `
 <!DOCTYPE html>
@@ -2154,15 +2175,13 @@ body { font-family: Arial, sans-serif; padding: 20px; }
 <div class="secao">
   <div class="secao-titulo">🔑 DADOS DA RETIRADA DE CHAVES</div>
   <div class="linha"><div class="label">Data/Hora Retirada:</div><div class="valor"><strong>${dataRetirada}</strong></div></div>
-  <div class="linha"><div class="label">Quantidade de Chaves:</div><div class="valor">2 unidades (Porta Principal + Portaria)</div></div>
+  <div class="linha"><div class="label">Quantidade de Chaves:</div><div class="valor">${quantidadeChaves} unidades</div></div>
   <div class="linha"><div class="label">Estado das Chaves:</div><div class="valor">✅ Perfeito estado</div></div>
-  <div class="linha"><div class="label">Identificação:</div><div class="valor">Chave 1: Porta Principal | Chave 2: Portaria</div></div>
 </div>
 
 <div class="secao">
-  <div class="secao-titulo">👥 RESPONSÁVEIS PELA RETIRADA</div>
-  <div class="linha"><div class="label">Vistoriador/Empresa:</div><div class="valor">Integrativa Negócios Imobiliários</div></div>
-  <div class="linha"><div class="label">Locatário (Entrega):</div><div class="valor">${contrato.locatario}</div></div>
+  <div class="secao-titulo">👁️ VISTORIADOR RESPONSÁVEL</div>
+  <div class="linha"><div class="label">Nome/Empresa:</div><div class="valor"><strong>${nomeVistoriador}</strong></div></div>
 </div>
 
 <div style="background: #f0f8ff; padding: 15px; border-left: 4px solid #27ae60; margin: 20px 0;">
@@ -2216,6 +2235,9 @@ Protocolo: REC-RET-${new Date().getTime()}
         return;
       }
 
+      const nomeVistoriador = document.getElementById('edit-nomeVistoriador').value || 'Integrativa Negócios Imobiliários';
+      const quantidadeChaves = parseInt(document.getElementById('edit-quantidadeChaves').value) || 2;
+
       const agora = new Date().toLocaleString('pt-BR');
       const html = `
 <!DOCTYPE html>
@@ -2254,15 +2276,14 @@ body { font-family: Arial, sans-serif; padding: 20px; }
 <div class="secao">
   <div class="secao-titulo">🔑 DADOS DA DEVOLUÇÃO DE CHAVES</div>
   <div class="linha"><div class="label">Data/Hora Devolução:</div><div class="valor"><strong>${dataDevolucao}</strong></div></div>
-  <div class="linha"><div class="label">Quantidade de Chaves:</div><div class="valor">2 unidades (Porta Principal + Portaria)</div></div>
+  <div class="linha"><div class="label">Quantidade de Chaves:</div><div class="valor">${quantidadeChaves} unidades</div></div>
   <div class="linha"><div class="label">Estado das Chaves:</div><div class="valor">✅ Perfeito estado</div></div>
   <div class="linha"><div class="label">Observações Reparos:</div><div class="valor">Imóvel preparado e pronto para novo uso</div></div>
 </div>
 
 <div class="secao">
-  <div class="secao-titulo">👥 RESPONSÁVEIS PELA DEVOLUÇÃO</div>
-  <div class="linha"><div class="label">Vistoriador/Empresa:</div><div class="valor">Integrativa Negócios Imobiliários</div></div>
-  <div class="linha"><div class="label">Recebedor (Proprietário/Responsável):</div><div class="valor">${contrato.locatario}</div></div>
+  <div class="secao-titulo">👁️ VISTORIADOR RESPONSÁVEL</div>
+  <div class="linha"><div class="label">Nome/Empresa:</div><div class="valor"><strong>${nomeVistoriador}</strong></div></div>
 </div>
 
 <div style="background: #f0fff0; padding: 15px; border-left: 4px solid #3498db; margin: 20px 0;">
