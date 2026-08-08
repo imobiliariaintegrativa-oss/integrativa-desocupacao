@@ -364,6 +364,17 @@
       opacity: 0.8;
     }
 
+    /* Prioridade na tabela */
+    .prioridade-critica {
+      background: #fff5f5 !important;
+      border-left: 4px solid #c0392b;
+    }
+
+    .prioridade-alta {
+      background: #fff9f0 !important;
+      border-left: 4px solid #e67e22;
+    }
+
     .toast {
       position: fixed;
       bottom: 20px;
@@ -609,7 +620,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.5.5 🚀 Finalizar Desocupação + Datas de Chaves</div>
+    <div class="version-badge">V25.6 🚀 Responsável + Prioridade + Status Imóvel</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -678,6 +689,9 @@
               <th>Contrato</th>
               <th>Locatário</th>
               <th>Endereço</th>
+              <th>Responsável</th>
+              <th>Prioridade</th>
+              <th>Status Imóvel</th>
               <th>Com.</th>
               <th>Vistoria</th>
               <th>Ent.Chaves</th>
@@ -745,6 +759,45 @@
             <option value="recebidas">✅ Recebidas</option>
             <option value="nao-recebidas">❌ Não Recebidas</option>
           </select>
+        </div>
+
+        <div class="modal-form-group">
+          <label>👤 Responsável pela Ação:</label>
+          <select id="novo-responsavel">
+            <option value="">-- Selecione --</option>
+            <option value="cassio">👨‍⚖️ Cássio (Advogado)</option>
+            <option value="yuri">👨‍⚖️ Yuri (Advogado)</option>
+            <option value="cristiane">👩‍⚖️ Cristiane (Advogada)</option>
+            <option value="vistoriador">👷 Vistoriador</option>
+            <option value="maria">👩‍💼 Maria (Integrativa)</option>
+            <option value="outro">🔧 Outro</option>
+          </select>
+        </div>
+
+        <div class="modal-form-group">
+          <label>🚨 Prioridade:</label>
+          <select id="novo-prioridade">
+            <option value="media">🟡 Média (30-44 dias)</option>
+            <option value="baixa">🟢 Baixa (45+ dias)</option>
+            <option value="alta">🟠 Alta (15-29 dias)</option>
+            <option value="critica">🔴 CRÍTICA (menos de 15 dias)</option>
+          </select>
+        </div>
+
+        <div class="modal-form-group">
+          <label>🏠 Status do Imóvel:</label>
+          <select id="novo-statusImovel">
+            <option value="em-desocupacao">🔴 Em Desocupação</option>
+            <option value="em-reparo">🔧 Em Reparo</option>
+            <option value="pronto-para-aluguel">🟡 Pronto para Aluguel</option>
+            <option value="alugado">🟢 Alugado</option>
+            <option value="bloqueado">⏸️ Bloqueado</option>
+          </select>
+        </div>
+
+        <div class="modal-form-group">
+          <label>📅 Data Disponível para Aluguel:</label>
+          <input type="date" id="novo-dataDisponivelAluguel">
         </div>
 
         <div class="modal-buttons">
@@ -824,6 +877,45 @@
             <option value="nao">❌ Não</option>
             <option value="sim">✅ SIM - FINALIZADA</option>
           </select>
+        </div>
+
+        <div class="modal-form-group">
+          <label>👤 Responsável pela Ação:</label>
+          <select id="edit-responsavel">
+            <option value="">-- Selecione --</option>
+            <option value="cassio">👨‍⚖️ Cássio (Advogado)</option>
+            <option value="yuri">👨‍⚖️ Yuri (Advogado)</option>
+            <option value="cristiane">👩‍⚖️ Cristiane (Advogada)</option>
+            <option value="vistoriador">👷 Vistoriador</option>
+            <option value="maria">👩‍💼 Maria (Integrativa)</option>
+            <option value="outro">🔧 Outro</option>
+          </select>
+        </div>
+
+        <div class="modal-form-group">
+          <label>🚨 Prioridade:</label>
+          <select id="edit-prioridade">
+            <option value="baixa">🟢 Baixa (45+ dias)</option>
+            <option value="media">🟡 Média (30-44 dias)</option>
+            <option value="alta">🟠 Alta (15-29 dias)</option>
+            <option value="critica">🔴 CRÍTICA (menos de 15 dias)</option>
+          </select>
+        </div>
+
+        <div class="modal-form-group">
+          <label>🏠 Status do Imóvel:</label>
+          <select id="edit-statusImovel">
+            <option value="em-desocupacao">🔴 Em Desocupação</option>
+            <option value="em-reparo">🔧 Em Reparo</option>
+            <option value="pronto-para-aluguel">🟡 Pronto para Aluguel</option>
+            <option value="alugado">🟢 Alugado</option>
+            <option value="bloqueado">⏸️ Bloqueado</option>
+          </select>
+        </div>
+
+        <div class="modal-form-group">
+          <label>📅 Data Disponível para Aluguel:</label>
+          <input type="date" id="edit-dataDisponivelAluguel">
         </div>
 
         <div class="modal-buttons">
@@ -1308,12 +1400,48 @@
 
         let tipoTexto = isDespejo ? '⚖️ Despejo' : '🏠 Comum';
         let statusTexto = isFinalizado ? '✅ FINALIZADO' : c.statusChaves === 'recebidas' ? '✅' : '⏳';
+        
+        // Responsável
+        let responsavelTexto = '';
+        const respMap = {
+          'cassio': '👨‍⚖️ Cássio',
+          'yuri': '👨‍⚖️ Yuri',
+          'cristiane': '👩‍⚖️ Cristiane',
+          'vistoriador': '👷 Vistoriador',
+          'maria': '👩‍💼 Maria',
+          'outro': '🔧 Outro'
+        };
+        responsavelTexto = respMap[c.responsavel] || '-';
+        
+        // Prioridade
+        let prioridadeTexto = '';
+        const prioMap = {
+          'baixa': '🟢 Baixa',
+          'media': '🟡 Média',
+          'alta': '🟠 Alta',
+          'critica': '🔴 CRÍTICA'
+        };
+        prioridadeTexto = prioMap[c.prioridade] || '🟡 Média';
+        
+        // Status do Imóvel
+        let statusImovelTexto = '';
+        const statusMap = {
+          'em-desocupacao': '🔴 Desoc.',
+          'em-reparo': '🔧 Reparo',
+          'pronto-para-aluguel': '🟡 A Alugar',
+          'alugado': '🟢 Alugado',
+          'bloqueado': '⏸️ Bloqueado'
+        };
+        statusImovelTexto = statusMap[c.statusImovel] || '🔴 Desoc.';
 
         return `
         <tr class="${classeAlerta}">
           <td><strong>${c.contrato}</strong></td>
           <td>${c.locatario}</td>
           <td>${c.endereco || '-'}</td>
+          <td>${responsavelTexto}</td>
+          <td>${prioridadeTexto}</td>
+          <td>${statusImovelTexto}</td>
           <td>${formatarData(c.comunicacaoInquilino)}</td>
           <td>${formatarData(c.agendamentoVistoria)}</td>
           <td>${formatarData(c.entregaChaves)}</td>
@@ -1368,6 +1496,10 @@
         agendamentoVistoria: document.getElementById('novo-agendamento').value ? new Date(document.getElementById('novo-agendamento').value + 'T00:00:00Z').toISOString() : null,
         entregaChaves: document.getElementById('novo-entrega').value ? new Date(document.getElementById('novo-entrega').value + 'T00:00:00Z').toISOString() : null,
         statusChaves: document.getElementById('novo-statusChaves').value,
+        responsavel: document.getElementById('novo-responsavel').value,
+        prioridade: document.getElementById('novo-prioridade').value,
+        statusImovel: document.getElementById('novo-statusImovel').value,
+        dataDisponivelAluguel: document.getElementById('novo-dataDisponivelAluguel').value ? new Date(document.getElementById('novo-dataDisponivelAluguel').value + 'T00:00:00Z').toISOString() : null,
         reparos: []
       };
 
@@ -1424,6 +1556,10 @@
       document.getElementById('edit-dataRetiradaChaves').value = c.dataRetiradaChaves ? c.dataRetiradaChaves.split('T')[0] : '';
       document.getElementById('edit-dataDevolucaoChaves').value = c.dataDevolucaoChaves ? c.dataDevolucaoChaves.split('T')[0] : '';
       document.getElementById('edit-finalizado').value = c.finalizado || 'nao';
+      document.getElementById('edit-responsavel').value = c.responsavel || '';
+      document.getElementById('edit-prioridade').value = c.prioridade || 'media';
+      document.getElementById('edit-statusImovel').value = c.statusImovel || 'em-desocupacao';
+      document.getElementById('edit-dataDisponivelAluguel').value = c.dataDisponivelAluguel ? c.dataDisponivelAluguel.split('T')[0] : '';
 
       // Elementos de erro removidos em V25.3.1
       document.getElementById('modalEditar').classList.add('show');
@@ -1444,6 +1580,10 @@
       const dataDevolucao = document.getElementById('edit-dataDevolucaoChaves').value;
       const novoStatus = document.getElementById('edit-statusChaves').value;
       const finalizado = document.getElementById('edit-finalizado').value;
+      const responsavel = document.getElementById('edit-responsavel').value;
+      const prioridade = document.getElementById('edit-prioridade').value;
+      const statusImovel = document.getElementById('edit-statusImovel').value;
+      const dataDisponivelAluguel = document.getElementById('edit-dataDisponivelAluguel').value;
 
       // Sem validação em V25.3.1 - Salvando diretamente
       atualizarSyncStatus('syncing');
@@ -1458,7 +1598,11 @@
         dataRetiradaChaves: dataRetirada ? new Date(dataRetirada + 'T00:00:00Z').toISOString() : null,
         dataDevolucaoChaves: dataDevolucao ? new Date(dataDevolucao + 'T00:00:00Z').toISOString() : null,
         statusChaves: novoStatus,
-        finalizado: finalizado
+        finalizado: finalizado,
+        responsavel: responsavel,
+        prioridade: prioridade,
+        statusImovel: statusImovel,
+        dataDisponivelAluguel: dataDisponivelAluguel ? new Date(dataDisponivelAluguel + 'T00:00:00Z').toISOString() : null
       };
 
       fetch(`${API_URL}/contracts/${contratoEmEdicao}`, {
