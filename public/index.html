@@ -620,10 +620,11 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.6 🚀 Responsável + Prioridade + Status Imóvel</div>
+    <div class="version-badge">V25.8 🚀 Dashboard Operacional + Prestador + Recibo de Chaves</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
+        <button class="tab-btn" onclick="mudarAba('operacional')">📈 Operacional</button>
         <button class="tab-btn" onclick="mudarAba('contratos')">📋 Contratos</button>
       </div>
       <button class="theme-toggle" onclick="toggleDarkMode()">🌙</button>
@@ -663,6 +664,92 @@
 
       <div class="controls">
         <button onclick="gerarRelatorioPDF()" style="background-color: #e74c3c; font-size: 13px;">📄 Gerar Relatório PDF</button>
+      </div>
+    </div>
+
+    <!-- ABA OPERACIONAL - MÉTRICAS -->
+    <div id="operacional" class="tab-content">
+      <h2 class="section-title">📈 Dashboard Operacional</h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 30px;">
+        <!-- Card: Comunicações -->
+        <div style="background: #3498db; color: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 32px; font-weight: bold;" id="metrica-comunicacoes">0</div>
+          <div style="font-size: 14px; margin-top: 5px;">📱 Comunicações (Mês)</div>
+          <div style="font-size: 12px; margin-top: 5px; opacity: 0.9;">Locatários notificados</div>
+        </div>
+
+        <!-- Card: Tempo Médio -->
+        <div style="background: #2ecc71; color: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 32px; font-weight: bold;" id="metrica-tempo">0</div>
+          <div style="font-size: 14px; margin-top: 5px;">⏱️ Dias Médios</div>
+          <div style="font-size: 12px; margin-top: 5px; opacity: 0.9;">Até finalização</div>
+        </div>
+
+        <!-- Card: Total Reparos -->
+        <div style="background: #e74c3c; color: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 32px; font-weight: bold;" id="metrica-reparos">0</div>
+          <div style="font-size: 14px; margin-top: 5px;">🔧 Reparos (Mês)</div>
+          <div style="font-size: 12px; margin-top: 5px; opacity: 0.9;">Serviços contratados</div>
+        </div>
+
+        <!-- Card: Valor Médio -->
+        <div style="background: #f39c12; color: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 32px; font-weight: bold;" id="metrica-valor">R$ 0</div>
+          <div style="font-size: 14px; margin-top: 5px;">💰 Valor Médio</div>
+          <div style="font-size: 12px; margin-top: 5px; opacity: 0.9;">Custo por reparo</div>
+        </div>
+      </div>
+
+      <!-- Tabela de Comparação Mensal -->
+      <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; color: #2c3e50;">📊 Comparação Últimos 3 Meses</h3>
+        <table style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+          <thead>
+            <tr style="background: #ecf0f1;">
+              <th style="padding: 12px; text-align: left; border-bottom: 2px solid #bdc3c7;">Mês</th>
+              <th style="padding: 12px; text-align: center; border-bottom: 2px solid #bdc3c7;">📱 Comunicações</th>
+              <th style="padding: 12px; text-align: center; border-bottom: 2px solid #bdc3c7;">⏱️ Dias Médios</th>
+              <th style="padding: 12px; text-align: center; border-bottom: 2px solid #bdc3c7;">🔧 Reparos</th>
+              <th style="padding: 12px; text-align: center; border-bottom: 2px solid #bdc3c7;">💰 Valor Médio</th>
+            </tr>
+          </thead>
+          <tbody id="tabelaMeses">
+            <!-- Preenchida por JavaScript -->
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Desempenho por Tipo -->
+      <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; color: #2c3e50;">🏠 Performance: Comum vs Despejo</h3>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 15px;">
+          <!-- Comuns -->
+          <div style="border-left: 4px solid #3498db; padding-left: 15px;">
+            <div style="font-size: 18px; font-weight: bold; color: #3498db;">🏠 Desocupações Comuns</div>
+            <div style="margin-top: 10px; font-size: 14px;">
+              <div>Total: <strong id="comum-total">0</strong></div>
+              <div>Finalizadas: <strong id="comum-finalizadas">0</strong></div>
+              <div>Taxa Sucesso: <strong id="comum-taxa">0%</strong></div>
+              <div>Dias Médios: <strong id="comum-dias">0</strong></div>
+            </div>
+          </div>
+          <!-- Despejos -->
+          <div style="border-left: 4px solid #e74c3c; padding-left: 15px;">
+            <div style="font-size: 18px; font-weight: bold; color: #e74c3c;">⚖️ Desocupações Despejo</div>
+            <div style="margin-top: 10px; font-size: 14px;">
+              <div>Total: <strong id="despejo-total">0</strong></div>
+              <div>Finalizadas: <strong id="despejo-finalizadas">0</strong></div>
+              <div>Taxa Sucesso: <strong id="despejo-taxa">0%</strong></div>
+              <div>Dias Médios: <strong id="despejo-dias">0</strong></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Botão Atualizar -->
+      <div style="text-align: center; margin-top: 30px;">
+        <button onclick="calcularMetricas()" style="background: #3498db; color: white; padding: 12px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">🔄 Atualizar Métricas</button>
       </div>
     </div>
 
@@ -962,6 +1049,62 @@
           <input type="text" id="rep-responsavel" placeholder="Ex: Integrativa, Vidraçaria, Proprietário...">
         </div>
 
+        <!-- CAMPOS PRESTADOR (V25.8) -->
+        <div style="border-top: 2px solid #ecf0f1; margin-top: 15px; padding-top: 15px;">
+          <h4 style="margin-top: 0; color: #2c3e50;">👷 Dados do Prestador Contratado</h4>
+          
+          <div class="modal-form-group">
+            <label>👤 Nome Prestador:</label>
+            <input type="text" id="rep-prestador-nome" placeholder="Ex: João da Pintura Silva">
+          </div>
+
+          <div class="modal-form-group">
+            <label>📱 Telefone:</label>
+            <input type="tel" id="rep-prestador-telefone" placeholder="Ex: (17) 99999-9999">
+          </div>
+
+          <div class="modal-form-group">
+            <label>📧 Email:</label>
+            <input type="email" id="rep-prestador-email" placeholder="Ex: joao@email.com">
+          </div>
+
+          <div class="modal-form-group">
+            <label>🔧 Especialidade:</label>
+            <select id="rep-prestador-especialidade">
+              <option value="">-- Selecione --</option>
+              <option value="Pintor">🎨 Pintor</option>
+              <option value="Pedreiro">🧱 Pedreiro</option>
+              <option value="Eletricista">⚡ Eletricista</option>
+              <option value="Hidráulica">🚰 Hidráulica</option>
+              <option value="Carpinteiro">🪑 Carpinteiro</option>
+              <option value="Vidraçaria">🪟 Vidraçaria</option>
+              <option value="Limpeza">🧹 Limpeza</option>
+              <option value="Outro">🔧 Outro</option>
+            </select>
+          </div>
+
+          <div class="modal-form-group">
+            <label>📅 Data Retirada de Chaves:</label>
+            <input type="date" id="rep-data-retirada">
+            <small style="color: #7f8c8d; display: block; margin-top: 5px;">Quando o prestador pegou as chaves</small>
+          </div>
+
+          <div class="modal-form-group">
+            <label>📅 Data Devolução de Chaves:</label>
+            <input type="date" id="rep-data-devolucao">
+            <small style="color: #7f8c8d; display: block; margin-top: 5px;">Quando devolveu (deixar em branco se ainda não devolveu)</small>
+          </div>
+
+          <div class="modal-form-group">
+            <label>💰 Valor do Serviço:</label>
+            <input type="number" id="rep-valor-servico" placeholder="Ex: 2500.00" step="0.01">
+          </div>
+
+          <div class="modal-form-group">
+            <button type="button" onclick="gerarReciboPDF()" style="width: 100%; background: #27ae60; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px;">📄 Gerar Recibo de Chaves (PDF)</button>
+          </div>
+        </div>
+
         <div class="modal-buttons">
           <button type="button" class="btn-primary" onclick="salvarReparo()">💾 Salvar</button>
           <button type="button" class="btn-secondary" onclick="fecharModalReparo()">❌ Cancelar</button>
@@ -1188,6 +1331,143 @@
 
     // Validação removida em V25.3 - Usuário pode digitar datas livremente
 
+    // ========= CALCULAR MÉTRICAS OPERACIONAIS (V25.7) =========
+    function calcularMetricas() {
+      const agora = new Date();
+      const mesAtual = agora.getMonth();
+      const anoAtual = agora.getFullYear();
+
+      // Mês atual
+      const contratosMes = contratos.filter(c => {
+        const data = c.dataCriacao ? new Date(c.dataCriacao) : null;
+        return data && data.getMonth() === mesAtual && data.getFullYear() === anoAtual;
+      });
+
+      // Comunicações este mês
+      const comunicacoes = contratosMes.filter(c => c.comunicacaoInquilino).length;
+      document.getElementById('metrica-comunicacoes').textContent = comunicacoes;
+
+      // Tempo médio até finalização
+      const contratosFinal = contratos.filter(c => c.finalizado === 'sim' && c.entregaChaves);
+      let tempoDias = 0;
+      if (contratosFinal.length > 0) {
+        const tempos = contratosFinal.map(c => {
+          const entrega = new Date(c.entregaChaves);
+          const atualizacao = c.dataAtualizacao ? new Date(c.dataAtualizacao) : new Date();
+          const dias = Math.floor((atualizacao - entrega) / (1000 * 60 * 60 * 24));
+          return dias >= 0 ? dias : 0;
+        });
+        tempoDias = Math.round(tempos.reduce((a, b) => a + b, 0) / tempos.length);
+      }
+      document.getElementById('metrica-tempo').textContent = tempoDias;
+
+      // Total de reparos este mês
+      let totalReparos = 0;
+      let totalValor = 0;
+      contratosMes.forEach(c => {
+        if (c.reparos && c.reparos.length > 0) {
+          totalReparos += c.reparos.length;
+          c.reparos.forEach(r => {
+            if (r.valorServico) totalValor += parseFloat(r.valorServico) || 0;
+          });
+        }
+      });
+      document.getElementById('metrica-reparos').textContent = totalReparos;
+      const valorMedio = totalReparos > 0 ? totalValor / totalReparos : 0;
+      document.getElementById('metrica-valor').textContent = 'R$ ' + valorMedio.toFixed(0);
+
+      // Tabela de comparação
+      const meses = [];
+      for (let i = 2; i >= 0; i--) {
+        const data = new Date(anoAtual, mesAtual - i, 1);
+        const m = data.getMonth();
+        const a = data.getFullYear();
+        const nomeMes = data.toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+        
+        const contratosMesI = contratos.filter(c => {
+          const d = c.dataCriacao ? new Date(c.dataCriacao) : null;
+          return d && d.getMonth() === m && d.getFullYear() === a;
+        });
+
+        const com = contratosMesI.filter(c => c.comunicacaoInquilino).length;
+        const rep = contratosMesI.reduce((sum, c) => sum + (c.reparos ? c.reparos.length : 0), 0);
+        
+        let dias = 0;
+        const finalizadosMes = contratosMesI.filter(c => c.finalizado === 'sim' && c.entregaChaves);
+        if (finalizadosMes.length > 0) {
+          const tempos = finalizadosMes.map(c => {
+            const entrega = new Date(c.entregaChaves);
+            const atualizacao = c.dataAtualizacao ? new Date(c.dataAtualizacao) : new Date();
+            const d = Math.floor((atualizacao - entrega) / (1000 * 60 * 60 * 24));
+            return d >= 0 ? d : 0;
+          });
+          dias = Math.round(tempos.reduce((a, b) => a + b, 0) / tempos.length);
+        }
+
+        let val = 0;
+        contratosMesI.forEach(c => {
+          if (c.reparos) c.reparos.forEach(r => {
+            if (r.valorServico) val += parseFloat(r.valorServico) || 0;
+          });
+        });
+        const valMedio = rep > 0 ? val / rep : 0;
+
+        meses.push({ mes: nomeMes, com, dias, rep, val: valMedio });
+      }
+
+      const tbody = document.getElementById('tabelaMeses');
+      tbody.innerHTML = meses.map((m, idx) => `
+        <tr style="border-bottom: 1px solid #ecf0f1; ${idx % 2 === 0 ? 'background: #f9f9f9;' : ''}">
+          <td style="padding: 12px; text-align: left;">${m.mes}</td>
+          <td style="padding: 12px; text-align: center;"><strong>${m.com}</strong></td>
+          <td style="padding: 12px; text-align: center;"><strong>${m.dias}</strong></td>
+          <td style="padding: 12px; text-align: center;"><strong>${m.rep}</strong></td>
+          <td style="padding: 12px; text-align: center;"><strong>R$ ${m.val.toFixed(0)}</strong></td>
+        </tr>
+      `).join('');
+
+      // Performance por tipo
+      const comuns = contratos.filter(c => c.tipoDesocupacao === 'comum');
+      const despejos = contratos.filter(c => c.tipoDesocupacao === 'despejo');
+
+      const comFinalizadas = comuns.filter(c => c.finalizado === 'sim').length;
+      const despFinalizadas = despejos.filter(c => c.finalizado === 'sim').length;
+
+      let comDias = 0;
+      const comFinal = comuns.filter(c => c.finalizado === 'sim' && c.entregaChaves);
+      if (comFinal.length > 0) {
+        const tempos = comFinal.map(c => {
+          const e = new Date(c.entregaChaves);
+          const a = c.dataAtualizacao ? new Date(c.dataAtualizacao) : new Date();
+          return Math.floor((a - e) / (1000 * 60 * 60 * 24));
+        });
+        comDias = Math.round(tempos.reduce((a, b) => a + b, 0) / tempos.length);
+      }
+
+      let despDias = 0;
+      const despFinal = despejos.filter(c => c.finalizado === 'sim' && c.entregaChaves);
+      if (despFinal.length > 0) {
+        const tempos = despFinal.map(c => {
+          const e = new Date(c.entregaChaves);
+          const a = c.dataAtualizacao ? new Date(c.dataAtualizacao) : new Date();
+          return Math.floor((a - e) / (1000 * 60 * 60 * 24));
+        });
+        despDias = Math.round(tempos.reduce((a, b) => a + b, 0) / tempos.length);
+      }
+
+      document.getElementById('comum-total').textContent = comuns.length;
+      document.getElementById('comum-finalizadas').textContent = comFinalizadas;
+      document.getElementById('comum-taxa').textContent = comuns.length > 0 ? Math.round((comFinalizadas / comuns.length) * 100) + '%' : '0%';
+      document.getElementById('comum-dias').textContent = comDias;
+
+      document.getElementById('despejo-total').textContent = despejos.length;
+      document.getElementById('despejo-finalizadas').textContent = despFinalizadas;
+      document.getElementById('despejo-taxa').textContent = despejos.length > 0 ? Math.round((despFinalizadas / despejos.length) * 100) + '%' : '0%';
+      document.getElementById('despejo-dias').textContent = despDias;
+
+      mostrarToast('✅ Métricas atualizadas!', false);
+    }
+
     function carregarDados() {
       document.getElementById('loading').style.display = 'block';
       document.getElementById('tabela').style.display = 'none';
@@ -1211,6 +1491,7 @@
           atualizarDashboard();
           atualizarAlertas();
           atualizarTabela();
+          calcularMetricas(); // Atualizar métricas operacionais (V25.7)
           document.getElementById('loading').style.display = 'none';
           document.getElementById('tabela').style.display = 'table';
           atualizarSyncStatus('synced');
@@ -1719,6 +2000,105 @@
       document.getElementById('modalReparo').classList.add('show');
     }
 
+    // ========= GERAR RECIBO DE CHAVES (V25.8) =========
+    function gerarReciboPDF() {
+      const contrato = contratos.find(c => c._id === contratoEmReparo);
+      if (!contrato) {
+        mostrarToast('❌ Contrato não encontrado!', true);
+        return;
+      }
+
+      const prestadorNome = document.getElementById('rep-prestador-nome').value || 'Não informado';
+      const prestadorEspecialidade = document.getElementById('rep-prestador-especialidade').value || 'Não informado';
+      const prestadorTelefone = document.getElementById('rep-prestador-telefone').value || 'Não informado';
+      const dataRetirada = document.getElementById('rep-data-retirada').value || 'Não informado';
+      const descricao = document.getElementById('rep-descricao').value || 'Não informado';
+
+      const agora = new Date().toLocaleString('pt-BR');
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; }
+.header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+.titulo { font-size: 24px; font-weight: bold; }
+.subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
+.secao { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+.secao-titulo { font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #2c3e50; }
+.linha { display: flex; margin-bottom: 8px; }
+.label { font-weight: bold; width: 150px; }
+.valor { flex: 1; }
+.assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; text-align: center; }
+.assinatura-campo { border-top: 1px solid #333; padding-top: 10px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="titulo">🔑 RECIBO DE RETIRADA DE CHAVES</div>
+  <div class="subtitulo">Integrativa Negócios Imobiliários</div>
+  <div class="subtitulo">CRECI J-23.355 | CNPJ 14.914.904/0001-37</div>
+</div>
+
+<div class="secao">
+  <div class="secao-titulo">📋 INFORMAÇÕES DO CONTRATO</div>
+  <div class="linha"><div class="label">Contrato:</div><div class="valor">${contrato.contrato}</div></div>
+  <div class="linha"><div class="label">Imóvel:</div><div class="valor">${contrato.endereco || 'Não informado'}</div></div>
+  <div class="linha"><div class="label">Locatário:</div><div class="valor">${contrato.locatario}</div></div>
+</div>
+
+<div class="secao">
+  <div class="secao-titulo">🔧 INFORMAÇÕES DO REPARO</div>
+  <div class="linha"><div class="label">Tipo de Reparo:</div><div class="valor">${descricao.split(' ')[0]}</div></div>
+  <div class="linha"><div class="label">Descrição:</div><div class="valor">${descricao}</div></div>
+</div>
+
+<div class="secao">
+  <div class="secao-titulo">👷 PRESTADOR CONTRATADO</div>
+  <div class="linha"><div class="label">Nome:</div><div class="valor">${prestadorNome}</div></div>
+  <div class="linha"><div class="label">Especialidade:</div><div class="valor">${prestadorEspecialidade}</div></div>
+  <div class="linha"><div class="label">Telefone:</div><div class="valor">${prestadorTelefone}</div></div>
+</div>
+
+<div class="secao">
+  <div class="secao-titulo">🔑 RETIRADA DE CHAVES</div>
+  <div class="linha"><div class="label">Data Retirada:</div><div class="valor">${dataRetirada}</div></div>
+  <div class="linha"><div class="label">Quantidade:</div><div class="valor">2 unidades</div></div>
+  <div class="linha"><div class="label">Estado:</div><div class="valor">Perfeito estado</div></div>
+</div>
+
+<div class="assinaturas">
+  <div>
+    <div style="font-weight: bold;">👁️ VISTORIADOR</div>
+    <div class="assinatura-campo">
+      ________________________<br>
+      Assinatura e Data
+    </div>
+  </div>
+  <div>
+    <div style="font-weight: bold;">👷 PRESTADOR</div>
+    <div class="assinatura-campo">
+      ________________________<br>
+      Assinatura e Data
+    </div>
+  </div>
+</div>
+
+<div style="text-align: center; margin-top: 40px; font-size: 12px; color: #666;">
+Documento gerado em: ${agora}<br>
+Protocolo: REC-${new Date().getTime()}
+</div>
+</body>
+</html>
+      `;
+
+      const janela = window.open('', '', 'width=800,height=600');
+      janela.document.write(html);
+      janela.document.close();
+      setTimeout(() => janela.print(), 250);
+    }
+
     function fecharModalReparo() {
       document.getElementById('modalReparo').classList.remove('show');
       contratoEmReparo = null;
@@ -1744,7 +2124,15 @@
         urgencia,
         responsavel,
         dataLimite: new Date(dataLimite + 'T00:00:00Z').toISOString(),
-        status: 'PENDENTE'
+        status: 'PENDENTE',
+        // Campos Prestador (V25.8)
+        prestadorNome: document.getElementById('rep-prestador-nome').value,
+        prestadorTelefone: document.getElementById('rep-prestador-telefone').value,
+        prestadorEmail: document.getElementById('rep-prestador-email').value,
+        prestadorEspecialidade: document.getElementById('rep-prestador-especialidade').value,
+        dataRetiradaChaves: document.getElementById('rep-data-retirada').value ? new Date(document.getElementById('rep-data-retirada').value + 'T00:00:00Z').toISOString() : null,
+        dataDevolucaoChaves: document.getElementById('rep-data-devolucao').value ? new Date(document.getElementById('rep-data-devolucao').value + 'T00:00:00Z').toISOString() : null,
+        valorServico: parseFloat(document.getElementById('rep-valor-servico').value) || 0
       };
 
       fetch(`${API_URL}/repairs/${contratoEmReparo}`, {
