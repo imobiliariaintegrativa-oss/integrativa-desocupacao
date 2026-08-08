@@ -620,7 +620,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.8 🚀 Dashboard Operacional + Prestador + Recibo de Chaves</div>
+    <div class="version-badge">V25.9 🚀 Recibos Vistoriador + Cores Tabela</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -951,11 +951,13 @@
         <div class="modal-form-group">
           <label>📅 Data Retirada de Chaves (Vistoriador):</label>
           <input type="date" id="edit-dataRetiradaChaves">
+          <button type="button" onclick="gerarReciboRetiradaVistoriador()" style="width: 100%; background: #27ae60; color: white; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; margin-top: 8px;">📄 Recibo Retirada (Vistoriador)</button>
         </div>
 
         <div class="modal-form-group">
           <label>📅 Data Devolução de Chaves (Após Reparos):</label>
           <input type="date" id="edit-dataDevolucaoChaves">
+          <button type="button" onclick="gerarReciboDevolucaoVistoriador()" style="width: 100%; background: #3498db; color: white; padding: 8px; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; margin-top: 8px;">📄 Recibo Devolução (Vistoriador)</button>
         </div>
 
         <div class="modal-form-group">
@@ -1417,12 +1419,12 @@
 
       const tbody = document.getElementById('tabelaMeses');
       tbody.innerHTML = meses.map((m, idx) => `
-        <tr style="border-bottom: 1px solid #ecf0f1; ${idx % 2 === 0 ? 'background: #f9f9f9;' : ''}">
-          <td style="padding: 12px; text-align: left;">${m.mes}</td>
-          <td style="padding: 12px; text-align: center;"><strong>${m.com}</strong></td>
-          <td style="padding: 12px; text-align: center;"><strong>${m.dias}</strong></td>
-          <td style="padding: 12px; text-align: center;"><strong>${m.rep}</strong></td>
-          <td style="padding: 12px; text-align: center;"><strong>R$ ${m.val.toFixed(0)}</strong></td>
+        <tr style="border-bottom: 1px solid #ecf0f1; ${idx % 2 === 0 ? 'background: #ecf7ff;' : 'background: #f5f9ff;'}">
+          <td style="padding: 12px; text-align: left; font-weight: bold; color: #2c3e50;">${m.mes}</td>
+          <td style="padding: 12px; text-align: center; color: #3498db;"><strong>${m.com}</strong></td>
+          <td style="padding: 12px; text-align: center; color: #2ecc71;"><strong>${m.dias}</strong></td>
+          <td style="padding: 12px; text-align: center; color: #e74c3c;"><strong>${m.rep}</strong></td>
+          <td style="padding: 12px; text-align: center; color: #f39c12;"><strong>R$ ${m.val.toFixed(0)}</strong></td>
         </tr>
       `).join('');
 
@@ -2094,6 +2096,206 @@ Protocolo: REC-${new Date().getTime()}
       `;
 
       const janela = window.open('', '', 'width=800,height=600');
+      janela.document.write(html);
+      janela.document.close();
+      setTimeout(() => janela.print(), 250);
+    }
+
+    // ========= RECIBO RETIRADA DE CHAVES - VISTORIADOR =========
+    function gerarReciboRetiradaVistoriador() {
+      const contratoId = contratoEmEdicao;
+      const contrato = contratos.find(c => c._id === contratoId);
+      if (!contrato) {
+        mostrarToast('❌ Contrato não encontrado!', true);
+        return;
+      }
+
+      const dataRetirada = document.getElementById('edit-dataRetiradaChaves').value;
+      if (!dataRetirada) {
+        mostrarToast('❌ Preencha a data de retirada!', true);
+        return;
+      }
+
+      const agora = new Date().toLocaleString('pt-BR');
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; }
+.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #27ae60; padding-bottom: 15px; }
+.titulo { font-size: 24px; font-weight: bold; color: #27ae60; }
+.subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
+.secao { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+.secao-titulo { font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #2c3e50; }
+.linha { display: flex; margin-bottom: 8px; }
+.label { font-weight: bold; width: 180px; }
+.valor { flex: 1; }
+.assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; text-align: center; }
+.assinatura-campo { border-top: 2px solid #333; padding-top: 10px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="titulo">🔑 RECIBO DE RETIRADA DE CHAVES</div>
+  <div style="font-size: 14px; color: #27ae60; margin-top: 5px;">VISTORIADOR RETIRA DO LOCATÁRIO</div>
+  <div class="subtitulo">Integrativa Negócios Imobiliários</div>
+  <div class="subtitulo">CRECI J-23.355 | CNPJ 14.914.904/0001-37</div>
+</div>
+
+<div class="secao">
+  <div class="secao-titulo">📋 INFORMAÇÕES DO CONTRATO/IMÓVEL</div>
+  <div class="linha"><div class="label">Contrato:</div><div class="valor"><strong>${contrato.contrato}</strong></div></div>
+  <div class="linha"><div class="label">Imóvel:</div><div class="valor">${contrato.endereco || 'Não informado'}</div></div>
+  <div class="linha"><div class="label">Locatário:</div><div class="valor">${contrato.locatario}</div></div>
+</div>
+
+<div class="secao">
+  <div class="secao-titulo">🔑 DADOS DA RETIRADA DE CHAVES</div>
+  <div class="linha"><div class="label">Data/Hora Retirada:</div><div class="valor"><strong>${dataRetirada}</strong></div></div>
+  <div class="linha"><div class="label">Quantidade de Chaves:</div><div class="valor">2 unidades (Porta Principal + Portaria)</div></div>
+  <div class="linha"><div class="label">Estado das Chaves:</div><div class="valor">✅ Perfeito estado</div></div>
+  <div class="linha"><div class="label">Identificação:</div><div class="valor">Chave 1: Porta Principal | Chave 2: Portaria</div></div>
+</div>
+
+<div class="secao">
+  <div class="secao-titulo">👥 RESPONSÁVEIS PELA RETIRADA</div>
+  <div class="linha"><div class="label">Vistoriador/Empresa:</div><div class="valor">Integrativa Negócios Imobiliários</div></div>
+  <div class="linha"><div class="label">Locatário (Entrega):</div><div class="valor">${contrato.locatario}</div></div>
+</div>
+
+<div style="background: #f0f8ff; padding: 15px; border-left: 4px solid #27ae60; margin: 20px 0;">
+  <strong>DECLARAÇÃO:</strong><br>
+  O(a) vistoriador(a) declara ter recebido as chaves acima descritas em perfeito estado de conservação, assumindo total responsabilidade pela sua guarda, conservação e devolução conforme previsto em contrato.
+</div>
+
+<div class="assinaturas">
+  <div>
+    <div style="font-weight: bold; color: #27ae60;">👁️ VISTORIADOR/EMPRESA</div>
+    <div class="assinatura-campo">
+      ________________________<br>
+      Assinatura e Data
+    </div>
+  </div>
+  <div>
+    <div style="font-weight: bold; color: #e74c3c;">👤 LOCATÁRIO</div>
+    <div class="assinatura-campo">
+      ________________________<br>
+      Assinatura e Data
+    </div>
+  </div>
+</div>
+
+<div style="text-align: center; margin-top: 40px; font-size: 12px; color: #666;">
+Documento gerado em: ${agora}<br>
+Protocolo: REC-RET-${new Date().getTime()}
+</div>
+</body>
+</html>
+      `;
+
+      const janela = window.open('', '', 'width=900,height=700');
+      janela.document.write(html);
+      janela.document.close();
+      setTimeout(() => janela.print(), 250);
+    }
+
+    // ========= RECIBO DEVOLUÇÃO DE CHAVES - VISTORIADOR =========
+    function gerarReciboDevolucaoVistoriador() {
+      const contratoId = contratoEmEdicao;
+      const contrato = contratos.find(c => c._id === contratoId);
+      if (!contrato) {
+        mostrarToast('❌ Contrato não encontrado!', true);
+        return;
+      }
+
+      const dataDevolucao = document.getElementById('edit-dataDevolucaoChaves').value;
+      if (!dataDevolucao) {
+        mostrarToast('❌ Preencha a data de devolução!', true);
+        return;
+      }
+
+      const agora = new Date().toLocaleString('pt-BR');
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; }
+.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #3498db; padding-bottom: 15px; }
+.titulo { font-size: 24px; font-weight: bold; color: #3498db; }
+.subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
+.secao { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+.secao-titulo { font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #2c3e50; }
+.linha { display: flex; margin-bottom: 8px; }
+.label { font-weight: bold; width: 180px; }
+.valor { flex: 1; }
+.assinaturas { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 40px; text-align: center; }
+.assinatura-campo { border-top: 2px solid #333; padding-top: 10px; margin-top: 40px; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="titulo">🔑 RECIBO DE DEVOLUÇÃO DE CHAVES</div>
+  <div style="font-size: 14px; color: #3498db; margin-top: 5px;">VISTORIADOR DEVOLVE AO PROPRIETÁRIO (APÓS REPAROS)</div>
+  <div class="subtitulo">Integrativa Negócios Imobiliários</div>
+  <div class="subtitulo">CRECI J-23.355 | CNPJ 14.914.904/0001-37</div>
+</div>
+
+<div class="secao">
+  <div class="secao-titulo">📋 INFORMAÇÕES DO CONTRATO/IMÓVEL</div>
+  <div class="linha"><div class="label">Contrato:</div><div class="valor"><strong>${contrato.contrato}</strong></div></div>
+  <div class="linha"><div class="label">Imóvel:</div><div class="valor">${contrato.endereco || 'Não informado'}</div></div>
+  <div class="linha"><div class="label">Proprietário/Responsável:</div><div class="valor">${contrato.locatario}</div></div>
+</div>
+
+<div class="secao">
+  <div class="secao-titulo">🔑 DADOS DA DEVOLUÇÃO DE CHAVES</div>
+  <div class="linha"><div class="label">Data/Hora Devolução:</div><div class="valor"><strong>${dataDevolucao}</strong></div></div>
+  <div class="linha"><div class="label">Quantidade de Chaves:</div><div class="valor">2 unidades (Porta Principal + Portaria)</div></div>
+  <div class="linha"><div class="label">Estado das Chaves:</div><div class="valor">✅ Perfeito estado</div></div>
+  <div class="linha"><div class="label">Observações Reparos:</div><div class="valor">Imóvel preparado e pronto para novo uso</div></div>
+</div>
+
+<div class="secao">
+  <div class="secao-titulo">👥 RESPONSÁVEIS PELA DEVOLUÇÃO</div>
+  <div class="linha"><div class="label">Vistoriador/Empresa:</div><div class="valor">Integrativa Negócios Imobiliários</div></div>
+  <div class="linha"><div class="label">Recebedor (Proprietário/Responsável):</div><div class="valor">${contrato.locatario}</div></div>
+</div>
+
+<div style="background: #f0fff0; padding: 15px; border-left: 4px solid #3498db; margin: 20px 0;">
+  <strong>DECLARAÇÃO:</strong><br>
+  O(a) proprietário(a)/responsável declara ter recebido as chaves do imóvel em perfeito estado de conservação, após realização de todos os reparos necessários, isentando a vistoriadora de qualquer responsabilidade posterior.
+</div>
+
+<div class="assinaturas">
+  <div>
+    <div style="font-weight: bold; color: #3498db;">👁️ VISTORIADOR/EMPRESA</div>
+    <div class="assinatura-campo">
+      ________________________<br>
+      Assinatura e Data
+    </div>
+  </div>
+  <div>
+    <div style="font-weight: bold; color: #e74c3c;">👤 RECEBEDOR</div>
+    <div class="assinatura-campo">
+      ________________________<br>
+      Assinatura e Data
+    </div>
+  </div>
+</div>
+
+<div style="text-align: center; margin-top: 40px; font-size: 12px; color: #666;">
+Documento gerado em: ${agora}<br>
+Protocolo: REC-DEV-${new Date().getTime()}
+</div>
+</body>
+</html>
+      `;
+
+      const janela = window.open('', '', 'width=900,height=700');
       janela.document.write(html);
       janela.document.close();
       setTimeout(() => janela.print(), 250);
