@@ -27,6 +27,10 @@ const contractSchema = new mongoose.Schema({
   dataDevolucaoChaves: Date,
   statusChaves: { type: String, enum: ['pendente', 'recebidas', 'nao-recebidas'], default: 'pendente' },
   finalizado: { type: String, enum: ['sim', 'nao'], default: 'nao' },
+  responsavel: String,
+  prioridade: { type: String, enum: ['baixa', 'media', 'alta', 'critica'], default: 'media' },
+  statusImovel: { type: String, enum: ['em-desocupacao', 'em-reparo', 'pronto-para-aluguel', 'alugado', 'bloqueado'], default: 'em-desocupacao' },
+  dataDisponivelAluguel: Date,
   reparos: [{
     descricao: String,
     urgencia: String,
@@ -95,6 +99,10 @@ app.post('/api/contracts', async (req, res) => {
       dataDevolucaoChaves: req.body.dataDevolucaoChaves,
       statusChaves: req.body.statusChaves || 'pendente',
       finalizado: req.body.finalizado || 'nao',
+      responsavel: req.body.responsavel,
+      prioridade: req.body.prioridade || 'media',
+      statusImovel: req.body.statusImovel || 'em-desocupacao',
+      dataDisponivelAluguel: req.body.dataDisponivelAluguel,
       reparos: req.body.reparos || []
     });
     await novoContrato.save();
@@ -120,6 +128,10 @@ app.put('/api/contracts/:id', async (req, res) => {
     contrato.dataDevolucaoChaves = req.body.dataDevolucaoChaves || contrato.dataDevolucaoChaves;
     contrato.statusChaves = req.body.statusChaves || contrato.statusChaves;
     contrato.finalizado = req.body.finalizado || contrato.finalizado;
+    contrato.responsavel = req.body.responsavel || contrato.responsavel;
+    contrato.prioridade = req.body.prioridade || contrato.prioridade;
+    contrato.statusImovel = req.body.statusImovel || contrato.statusImovel;
+    contrato.dataDisponivelAluguel = req.body.dataDisponivelAluguel || contrato.dataDisponivelAluguel;
     contrato.dataAtualizacao = new Date();
 
     await contrato.save();
