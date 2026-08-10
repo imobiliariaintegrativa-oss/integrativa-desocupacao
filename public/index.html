@@ -620,11 +620,12 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.10 🚀 Nome Vistoriador + Quantidade Chaves Dinâmica</div>
+    <div class="version-badge">V25.11 🚀 Relatórios + Ordenação Contratos</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
         <button class="tab-btn" onclick="mudarAba('operacional')">📈 Operacional</button>
+        <button class="tab-btn" onclick="mudarAba('relatorios')">📋 Relatórios</button>
         <button class="tab-btn" onclick="mudarAba('contratos')">📋 Contratos</button>
       </div>
       <button class="theme-toggle" onclick="toggleDarkMode()">🌙</button>
@@ -753,6 +754,67 @@
       </div>
     </div>
 
+    <!-- ABA RELATÓRIOS -->
+    <div id="relatorios" class="tab-content">
+      <h2 class="section-title">📋 Relatórios</h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+        <!-- Relatório 1: Chaves Entregues -->
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 24px; margin-bottom: 10px;">🔑</div>
+          <div style="font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">Chaves Entregues</div>
+          <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Locatários que entregaram chaves</div>
+          <button onclick="gerarRelatorioChavasEntregues()" style="width: 100%; background: #3498db; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">📄 Gerar PDF</button>
+        </div>
+
+        <!-- Relatório 2: Imóveis Finalizados -->
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 24px; margin-bottom: 10px;">✅</div>
+          <div style="font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">Imóveis Finalizados</div>
+          <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Desocupações 100% concluídas</div>
+          <button onclick="gerarRelatorioImovelFinalizados()" style="width: 100%; background: #27ae60; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">📄 Gerar PDF</button>
+        </div>
+
+        <!-- Relatório 3: Imóveis em Manutenção -->
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 24px; margin-bottom: 10px;">🔧</div>
+          <div style="font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">Imóveis em Manutenção</div>
+          <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Reparos em andamento</div>
+          <button onclick="gerarRelatorioImovelManutencao()" style="width: 100%; background: #e74c3c; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">📄 Gerar PDF</button>
+        </div>
+
+        <!-- Relatório 4: Vistorias Próximas -->
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 24px; margin-bottom: 10px;">📅</div>
+          <div style="font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">Vistorias Próximas</div>
+          <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Agendadas para os próximos 30 dias</div>
+          <button onclick="gerarRelatorioVistoriaProximas()" style="width: 100%; background: #f39c12; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">📄 Gerar PDF</button>
+        </div>
+      </div>
+
+      <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; color: #2c3e50;">📊 Resumo Rápido</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px;">
+          <div style="background: #ecf7ff; padding: 15px; border-radius: 5px; border-left: 4px solid #3498db;">
+            <div style="font-size: 12px; color: #7f8c8d;">🔑 Chaves Recebidas</div>
+            <div style="font-size: 24px; font-weight: bold; color: #3498db;" id="resumo-chaves">0</div>
+          </div>
+          <div style="background: #f0fff0; padding: 15px; border-radius: 5px; border-left: 4px solid #27ae60;">
+            <div style="font-size: 12px; color: #7f8c8d;">✅ Finalizados</div>
+            <div style="font-size: 24px; font-weight: bold; color: #27ae60;" id="resumo-finalizados">0</div>
+          </div>
+          <div style="background: #fff5f0; padding: 15px; border-radius: 5px; border-left: 4px solid #e74c3c;">
+            <div style="font-size: 12px; color: #7f8c8d;">🔧 Em Reparo</div>
+            <div style="font-size: 24px; font-weight: bold; color: #e74c3c;" id="resumo-reparo">0</div>
+          </div>
+          <div style="background: #fff9f0; padding: 15px; border-radius: 5px; border-left: 4px solid #f39c12;">
+            <div style="font-size: 12px; color: #7f8c8d;">📅 Vistorias 30d</div>
+            <div style="font-size: 24px; font-weight: bold; color: #f39c12;" id="resumo-vistoria">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- ABA CONTRATOS -->
     <div id="contratos" class="tab-content">
       <h2 class="section-title">📋 Contratos em Desocupação</h2>
@@ -766,6 +828,17 @@
         </div>
         <button onclick="abrirModalNovoContrato()" class="btn-success" style="background-color: #27ae60;">➕ Novo Contrato</button>
         <button onclick="recarregarDados()" style="background-color: #95a5a6;">🔄 Atualizar</button>
+        
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <label style="font-size: 12px; color: #2c3e50; font-weight: bold;">📊 Ordenar por:</label>
+          <select id="ordenarPor" onchange="ordenarContratos(this.value)" style="padding: 8px 10px; border: 1px solid #bdc3c7; border-radius: 5px; cursor: pointer; font-size: 12px;">
+            <option value="">-- Padrão --</option>
+            <option value="comunicacao">📱 Data Comunicação</option>
+            <option value="vistoria">📅 Data Vistoria</option>
+            <option value="entrega">🔑 Data Entrega Chaves</option>
+            <option value="contrato">📋 Contrato (A-Z)</option>
+          </select>
+        </div>
       </div>
 
       <div class="table-wrapper">
@@ -1504,6 +1577,7 @@
           atualizarAlertas();
           atualizarTabela();
           calcularMetricas(); // Atualizar métricas operacionais (V25.7)
+          atualizarResumoRelatorios(); // Atualizar resumo de relatórios (V25.10)
           document.getElementById('loading').style.display = 'none';
           document.getElementById('tabela').style.display = 'table';
           atualizarSyncStatus('synced');
@@ -2320,6 +2394,350 @@ Protocolo: REC-DEV-${new Date().getTime()}
       janela.document.write(html);
       janela.document.close();
       setTimeout(() => janela.print(), 250);
+    }
+
+    // ========= RELATÓRIOS (V25.10) =========
+    function atualizarResumoRelatorios() {
+      const chavasRecebidas = contratos.filter(c => c.statusChaves === 'recebidas').length;
+      const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
+      const emReparo = contratos.filter(c => c.statusImovel === 'em-reparo').length;
+      
+      const agora = new Date();
+      const proximos30dias = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000);
+      const vistoriasProximas = contratos.filter(c => {
+        if (!c.agendamentoVistoria) return false;
+        const dataVistoria = new Date(c.agendamentoVistoria);
+        return dataVistoria >= agora && dataVistoria <= proximos30dias;
+      }).length;
+
+      document.getElementById('resumo-chaves').textContent = chavasRecebidas;
+      document.getElementById('resumo-finalizados').textContent = finalizados;
+      document.getElementById('resumo-reparo').textContent = emReparo;
+      document.getElementById('resumo-vistoria').textContent = vistoriasProximas;
+    }
+
+    function gerarRelatorioChavasEntregues() {
+      const chavasRecebidas = contratos.filter(c => c.statusChaves === 'recebidas');
+      
+      if (chavasRecebidas.length === 0) {
+        mostrarToast('❌ Nenhuma chave recebida ainda!', true);
+        return;
+      }
+
+      const agora = new Date().toLocaleString('pt-BR');
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; }
+.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #3498db; padding-bottom: 15px; }
+.titulo { font-size: 24px; font-weight: bold; color: #3498db; }
+.subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th { background: #3498db; color: white; padding: 12px; text-align: left; }
+td { padding: 10px; border-bottom: 1px solid #ecf0f1; }
+tr:nth-child(even) { background: #f9f9f9; }
+.total { font-weight: bold; background: #ecf0f1; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="titulo">🔑 RELATÓRIO DE CHAVES ENTREGUES</div>
+  <div class="subtitulo">Locatários que entregaram chaves</div>
+  <div class="subtitulo">${agora}</div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Contrato</th>
+      <th>Locatário</th>
+      <th>Endereço</th>
+      <th>Data Entrega</th>
+      <th>Status</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${chavasRecebidas.map(c => `
+      <tr>
+        <td>${c.contrato}</td>
+        <td>${c.locatario}</td>
+        <td>${c.endereco}</td>
+        <td>${c.entregaChaves ? new Date(c.entregaChaves).toLocaleDateString('pt-BR') : 'Não informado'}</td>
+        <td>✅ Recebidas</td>
+      </tr>
+    `).join('')}
+  </tbody>
+</table>
+
+<div class="total" style="margin-top: 20px; padding: 12px; text-align: center;">
+  Total de Contratos com Chaves Entregues: <strong>${chavasRecebidas.length}</strong>
+</div>
+</body>
+</html>
+      `;
+
+      const janela = window.open('', '', 'width=900,height=700');
+      janela.document.write(html);
+      janela.document.close();
+      setTimeout(() => janela.print(), 250);
+    }
+
+    function gerarRelatorioImovelFinalizados() {
+      const finalizados = contratos.filter(c => c.finalizado === 'sim');
+      
+      if (finalizados.length === 0) {
+        mostrarToast('❌ Nenhum imóvel finalizado ainda!', true);
+        return;
+      }
+
+      const agora = new Date().toLocaleString('pt-BR');
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; }
+.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #27ae60; padding-bottom: 15px; }
+.titulo { font-size: 24px; font-weight: bold; color: #27ae60; }
+.subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th { background: #27ae60; color: white; padding: 12px; text-align: left; }
+td { padding: 10px; border-bottom: 1px solid #ecf0f1; }
+tr:nth-child(even) { background: #f9f9f9; }
+.total { font-weight: bold; background: #ecf0f1; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="titulo">✅ RELATÓRIO DE IMÓVEIS FINALIZADOS</div>
+  <div class="subtitulo">Desocupações 100% concluídas</div>
+  <div class="subtitulo">${agora}</div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Contrato</th>
+      <th>Locatário</th>
+      <th>Endereço</th>
+      <th>Data Finalização</th>
+      <th>Responsável</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${finalizados.map(c => `
+      <tr>
+        <td>${c.contrato}</td>
+        <td>${c.locatario}</td>
+        <td>${c.endereco}</td>
+        <td>${c.dataAtualizacao ? new Date(c.dataAtualizacao).toLocaleDateString('pt-BR') : 'Não informado'}</td>
+        <td>${c.responsavel || '-'}</td>
+      </tr>
+    `).join('')}
+  </tbody>
+</table>
+
+<div class="total" style="margin-top: 20px; padding: 12px; text-align: center;">
+  Total de Imóveis Finalizados: <strong>${finalizados.length}</strong>
+</div>
+</body>
+</html>
+      `;
+
+      const janela = window.open('', '', 'width=900,height=700');
+      janela.document.write(html);
+      janela.document.close();
+      setTimeout(() => janela.print(), 250);
+    }
+
+    function gerarRelatorioImovelManutencao() {
+      const emReparo = contratos.filter(c => c.statusImovel === 'em-reparo');
+      
+      if (emReparo.length === 0) {
+        mostrarToast('❌ Nenhum imóvel em manutenção!', true);
+        return;
+      }
+
+      const agora = new Date().toLocaleString('pt-BR');
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; }
+.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #e74c3c; padding-bottom: 15px; }
+.titulo { font-size: 24px; font-weight: bold; color: #e74c3c; }
+.subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th { background: #e74c3c; color: white; padding: 12px; text-align: left; }
+td { padding: 10px; border-bottom: 1px solid #ecf0f1; }
+tr:nth-child(even) { background: #f9f9f9; }
+.total { font-weight: bold; background: #ecf0f1; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="titulo">🔧 RELATÓRIO DE IMÓVEIS EM MANUTENÇÃO</div>
+  <div class="subtitulo">Reparos em andamento</div>
+  <div class="subtitulo">${agora}</div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Contrato</th>
+      <th>Locatário</th>
+      <th>Endereço</th>
+      <th>Prioridade</th>
+      <th>Reparos</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${emReparo.map(c => `
+      <tr>
+        <td>${c.contrato}</td>
+        <td>${c.locatario}</td>
+        <td>${c.endereco}</td>
+        <td>${c.prioridade || '-'}</td>
+        <td>${c.reparos ? c.reparos.length : 0} reparo(s)</td>
+      </tr>
+    `).join('')}
+  </tbody>
+</table>
+
+<div class="total" style="margin-top: 20px; padding: 12px; text-align: center;">
+  Total de Imóveis em Manutenção: <strong>${emReparo.length}</strong>
+</div>
+</body>
+</html>
+      `;
+
+      const janela = window.open('', '', 'width=900,height=700');
+      janela.document.write(html);
+      janela.document.close();
+      setTimeout(() => janela.print(), 250);
+    }
+
+    function gerarRelatorioVistoriaProximas() {
+      const agora = new Date();
+      const proximos30dias = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000);
+      
+      const vistoriasProximas = contratos.filter(c => {
+        if (!c.agendamentoVistoria) return false;
+        const dataVistoria = new Date(c.agendamentoVistoria);
+        return dataVistoria >= agora && dataVistoria <= proximos30dias;
+      }).sort((a, b) => new Date(a.agendamentoVistoria) - new Date(b.agendamentoVistoria));
+
+      if (vistoriasProximas.length === 0) {
+        mostrarToast('❌ Nenhuma vistoria agendada para os próximos 30 dias!', true);
+        return;
+      }
+
+      const agoraStr = new Date().toLocaleString('pt-BR');
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; }
+.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #f39c12; padding-bottom: 15px; }
+.titulo { font-size: 24px; font-weight: bold; color: #f39c12; }
+.subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th { background: #f39c12; color: white; padding: 12px; text-align: left; }
+td { padding: 10px; border-bottom: 1px solid #ecf0f1; }
+tr:nth-child(even) { background: #f9f9f9; }
+.total { font-weight: bold; background: #ecf0f1; }
+.urgente { color: #e74c3c; font-weight: bold; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="titulo">📅 RELATÓRIO DE VISTORIAS PRÓXIMAS</div>
+  <div class="subtitulo">Agendadas para os próximos 30 dias</div>
+  <div class="subtitulo">${agoraStr}</div>
+</div>
+
+<table>
+  <thead>
+    <tr>
+      <th>Contrato</th>
+      <th>Locatário</th>
+      <th>Endereço</th>
+      <th>Data Vistoria</th>
+      <th>Prioridade</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${vistoriasProximas.map(c => `
+      <tr>
+        <td>${c.contrato}</td>
+        <td>${c.locatario}</td>
+        <td>${c.endereco}</td>
+        <td><strong>${new Date(c.agendamentoVistoria).toLocaleDateString('pt-BR')}</strong></td>
+        <td>${c.prioridade ? '🔴 ' + c.prioridade.toUpperCase() : '-'}</td>
+      </tr>
+    `).join('')}
+  </tbody>
+</table>
+
+<div class="total" style="margin-top: 20px; padding: 12px; text-align: center;">
+  Total de Vistorias Agendadas (30 dias): <strong>${vistoriasProximas.length}</strong>
+</div>
+</body>
+</html>
+      `;
+
+      const janela = window.open('', '', 'width=900,height=700');
+      janela.document.write(html);
+      janela.document.close();
+      setTimeout(() => janela.print(), 250);
+    }
+
+    function ordenarContratos(criterio) {
+      if (!criterio) {
+        carregarDados();
+        return;
+      }
+
+      let contratoOrdenado = [...contratos];
+
+      switch(criterio) {
+        case 'comunicacao':
+          contratoOrdenado.sort((a, b) => {
+            const dataA = a.comunicacaoInquilino ? new Date(a.comunicacaoInquilino) : new Date('1900-01-01');
+            const dataB = b.comunicacaoInquilino ? new Date(b.comunicacaoInquilino) : new Date('1900-01-01');
+            return dataA - dataB;
+          });
+          break;
+        case 'vistoria':
+          contratoOrdenado.sort((a, b) => {
+            const dataA = a.agendamentoVistoria ? new Date(a.agendamentoVistoria) : new Date('1900-01-01');
+            const dataB = b.agendamentoVistoria ? new Date(b.agendamentoVistoria) : new Date('1900-01-01');
+            return dataA - dataB;
+          });
+          break;
+        case 'entrega':
+          contratoOrdenado.sort((a, b) => {
+            const dataA = a.entregaChaves ? new Date(a.entregaChaves) : new Date('1900-01-01');
+            const dataB = b.entregaChaves ? new Date(b.entregaChaves) : new Date('1900-01-01');
+            return dataA - dataB;
+          });
+          break;
+        case 'contrato':
+          contratoOrdenado.sort((a, b) => a.contrato.localeCompare(b.contrato));
+          break;
+      }
+
+      contratos = contratoOrdenado;
+      atualizarTabela();
+      mostrarToast('✅ Contratos reordenados!', false);
     }
 
     function fecharModalReparo() {
