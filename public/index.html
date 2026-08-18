@@ -620,7 +620,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.13 🚀 Financeiro + Tarefas + Comercial + Recibos Profissionais</div>
+    <div class="version-badge">V25.14 🔧 Alertas Corrigidos + Financeiro Sincronizado + Relatório Comunicações</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -792,6 +792,14 @@
           <div style="font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">Vistorias Próximas</div>
           <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Agendadas para os próximos 30 dias</div>
           <button onclick="gerarRelatorioVistoriaProximas()" style="width: 100%; background: #f39c12; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">📄 Gerar PDF</button>
+        </div>
+
+        <!-- Relatório 5: Comunicações do Mês (NOVO V25.14) -->
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 24px; margin-bottom: 10px;">📞</div>
+          <div style="font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">Comunicações do Mês</div>
+          <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Avisos de desocupação feitos neste mês</div>
+          <button onclick="gerarRelatorioComunicacoesMes()" style="width: 100%; background: #9b59b6; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">📄 Gerar PDF</button>
         </div>
       </div>
 
@@ -1815,8 +1823,9 @@
     function atualizarAlertas() {
       let alerts = [];
 
+      // ✅ ALERTA 1: Chaves Entregues (Esta Semana) - Excluir Finalizados
       const chavasEntregues = contratos.filter(c => {
-        if (!c.entregaChaves) return false;
+        if (!c.entregaChaves || c.finalizado === 'sim') return false; // NOVA CONDIÇÃO
         const dias = calcularDiasAte(c.entregaChaves);
         return dias !== null && dias <= 7 && dias >= 0;
       });
@@ -1830,8 +1839,9 @@
         });
       }
 
+      // ✅ ALERTA 2: Vistorias Próximas - Excluir Finalizados
       const vistoriasProximas = contratos.filter(c => {
-        if (!c.agendamentoVistoria) return false;
+        if (!c.agendamentoVistoria || c.finalizado === 'sim') return false; // NOVA CONDIÇÃO
         const dias = calcularDiasAte(c.agendamentoVistoria);
         return dias !== null && dias <= 7 && dias >= 0;
       });
@@ -1848,8 +1858,9 @@
         });
       }
 
+      // ✅ ALERTA 3: Desocupações Lentas (45+ dias) - Excluir Finalizados
       const diasAltos = contratos.filter(c => {
-        if (!c.comunicacaoInquilino) return false;
+        if (!c.comunicacaoInquilino || c.finalizado === 'sim') return false; // NOVA CONDIÇÃO
         const dias = calcularDiasDesde(c.comunicacaoInquilino);
         return dias !== null && dias > 45;
       });
@@ -1866,9 +1877,10 @@
         });
       }
 
+      // ✅ ALERTA 4: Reparos Urgentes - Excluir Finalizados
       const repEmManutencao = [];
       contratos.forEach(c => {
-        if (c.reparos) {
+        if (c.reparos && c.finalizado !== 'sim') { // NOVA CONDIÇÃO
           const temUrgente = c.reparos.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
           if (temUrgente) {
             const urgentes = c.reparos.filter(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO').length;
@@ -2936,6 +2948,143 @@ tr:nth-child(even) { background: #f9f9f9; }
       setTimeout(() => janela.print(), 250);
     }
 
+    // ========= RELATÓRIO DE COMUNICAÇÕES DO MÊS (V25.14) =========
+    function gerarRelatorioComunicacoesMes() {
+      // Obter mês e ano atual
+      const agora = new Date();
+      const mesAtual = agora.getMonth() + 1;
+      const anoAtual = agora.getFullYear();
+
+      // Filtrar comunicações do mês atual
+      const comunicacoesMes = contratos.filter(c => {
+        if (!c.comunicacaoInquilino) return false;
+        const dataCom = new Date(c.comunicacaoInquilino);
+        return dataCom.getMonth() + 1 === mesAtual && dataCom.getFullYear() === anoAtual;
+      }).sort((a, b) => new Date(b.comunicacaoInquilino) - new Date(a.comunicacaoInquilino));
+
+      if (comunicacoesMes.length === 0) {
+        mostrarToast('❌ Nenhuma comunicação registrada neste mês!', true);
+        return;
+      }
+
+      const logoHTML = getLogoHTML();
+      const agoraStr = new Date().toLocaleString('pt-BR');
+      const meses = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+      const mesNome = meses[mesAtual];
+
+      // Contar por tipo
+      const comuns = comunicacoesMes.filter(c => c.tipoDesocupacao === 'comum').length;
+      const despejos = comunicacoesMes.filter(c => c.tipoDesocupacao === 'despejo').length;
+      const imoveisProntos = comunicacoesMes.filter(c => c.statusImovel === 'pronto-para-aluguel').length;
+      const emReparo = comunicacoesMes.filter(c => c.statusImovel === 'em-reparo').length;
+
+      const html = `
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+body { font-family: Arial, sans-serif; padding: 20px; }
+.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #9b59b6; padding-bottom: 15px; }
+.logo { text-align: center; margin-bottom: 20px; }
+.titulo { font-size: 24px; font-weight: bold; color: #9b59b6; }
+.subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
+.metricas { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin: 20px 0; }
+.metrica-box { background: #f9f9f9; padding: 12px; border-radius: 5px; border-left: 4px solid #9b59b6; }
+.metrica-box .valor { font-size: 20px; font-weight: bold; color: #9b59b6; }
+table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+th { background: #9b59b6; color: white; padding: 12px; text-align: left; }
+td { padding: 10px; border-bottom: 1px solid #ecf0f1; }
+tr:nth-child(even) { background: #f9f9f9; }
+.total { font-weight: bold; background: #ecf0f1; }
+</style>
+</head>
+<body>
+<div class="logo">\${logoHTML}</div>
+<div class="header">
+  <div class="titulo">📞 RELATÓRIO DE COMUNICAÇÕES - \${mesNome.toUpperCase()} \${anoAtual}</div>
+  <div class="subtitulo">Avisos de desocupação enviados</div>
+  <div class="subtitulo">\${agoraStr}</div>
+  <div class="subtitulo">Integrativa Negócios Imobiliários</div>
+</div>
+
+<div class="metricas">
+  <div class="metrica-box">
+    <div>📊 Total de Comunicações</div>
+    <div class="valor">\${comunicacoesMes.length}</div>
+  </div>
+  
+  <div class="metrica-box">
+    <div>📅 Período</div>
+    <div class="valor">\${mesNome}/\${anoAtual}</div>
+  </div>
+
+  <div class="metrica-box">
+    <div>📋 Desocupações Comuns</div>
+    <div class="valor" style="color: #3498db;">\${comuns}</div>
+  </div>
+
+  <div class="metrica-box">
+    <div>⚖️ Despejos (Judicial)</div>
+    <div class="valor" style="color: #e74c3c;">\${despejos}</div>
+  </div>
+</div>
+
+<h3 style="color: #2c3e50; margin-top: 30px;">📋 Detalhamento das Comunicações</h3>
+<table>
+  <thead>
+    <tr>
+      <th>Contrato</th>
+      <th>Locatário</th>
+      <th>Imóvel</th>
+      <th>Data Comunicação</th>
+      <th>Tipo</th>
+      <th>Status Imóvel</th>
+    </tr>
+  </thead>
+  <tbody>
+    \${comunicacoesMes.map(c => `
+      <tr>
+        <td><strong>\${c.contrato}</strong></td>
+        <td>\${c.locatario}</td>
+        <td>\${c.endereco}</td>
+        <td>\${new Date(c.comunicacaoInquilino).toLocaleDateString('pt-BR')}</td>
+        <td>
+          \${c.tipoDesocupacao === 'despejo' ? '⚖️ DESPEJO' : '📋 COMUM'}
+        </td>
+        <td>
+          \${c.statusImovel === 'pronto-para-aluguel' ? '🏠 Pronto' : c.statusImovel === 'em-reparo' ? '🔧 Em Reparo' : '-'}
+        </td>
+      </tr>
+    `).join('')}
+  </tbody>
+</table>
+
+<div style="margin-top: 20px; padding: 15px; background: #ecf0f1; border-radius: 5px;">
+  <strong>RESUMO DO MÊS</strong>
+  <div style="margin-top: 10px; font-size: 13px;">
+    <div>📊 Total: \${comunicacoesMes.length} comunicações</div>
+    <div style="color: #3498db;">📋 Desocupações Comuns: \${comuns}</div>
+    <div style="color: #e74c3c;">⚖️ Despejos: \${despejos}</div>
+    <div style="color: #27ae60;">🏠 Imóveis Prontos para Aluguel: \${imoveisProntos}</div>
+    <div style="color: #f39c12;">🔧 Imóveis em Reparo: \${emReparo}</div>
+  </div>
+</div>
+
+<p style="margin-top: 30px; font-size: 12px; color: #666; text-align: center; border-top: 1px solid #ddd; padding-top: 20px;">
+  Relatório gerado automaticamente por Integrativa Negócios Imobiliários<br>
+  \${agoraStr}
+</p>
+</body>
+</html>
+      `;
+
+      const janela = window.open('', '', 'width=900,height=700');
+      janela.document.write(html);
+      janela.document.close();
+      setTimeout(() => janela.print(), 250);
+    }
+
     // ========= RECIBO RETIRADA DE CHAVES - LOCATÁRIO (V25.13) =========
     // Para uso quando locatário optar por retirar chaves após vistoria e fazer as manutenções
     function gerarReciboRetiradaLocatario() {
@@ -3971,6 +4120,40 @@ td { padding: 10px; border-bottom: 1px solid #ecf0f1; }
     } else {
       carregarDados();
     }
+
+    // ========= SINCRONIZAÇÃO EM TEMPO REAL (V25.14) =========
+    // Quando outro usuário/aba altera localStorage, sincroniza automaticamente
+    window.addEventListener('storage', (evento) => {
+      console.log('🔄 Storage alterado em outra aba/usuário:', evento.key);
+
+      // Sincronizar Financeiro
+      if (evento.key === 'integrativa_pagamentos') {
+        console.log('💰 Sincronizando pagamentos...');
+        recarregarFinanceiro();
+        mostrarToast('🔄 Pagamentos sincronizados!', false);
+      }
+
+      // Sincronizar Tarefas
+      if (evento.key === 'integrativa_tarefas') {
+        console.log('✅ Sincronizando tarefas...');
+        recarregarTarefas();
+        mostrarToast('🔄 Tarefas sincronizadas!', false);
+      }
+
+      // Sincronizar Logo
+      if (evento.key === 'integrativa_logo') {
+        console.log('🎨 Sincronizando logo...');
+        carregarLogoLocalStorage();
+        mostrarToast('🔄 Logo sincronizado!', false);
+      }
+
+      // Sincronizar Contratos (se alterados no servidor)
+      if (evento.key === 'integrativa_contratos_sync') {
+        console.log('📋 Sincronizando contratos...');
+        carregarDados();
+        mostrarToast('🔄 Contratos sincronizados!', false);
+      }
+    });
   </script>
 </body>
 </html>
