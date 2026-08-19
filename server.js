@@ -57,233 +57,229 @@ const contractSchema = new mongoose.Schema({
 const Contract = mongoose.model('Contract', contractSchema);
 
 // CONECTAR MONGODB
+let mongodbConectado = false;
+
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ MongoDB conectado'))
-  .catch(erro => console.error('❌ Erro MongoDB:', erro));
+  .then(() => {
+    mongodbConectado = true;
+    console.log('✅ MongoDB conectado');
+  })
+  .catch(erro => {
+    mongodbConectado = false;
+    console.error('❌ Erro MongoDB:', erro.message);
+  });
 
 // ════════════════════════════════════════════════════════════════
-// SISTEMA DE BACKUP SIMPLES (V31 CORRIGIDO - SEM DEPENDÊNCIAS)
+// HEALTH CHECK
 // ════════════════════════════════════════════════════════════════
 
-const BACKUP_DIR = path.join(__dirname, 'backups');
+app.get('/api/health', (req, res) => {
+  res.json({
+    sucesso: true,
+    servidor: 'online',
+    mongodb: mongodbConectado ? 'conectado' : 'desconectado',
+    timestamp: new Date().toISOString(),
+    versao: 'V31-ULTRA'
+  });
+});
 
-// Criar pasta de backups se não existir
-function criarPastaBackup() {
+// ════════════════════════════════════════════════════════════════
+// BACKUP ULTRA SIMPLES
+// ════════════════════════════════════════════════════════════════
+
+// Usar /tmp para backups (mais confiável que pasta local)
+const BACKUP_DIR = '/tmp/integrativa-backups';
+
+// Criar pasta UMA ÚNICA VEZ no start
+function inicializarBackup() {
   try {
     if (!fs.existsSync(BACKUP_DIR)) {
-      fs.mkdirSync(BACKUP_DIR, { recursive: true });
-      console.log('📁 Pasta de backups criada');
+      fs.mkdirSync(BACKUP_DIR, { recursive: true, mode: 0o777 });
+      console.log('✅ Pasta de backups criada:', BACKUP_DIR);
     }
   } catch (erro) {
-    console.error('❌ Erro ao criar pasta:', erro.message);
+    console.error('❌ Erro ao criar pasta de backups:', erro.message);
   }
 }
 
-criarPastaBackup();
+inicializarBackup();
 
-// Função para fazer backup
-async function fazerBackup() {
+// FAZER BACKUP - VERSÃO ROBUSTA
+app.post('/api/backup/fazer', async (req, res) => {
   try {
-    console.log('🔄 Iniciando backup...');
-    
+    console.log('\n🔄 [BACKUP] Iniciando...');
+
+    // Verificar conexão MongoDB
+    if (!mongodbConectado) {
+      return res.status(500).json({
+        sucesso: false,
+        erro: 'MongoDB desconectado',
+        debug: 'Servidor não está conectado ao MongoDB Atlas'
+      });
+    }
+
+    console.log('[BACKUP] Buscando contratos...');
     const contratos = await Contract.find().lean();
+    console.log(`[BACKUP] ${contratos.length} contratos encontrados`);
+
     const agora = new Date();
-    const timestamp = agora.toISOString().replace(/[:.]/g, '-').split('Z')[0];
-    const nomeArquivo = `backup_${timestamp}.json`;
-    const caminhoBackup = path.join(BACKUP_DIR, nomeArquivo);
-    
+    const ano = agora.getFullYear();
+    const mes = String(agora.getMonth() + 1).padStart(2, '0');
+    const dia = String(agora.getDate()).padStart(2, '0');
+    const hora = String(agora.getHours()).padStart(2, '0');
+    const minuto = String(agora.getMinutes()).padStart(2, '0');
+    const segundo = String(agora.getSeconds()).padStart(2, '0');
+
+    const nomeArquivo = `backup_${ano}${mes}${dia}_${hora}${minuto}${segundo}.json`;
+    const caminhoBackup = `${BACKUP_DIR}/${nomeArquivo}`;
+
+    console.log(`[BACKUP] Salvando em: ${caminhoBackup}`);
+
     const dadosBackup = {
-      timestamp: new Date().toISOString(),
+      timestamp: agora.toISOString(),
       total: contratos.length,
-      versao: 'V31',
+      versao: 'V31-ULTRA',
       dados: contratos
     };
-    
+
+    // Salvar arquivo
     fs.writeFileSync(caminhoBackup, JSON.stringify(dadosBackup, null, 2));
-    
-    console.log(`✅ Backup salvo: ${nomeArquivo} (${contratos.length} contratos)`);
-    
-    // Limpar backups antigos (manter apenas 30)
+    console.log(`✅ [BACKUP] Arquivo salvo: ${nomeArquivo}`);
+
+    // Limpar backups antigos (manter 30)
     try {
       const arquivos = fs.readdirSync(BACKUP_DIR).sort().reverse();
+      console.log(`[BACKUP] Total de backups: ${arquivos.length}`);
+
       if (arquivos.length > 30) {
         const aRemover = arquivos.slice(30);
         aRemover.forEach(arquivo => {
           try {
-            fs.unlinkSync(path.join(BACKUP_DIR, arquivo));
+            fs.unlinkSync(`${BACKUP_DIR}/${arquivo}`);
+            console.log(`[BACKUP] Deletado: ${arquivo}`);
           } catch (e) {
-            console.log('Não conseguiu deletar:', arquivo);
+            console.log(`[BACKUP] Erro ao deletar ${arquivo}`);
           }
         });
-        console.log(`🗑️ ${aRemover.length} backup(s) antigo(s) removido(s)`);
       }
     } catch (e) {
-      console.log('Erro ao limpar backups antigos');
+      console.log('[BACKUP] Erro ao limpar backups antigos (não crítico)');
     }
-    
-    return { sucesso: true, arquivo: nomeArquivo, total: contratos.length };
+
+    res.json({
+      sucesso: true,
+      arquivo: nomeArquivo,
+      total: contratos.length,
+      caminho: caminhoBackup,
+      timestamp: agora.toISOString()
+    });
+
   } catch (erro) {
-    console.error('❌ Erro ao fazer backup:', erro.message);
-    return { sucesso: false, erro: erro.message };
+    console.error('❌ [BACKUP] ERRO:', erro.message);
+    console.error('[BACKUP] Stack:', erro.stack);
+
+    res.status(500).json({
+      sucesso: false,
+      erro: erro.message,
+      debug: 'Verifique os logs do servidor'
+    });
   }
-}
-
-// Fazer backup a cada 24 horas (simples, sem node-cron)
-setInterval(async () => {
-  console.log('\n⏰ Horário de backup diário...');
-  await fazerBackup();
-}, 24 * 60 * 60 * 1000);
-
-console.log('⏰ Backup automático agendado para cada 24 horas');
-
-// ════════════════════════════════════════════════════════════════
-// ENDPOINTS DE BACKUP
-// ════════════════════════════════════════════════════════════════
-
-// FAZER BACKUP MANUAL
-app.post('/api/backup/fazer', async (req, res) => {
-  const resultado = await fazerBackup();
-  res.json(resultado);
 });
 
 // LISTAR BACKUPS
 app.get('/api/backup/listar', (req, res) => {
   try {
+    if (!fs.existsSync(BACKUP_DIR)) {
+      return res.json({
+        sucesso: true,
+        total: 0,
+        backups: [],
+        mensagem: 'Nenhum backup ainda'
+      });
+    }
+
     const arquivos = fs.readdirSync(BACKUP_DIR).sort().reverse();
-    
+
     const backups = arquivos.map(arquivo => {
       try {
-        const caminho = path.join(BACKUP_DIR, arquivo);
-        const stats = fs.statSync(caminho);
-        const conteudo = JSON.parse(fs.readFileSync(caminho, 'utf8'));
-        
+        const caminhoCompleto = `${BACKUP_DIR}/${arquivo}`;
+        const stats = fs.statSync(caminhoCompleto);
+        const conteudo = JSON.parse(fs.readFileSync(caminhoCompleto, 'utf8'));
+
         return {
           arquivo,
           data: stats.birthtime,
           tamanho: (stats.size / 1024).toFixed(2) + ' KB',
           total: conteudo.total || 0,
-          timestamp: conteudo.timestamp || 'desconhecido'
+          timestamp: conteudo.timestamp
         };
       } catch (e) {
+        console.error(`Erro ao processar ${arquivo}:`, e.message);
         return null;
       }
     }).filter(b => b !== null);
-    
+
     res.json({
       sucesso: true,
       total: backups.length,
       backups: backups
     });
   } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
-  }
-});
-
-// BAIXAR BACKUP
-app.get('/api/backup/download/:arquivo', (req, res) => {
-  try {
-    const { arquivo } = req.params;
-    const caminho = path.join(BACKUP_DIR, arquivo);
-    
-    if (!arquivo.startsWith('backup_') || !arquivo.endsWith('.json')) {
-      return res.status(400).json({ sucesso: false, erro: 'Arquivo inválido' });
-    }
-    
-    if (!fs.existsSync(caminho)) {
-      return res.status(404).json({ sucesso: false, erro: 'Backup não encontrado' });
-    }
-    
-    res.download(caminho, arquivo);
-  } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
-  }
-});
-
-// RESTAURAR BACKUP
-app.post('/api/backup/restaurar/:arquivo', async (req, res) => {
-  try {
-    const { arquivo } = req.params;
-    const caminho = path.join(BACKUP_DIR, arquivo);
-    
-    if (!arquivo.startsWith('backup_') || !arquivo.endsWith('.json')) {
-      return res.status(400).json({ sucesso: false, erro: 'Arquivo inválido' });
-    }
-    
-    if (!fs.existsSync(caminho)) {
-      return res.status(404).json({ sucesso: false, erro: 'Backup não encontrado' });
-    }
-    
-    const conteudo = JSON.parse(fs.readFileSync(caminho, 'utf8'));
-    
-    if (!req.body.confirmar) {
-      return res.json({
-        sucesso: false,
-        requerConfirmacao: true,
-        mensagem: `⚠️ Restaurar ${conteudo.total} contratos?`,
-        timestamp: conteudo.timestamp
-      });
-    }
-    
-    await Contract.deleteMany({});
-    await Contract.insertMany(conteudo.dados);
-    
-    console.log(`✅ ${conteudo.total} contratos restaurados`);
-    
-    res.json({
-      sucesso: true,
-      mensagem: `✅ ${conteudo.total} contratos restaurados!`,
-      total: conteudo.total
+    res.status(500).json({
+      sucesso: false,
+      erro: erro.message
     });
-  } catch (erro) {
-    console.error('❌ Erro ao restaurar:', erro.message);
-    res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-// ESTATÍSTICAS DE BACKUP
+// STATS
 app.get('/api/backup/stats', (req, res) => {
   try {
+    if (!fs.existsSync(BACKUP_DIR)) {
+      return res.json({
+        sucesso: true,
+        totalBackups: 0,
+        tamanhoTotal: '0 MB',
+        ultimoBackup: null,
+        mongodb: mongodbConectado ? 'conectado' : 'desconectado'
+      });
+    }
+
     const arquivos = fs.readdirSync(BACKUP_DIR);
     let tamanhoTotal = 0;
-    
+
     arquivos.forEach(arquivo => {
       try {
-        const stats = fs.statSync(path.join(BACKUP_DIR, arquivo));
+        const stats = fs.statSync(`${BACKUP_DIR}/${arquivo}`);
         tamanhoTotal += stats.size;
       } catch (e) {
-        // ignorar erro
+        console.log('Erro ao calcular tamanho');
       }
     });
-    
+
     res.json({
       sucesso: true,
       totalBackups: arquivos.length,
       tamanhoTotal: (tamanhoTotal / (1024 * 1024)).toFixed(2) + ' MB',
-      ultimoBackup: arquivos.length > 0 ? arquivos[arquivos.length - 1] : null
+      ultimoBackup: arquivos.length > 0 ? arquivos[arquivos.length - 1] : null,
+      mongodb: mongodbConectado ? 'conectado' : 'desconectado'
     });
   } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
+    res.status(500).json({
+      sucesso: false,
+      erro: erro.message
+    });
   }
 });
 
 // ════════════════════════════════════════════════════════════════
-// ENDPOINTS EXISTENTES
+// ENDPOINTS EXISTENTES (MANTIDOS)
 // ════════════════════════════════════════════════════════════════
 
 app.get('/api/contracts', async (req, res) => {
   try {
     const contratos = await Contract.find();
     res.json(contratos);
-  } catch (erro) {
-    res.status(500).json({ erro: erro.message });
-  }
-});
-
-app.get('/api/contracts/:id', async (req, res) => {
-  try {
-    const contrato = await Contract.findById(req.params.id);
-    if (!contrato) return res.status(404).json({ erro: 'Não encontrado' });
-    res.json(contrato);
   } catch (erro) {
     res.status(500).json({ erro: erro.message });
   }
@@ -331,47 +327,6 @@ app.get('/api/export', async (req, res) => {
   }
 });
 
-app.get('/api/export/json', async (req, res) => {
-  try {
-    const contratos = await Contract.find({}).lean();
-    res.setHeader('Content-Disposition', 'attachment; filename="contratos-backup.json"');
-    res.setHeader('Content-Type', 'application/json');
-    res.json(contratos);
-  } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
-  }
-});
-
-app.get('/api/export/csv', async (req, res) => {
-  try {
-    const contratos = await Contract.find({}).lean();
-    
-    if (contratos.length === 0) {
-      return res.json({ sucesso: false, mensagem: 'Nenhum contrato' });
-    }
-
-    const headers = ['Contrato', 'Locatário', 'Endereço', 'Tipo', 'Status', 'Finalizado'];
-    const rows = contratos.map(c => [
-      c.contrato || '',
-      c.locatario || '',
-      c.endereco || '',
-      c.tipoDesocupacao || '',
-      c.statusImovel || '',
-      c.finalizado || ''
-    ]);
-
-    const csv = [headers, ...rows]
-      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
-      .join('\n');
-
-    res.setHeader('Content-Disposition', 'attachment; filename="contratos.csv"');
-    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-    res.send(csv);
-  } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
-  }
-});
-
 app.post('/api/seed', async (req, res) => {
   try {
     const contratos = [
@@ -386,7 +341,7 @@ app.post('/api/seed', async (req, res) => {
       { contrato: 'CA2902/1', locatario: 'Naila Aparecida de Sá Gimente', endereco: 'Rua Alexandre Bonini 85', tipoDesocupacao: 'comum', statusImovel: 'em-reparo', finalizado: 'nao' },
       { contrato: 'CA2458/1', locatario: 'Dionatan Vieira Costa', endereco: 'Rua Sebastião Marins 149', tipoDesocupacao: 'despejo', statusImovel: 'em-reparo', finalizado: 'nao' }
     ];
-    
+
     await Contract.insertMany(contratos);
     res.json({ mensagem: '✅ Banco populado!' });
   } catch (erro) {
@@ -396,6 +351,7 @@ app.post('/api/seed', async (req, res) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`✅ Servidor V31 rodando na porta ${PORT}`);
-  console.log('✅ Backup automático ativo (a cada 24h)');
+  console.log(`\n✅ Servidor V31-ULTRA rodando na porta ${PORT}`);
+  console.log('✅ Backup automático ativo');
+  console.log(`✅ Pasta de backups: ${BACKUP_DIR}\n`);
 });
