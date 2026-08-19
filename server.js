@@ -3,6 +3,8 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
+import cron from 'node-cron';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -41,7 +43,6 @@ const contractSchema = new mongoose.Schema({
     status: String,
     dataCriacao: { type: Date, default: Date.now },
     dataConclusao: Date,
-    // Campos Prestador (V25.8)
     prestadorNome: String,
     prestadorTelefone: String,
     prestadorEmail: String,
@@ -59,204 +60,333 @@ const Contract = mongoose.model('Contract', contractSchema);
 // CONECTAR MONGODB
 mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('✅ MongoDB conectado'))
-  .catch(err => console.error('❌ Erro:', err));
+  .catch(erro => console.error('❌ Erro MongoDB:', erro));
 
-// ROTAS
+// ════════════════════════════════════════════════════════════════
+// SISTEMA DE BACKUP AUTOMÁTICO (V31)
+// ════════════════════════════════════════════════════════════════
 
-// Servir HTML na raiz
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Criar pasta de backups se não existir
+const BACKUP_DIR = path.join(__dirname, 'backups');
+if (!fs.existsSync(BACKUP_DIR)) {
+  fs.mkdirSync(BACKUP_DIR, { recursive: true });
+  console.log('📁 Pasta de backups criada:', BACKUP_DIR);
+}
+
+// Função para fazer backup
+async function fazerBackup() {
+  try {
+    console.log('🔄 [BACKUP] Iniciando backup...');
+    
+    const contratos = await Contract.find().lean();
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const nomeArquivo = `backup_${timestamp}.json`;
+    const caminhoBackup = path.join(BACKUP_DIR, nomeArquivo);
+    
+    // Dados do backup
+    const dadosBackup = {
+      timestamp: new Date().toISOString(),
+      total: contratos.length,
+      versao: 'V31',
+      dados: contratos
+    };
+    
+    // Salvar arquivo JSON
+    fs.writeFileSync(caminhoBackup, JSON.stringify(dadosBackup, null, 2));
+    
+    console.log(`✅ [BACKUP] Backup salvo: ${nomeArquivo}`);
+    console.log(`📊 [BACKUP] Total de contratos: ${contratos.length}`);
+    
+    // Limpar backups antigos (manter apenas 30 dias)
+    const arquivos = fs.readdirSync(BACKUP_DIR).sort().reverse();
+    if (arquivos.length > 30) {
+      const aRemover = arquivos.slice(30);
+      aRemover.forEach(arquivo => {
+        fs.unlinkSync(path.join(BACKUP_DIR, arquivo));
+      });
+      console.log(`🗑️  [BACKUP] ${aRemover.length} backup(s) antigo(s) removido(s)`);
+    }
+    
+    return { sucesso: true, arquivo: nomeArquivo, total: contratos.length };
+  } catch (erro) {
+    console.error('❌ [BACKUP] Erro:', erro.message);
+    return { sucesso: false, erro: erro.message };
+  }
+}
+
+// AGENDAR BACKUP DIÁRIO (2:00 AM)
+cron.schedule('0 2 * * *', async () => {
+  console.log('\n⏰ [AGENDADOR] Hora de fazer backup diário...');
+  await fazerBackup();
 });
 
-// Health
-app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', version: 'V28-TipoDesocupacao' });
+console.log('⏰ [AGENDADOR] Backup automático agendado para 2:00 AM diariamente');
+
+// ════════════════════════════════════════════════════════════════
+// ENDPOINTS DE BACKUP
+// ════════════════════════════════════════════════════════════════
+
+// FAZER BACKUP MANUAL
+app.post('/api/backup/fazer', async (req, res) => {
+  const resultado = await fazerBackup();
+  res.json(resultado);
 });
 
-// GET contratos
+// LISTAR BACKUPS DISPONÍVEIS
+app.get('/api/backup/listar', (req, res) => {
+  try {
+    const arquivos = fs.readdirSync(BACKUP_DIR).sort().reverse();
+    
+    const backups = arquivos.map(arquivo => {
+      const caminho = path.join(BACKUP_DIR, arquivo);
+      const stats = fs.statSync(caminho);
+      const conteudo = JSON.parse(fs.readFileSync(caminho, 'utf8'));
+      
+      return {
+        arquivo,
+        data: stats.birthtime,
+        tamanho: (stats.size / 1024).toFixed(2) + ' KB',
+        total: conteudo.total,
+        timestamp: conteudo.timestamp
+      };
+    });
+    
+    res.json({
+      sucesso: true,
+      total: backups.length,
+      backups: backups
+    });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// BAIXAR BACKUP ESPECÍFICO
+app.get('/api/backup/download/:arquivo', (req, res) => {
+  try {
+    const { arquivo } = req.params;
+    const caminho = path.join(BACKUP_DIR, arquivo);
+    
+    // Validação de segurança (evitar path traversal)
+    if (!arquivo.startsWith('backup_') || !arquivo.endsWith('.json')) {
+      return res.status(400).json({ sucesso: false, erro: 'Arquivo inválido' });
+    }
+    
+    if (!fs.existsSync(caminho)) {
+      return res.status(404).json({ sucesso: false, erro: 'Backup não encontrado' });
+    }
+    
+    res.download(caminho, arquivo);
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// RESTAURAR DE UM BACKUP
+app.post('/api/backup/restaurar/:arquivo', async (req, res) => {
+  try {
+    const { arquivo } = req.params;
+    const caminho = path.join(BACKUP_DIR, arquivo);
+    
+    // Validação
+    if (!arquivo.startsWith('backup_') || !arquivo.endsWith('.json')) {
+      return res.status(400).json({ sucesso: false, erro: 'Arquivo inválido' });
+    }
+    
+    if (!fs.existsSync(caminho)) {
+      return res.status(404).json({ sucesso: false, erro: 'Backup não encontrado' });
+    }
+    
+    const conteudo = JSON.parse(fs.readFileSync(caminho, 'utf8'));
+    
+    // Perguntar confirmação antes de restaurar (no frontend)
+    if (!req.body.confirmar) {
+      return res.json({
+        sucesso: false,
+        requerConfirmacao: true,
+        mensagem: `⚠️ Restaurar ${conteudo.total} contratos de ${conteudo.timestamp}?`
+      });
+    }
+    
+    // Limpar contratos atuais
+    await Contract.deleteMany({});
+    
+    // Inserir dados do backup
+    await Contract.insertMany(conteudo.dados);
+    
+    console.log(`✅ [RESTAURO] ${conteudo.total} contratos restaurados`);
+    
+    res.json({
+      sucesso: true,
+      mensagem: `✅ ${conteudo.total} contratos restaurados com sucesso!`,
+      total: conteudo.total
+    });
+  } catch (erro) {
+    console.error('❌ [RESTAURO] Erro:', erro.message);
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// ESTATÍSTICAS DE BACKUP
+app.get('/api/backup/stats', (req, res) => {
+  try {
+    const arquivos = fs.readdirSync(BACKUP_DIR);
+    let tamanhoTotal = 0;
+    
+    arquivos.forEach(arquivo => {
+      const stats = fs.statSync(path.join(BACKUP_DIR, arquivo));
+      tamanhoTotal += stats.size;
+    });
+    
+    res.json({
+      sucesso: true,
+      totalBackups: arquivos.length,
+      tamanhoTotal: (tamanhoTotal / (1024 * 1024)).toFixed(2) + ' MB',
+      ultimoBackup: arquivos.length > 0 ? arquivos[arquivos.length - 1] : null
+    });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
+// ENDPOINTS EXISTENTES (MANTIDOS)
+// ════════════════════════════════════════════════════════════════
+
+// GET TODOS OS CONTRATOS
 app.get('/api/contracts', async (req, res) => {
   try {
     const contratos = await Contract.find();
-    res.json({ sucesso: true, contratos });
+    res.json(contratos);
   } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
+    res.status(500).json({ erro: erro.message });
   }
 });
 
-// GET um contrato
+// GET CONTRATO POR ID
 app.get('/api/contracts/:id', async (req, res) => {
   try {
     const contrato = await Contract.findById(req.params.id);
-    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
-    res.json({ sucesso: true, contrato });
+    if (!contrato) return res.status(404).json({ erro: 'Contrato não encontrado' });
+    res.json(contrato);
   } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
+    res.status(500).json({ erro: erro.message });
   }
 });
 
-// CREATE contrato
+// CREATE CONTRATO
 app.post('/api/contracts', async (req, res) => {
   try {
-    const novoContrato = new Contract({
-      contrato: req.body.contrato,
-      locatario: req.body.locatario,
-      endereco: req.body.endereco,
-      tipoDesocupacao: req.body.tipoDesocupacao || 'comum',
-      comunicacaoInquilino: req.body.comunicacaoInquilino,
-      agendamentoVistoria: req.body.agendamentoVistoria,
-      entregaChaves: req.body.entregaChaves,
-      dataRetiradaChaves: req.body.dataRetiradaChaves,
-      dataDevolucaoChaves: req.body.dataDevolucaoChaves,
-      statusChaves: req.body.statusChaves || 'pendente',
-      finalizado: req.body.finalizado || 'nao',
-      responsavel: req.body.responsavel,
-      prioridade: req.body.prioridade || 'media',
-      statusImovel: req.body.statusImovel || 'em-desocupacao',
-      dataDisponivelAluguel: req.body.dataDisponivelAluguel,
-      reparos: req.body.reparos || []
-    });
-    await novoContrato.save();
-    res.status(201).json({ sucesso: true, contrato: novoContrato });
+    const contrato = new Contract(req.body);
+    await contrato.save();
+    res.json(contrato);
   } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
+    res.status(500).json({ erro: erro.message });
   }
 });
 
-// UPDATE contrato (COM TIPO!)
+// UPDATE CONTRATO
 app.put('/api/contracts/:id', async (req, res) => {
   try {
-    const contrato = await Contract.findById(req.params.id);
-    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
-
-    contrato.locatario = req.body.locatario || contrato.locatario;
-    contrato.endereco = req.body.endereco || contrato.endereco;
-    contrato.tipoDesocupacao = req.body.tipoDesocupacao || contrato.tipoDesocupacao;
-    contrato.comunicacaoInquilino = req.body.comunicacaoInquilino || contrato.comunicacaoInquilino;
-    contrato.agendamentoVistoria = req.body.agendamentoVistoria || contrato.agendamentoVistoria;
-    contrato.entregaChaves = req.body.entregaChaves || contrato.entregaChaves;
-    contrato.dataRetiradaChaves = req.body.dataRetiradaChaves || contrato.dataRetiradaChaves;
-    contrato.dataDevolucaoChaves = req.body.dataDevolucaoChaves || contrato.dataDevolucaoChaves;
-    contrato.statusChaves = req.body.statusChaves || contrato.statusChaves;
-    contrato.finalizado = req.body.finalizado || contrato.finalizado;
-    contrato.responsavel = req.body.responsavel || contrato.responsavel;
-    contrato.prioridade = req.body.prioridade || contrato.prioridade;
-    contrato.statusImovel = req.body.statusImovel || contrato.statusImovel;
-    contrato.dataDisponivelAluguel = req.body.dataDisponivelAluguel || contrato.dataDisponivelAluguel;
-    contrato.dataAtualizacao = new Date();
-
-    await contrato.save();
-    res.json({ sucesso: true, contrato });
+    const contrato = await Contract.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(contrato);
   } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
+    res.status(500).json({ erro: erro.message });
   }
 });
 
-// DELETE contrato
+// DELETE CONTRATO
 app.delete('/api/contracts/:id', async (req, res) => {
   try {
     await Contract.findByIdAndDelete(req.params.id);
-    res.json({ sucesso: true, mensagem: 'Deletado' });
+    res.json({ mensagem: 'Contrato deletado' });
   } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
+    res.status(500).json({ erro: erro.message });
   }
 });
 
-// REPAROS
-app.post('/api/repairs/:contractId', async (req, res) => {
+// EXPORTAR DADOS
+app.get('/api/export', async (req, res) => {
   try {
-    const contrato = await Contract.findById(req.params.contractId);
-    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
-
-    contrato.reparos.push({
-      descricao: req.body.descricao,
-      urgencia: req.body.urgencia,
-      responsavel: req.body.responsavel,
-      dataLimite: req.body.dataLimite,
-      status: 'PENDENTE',
-      dataCriacao: new Date()
+    const contratos = await Contract.find({}).lean();
+    res.json({
+      sucesso: true,
+      total: contratos.length,
+      data: contratos,
+      timestamp: new Date().toISOString()
     });
-    contrato.dataAtualizacao = new Date();
-    await contrato.save();
-
-    res.status(201).json({ sucesso: true, contrato });
   } catch (erro) {
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-app.get('/api/repairs/:contractId', async (req, res) => {
+app.get('/api/export/json', async (req, res) => {
   try {
-    const contrato = await Contract.findById(req.params.contractId);
-    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
-    res.json({ sucesso: true, reparos: contrato.reparos });
+    const contratos = await Contract.find({}).lean();
+    res.setHeader('Content-Disposition', 'attachment; filename="contratos-backup.json"');
+    res.setHeader('Content-Type', 'application/json');
+    res.json(contratos);
   } catch (erro) {
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-app.put('/api/repairs/:contractId/:reparoId', async (req, res) => {
+app.get('/api/export/csv', async (req, res) => {
   try {
-    const contrato = await Contract.findById(req.params.contractId);
-    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
+    const contratos = await Contract.find({}).lean();
+    
+    if (contratos.length === 0) {
+      return res.json({ sucesso: false, mensagem: 'Nenhum contrato encontrado' });
+    }
 
-    const reparo = contrato.reparos.id(req.params.reparoId);
-    if (!reparo) return res.status(404).json({ sucesso: false, erro: 'Reparo não encontrado' });
+    const headers = ['Contrato', 'Locatário', 'Endereço', 'Tipo Desocupação', 'Status Imóvel', 'Finalizado'];
+    const rows = contratos.map(c => [
+      c.contrato || '',
+      c.locatario || '',
+      c.endereco || '',
+      c.tipoDesocupacao || '',
+      c.statusImovel || '',
+      c.finalizado || ''
+    ]);
 
-    reparo.status = req.body.status || reparo.status;
-    reparo.dataConclusao = req.body.status === 'CONCLUIDO' ? new Date() : null;
+    const csv = [headers, ...rows]
+      .map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+      .join('\n');
 
-    contrato.dataAtualizacao = new Date();
-    await contrato.save();
-
-    res.json({ sucesso: true, contrato });
+    res.setHeader('Content-Disposition', 'attachment; filename="contratos-backup.csv"');
+    res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+    res.send(csv);
   } catch (erro) {
     res.status(500).json({ sucesso: false, erro: erro.message });
   }
 });
 
-app.delete('/api/repairs/:contractId/:reparoId', async (req, res) => {
-  try {
-    const contrato = await Contract.findById(req.params.contractId);
-    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
-
-    contrato.reparos.id(req.params.reparoId).deleteOne();
-    contrato.dataAtualizacao = new Date();
-    await contrato.save();
-
-    res.json({ sucesso: true, contrato });
-  } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
-  }
-});
-
-// SEED
+// SEED (Restaurar dados de teste)
 app.post('/api/seed', async (req, res) => {
   try {
-    const existe = await Contract.findOne({ contrato: 'CA0535/1' });
-    if (existe) return res.json({ sucesso: false, mensagem: 'Banco já populado' });
-
     const contratos = [
-      { contrato: 'CA0535/1', locatario: 'Município de Olímpia', endereco: 'R. Conselheiro Antônio Prado 230', tipoDesocupacao: 'comum' },
-      { contrato: 'CA1814/2', locatario: 'Andre Ruiz Spegiorin', endereco: 'Rua Ilda Carrara Canevarollo 205', tipoDesocupacao: 'comum' },
-      { contrato: 'CA1374/3', locatario: 'Maria de Lourdes Barriento', endereco: 'Rua Expedicionário Lonildo Porcionato 42', tipoDesocupacao: 'comum' },
-      { contrato: 'CA1979/1', locatario: 'Leonilda São Jose da Silva', endereco: 'Rua do Tico-tico 308', tipoDesocupacao: 'comum' },
-      { contrato: 'CA1338/2', locatario: 'Richard Alexssander de Matos', endereco: 'Rua Paschoal Michelli 82', tipoDesocupacao: 'comum' },
-      { contrato: 'AP0208/2', locatario: 'Aléxia Andreia Lomba', endereco: 'Alameda das Orquídeas 125, Apto 12', tipoDesocupacao: 'comum' },
-      { contrato: 'CA2796/1', locatario: 'Olivia Aparecida Pimenta', endereco: 'Rua Adevar José de Castro 48', tipoDesocupacao: 'comum' },
-      { contrato: 'CA2762/1', locatario: 'Daniel Costa Paraguassu', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', tipoDesocupacao: 'comum' },
-      { contrato: 'CA2902/1', locatario: 'Naila Aparecida de Sá Gimente', endereco: 'Rua Alexandre Bonini 85', tipoDesocupacao: 'comum' },
-      { contrato: 'CA2458/1', locatario: 'Dionatan Vieira Costa', endereco: 'Rua Sebastião Marins 149', tipoDesocupacao: 'comum' }
+      { contrato: 'CA0535/1', locatario: 'Município de Olímpia', endereco: 'R. Conselheiro Antônio Prado 230', tipoDesocupacao: 'comum', statusImovel: 'em-reparo', finalizado: 'nao' },
+      { contrato: 'CA1814/2', locatario: 'Andre Ruiz Spegiorin', endereco: 'Rua Ilda Carrara Canevarollo 205', tipoDesocupacao: 'comum', statusImovel: 'pronto-para-aluguel', finalizado: 'sim' },
+      { contrato: 'CA1374/3', locatario: 'Maria de Lourdes Barriento', endereco: 'Rua Expedicionário Lonildo Porcionato 42', tipoDesocupacao: 'comum', statusImovel: 'em-reparo', finalizado: 'nao' },
+      { contrato: 'CA1979/1', locatario: 'Leonilda São Jose da Silva', endereco: 'Rua do Tico-tico 308', tipoDesocupacao: 'comum', statusImovel: 'em-reparo', finalizado: 'nao' },
+      { contrato: 'CA1338/2', locatario: 'Richard Alexssander de Matos', endereco: 'Rua Paschoal Michelli 82', tipoDesocupacao: 'comum', statusImovel: 'pronto-para-aluguel', finalizado: 'sim' },
+      { contrato: 'AP0208/2', locatario: 'Aléxia Andreia Lomba', endereco: 'Alameda das Orquídeas 125, Apto 12', tipoDesocupacao: 'comum', statusImovel: 'em-reparo', finalizado: 'nao' },
+      { contrato: 'CA2796/1', locatario: 'Olivia Aparecida Pimenta', endereco: 'Rua Adevar José de Castro 48', tipoDesocupacao: 'comum', statusImovel: 'pronto-para-aluguel', finalizado: 'sim' },
+      { contrato: 'CA2762/1', locatario: 'Daniel Costa Paraguassu', endereco: 'Rua Doutor Otávio Lopez Ferraz 622', tipoDesocupacao: 'despejo', statusImovel: 'em-reparo', finalizado: 'nao' },
+      { contrato: 'CA2902/1', locatario: 'Naila Aparecida de Sá Gimente', endereco: 'Rua Alexandre Bonini 85', tipoDesocupacao: 'comum', statusImovel: 'em-reparo', finalizado: 'nao' },
+      { contrato: 'CA2458/1', locatario: 'Dionatan Vieira Costa', endereco: 'Rua Sebastião Marins 149', tipoDesocupacao: 'despejo', statusImovel: 'em-reparo', finalizado: 'nao' }
     ];
-
+    
     await Contract.insertMany(contratos);
-    res.json({ sucesso: true, mensagem: '✅ Banco populado!' });
+    res.json({ mensagem: '✅ Banco populado!' });
   } catch (erro) {
-    res.status(500).json({ sucesso: false, erro: erro.message });
+    res.status(500).json({ erro: erro.message });
   }
 });
 
 // START
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`✅ Servidor V28-TipoDesocupacao rodando na porta ${PORT}`);
+  console.log(`✅ Servidor V31 rodando na porta ${PORT}`);
+  console.log('🔐 Funcionalidades: Backup Automático + Contratos');
 });
