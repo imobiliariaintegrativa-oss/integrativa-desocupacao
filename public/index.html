@@ -2229,6 +2229,462 @@ body { font-family: Arial, sans-serif; padding: 20px; }
 Documento gerado em: ${agora}<br>
 Protocolo: REC-${new Date().getTime()}
 </div>
+
+<!-- 🚨 SISTEMA DE ALERTAS V2 -->
+<script>
+// ════════════════════════════════════════════════════════════════
+// 🚨 SISTEMA DE ALERTAS INTELIGENTE V2
+// ════════════════════════════════════════════════════════════════
+// Insira este código na parte final do seu index.html (antes de </body>)
+
+const SistemaAlertasV2 = {
+  ultimosAlertas: [],
+  intervaloAtualiz: null,
+
+  // 🎯 INICIAR SISTEMA
+  iniciar() {
+    console.log('🚨 [ALERTAS V2] Sistema iniciado');
+    this.criarInterface();
+    this.atualizarAlertas();
+    
+    // Atualizar a cada 5 minutos (300000ms)
+    this.intervaloAtualiz = setInterval(() => this.atualizarAlertas(), 300000);
+    
+    // Também permitir atualização manual
+    window.atualizarAlertasManual = () => this.atualizarAlertas();
+  },
+
+  // 🎨 CRIAR INTERFACE
+  criarInterface() {
+    const html = `
+      <div id="alertas-container-v2" style="
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        width: 450px;
+        max-height: 85vh;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-family: Arial, sans-serif;
+        display: none;
+        flex-direction: column;
+      ">
+        <div style="
+          background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+          color: white;
+          padding: 15px;
+          border-radius: 8px 8px 0 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        ">
+          <div>
+            <h3 style="margin: 0; font-size: 18px;">🚨 ALERTAS EM TEMPO REAL</h3>
+            <small id="alertas-count-v2" style="opacity: 0.9;">Carregando...</small>
+          </div>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+          ">×</button>
+        </div>
+
+        <div id="alertas-list-v2" style="
+          overflow-y: auto;
+          flex: 1;
+          padding: 15px;
+        ">
+          <p style="text-align: center; color: #999;">Carregando alertas...</p>
+        </div>
+
+        <div style="
+          background: #f5f5f5;
+          padding: 10px 15px;
+          border-top: 1px solid #eee;
+          border-radius: 0 0 8px 8px;
+          display: flex;
+          gap: 10px;
+          justify-content: space-between;
+        ">
+          <button onclick="atualizarAlertasManual()" style="
+            flex: 1;
+            padding: 8px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+          ">🔄 Atualizar Agora</button>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            flex: 1;
+            padding: 8px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          ">Fechar</button>
+        </div>
+      </div>
+
+      <button id="alertas-btn-v2" onclick="document.getElementById('alertas-container-v2').style.display='flex'" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        color: white;
+        border: none;
+        font-size: 30px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 9998;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        🚨
+      </button>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+  },
+
+  // 🔄 BUSCAR E PROCESSAR ALERTAS
+  async atualizarAlertas() {
+    try {
+      console.log('🔄 [ALERTAS V2] Atualizando...');
+      
+      const resposta = await fetch('https://integrativa-desocupacao.onrender.com/api/contracts');
+      const contratos = await resposta.json();
+
+      if (!Array.isArray(contratos) || contratos.length === 0) {
+        this.mostrarMensagem('Nenhum contrato encontrado');
+        return;
+      }
+
+      const alertas = this.gerarAlertas(contratos);
+      this.renderizarAlertas(alertas);
+
+      // Notificar se novos alertas críticos apareceram
+      this.verificarNovasAlertas(alertas);
+
+    } catch (erro) {
+      console.error('❌ [ALERTAS V2] Erro:', erro);
+      this.mostrarMensagem('Erro ao buscar alertas: ' + erro.message);
+    }
+  },
+
+  // 🎯 GERAR ALERTAS COM REGRAS DE NEGÓCIO
+  gerarAlertas(contratos) {
+    const alertas = [];
+    const hoje = new Date();
+
+    contratos.forEach(c => {
+      const contratoCriado = new Date(c.dataCriacao);
+
+      // ========== ALERTAS DE VISTORIA ==========
+      if (c.agendamentoVistoria) {
+        const dataVistoria = new Date(c.agendamentoVistoria);
+        const diasAtraso = Math.floor((hoje - dataVistoria) / (1000 * 60 * 60 * 24));
+
+        if (diasAtraso > 15) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'VISTORIA_CRÍTICA',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⚠️ VISTORIA ATRASADA',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'AGENDAR VISTORIA AGORA',
+            cor: '#ff4444'
+          });
+        } else if (diasAtraso > 5) {
+          alertas.push({
+            prioridade: 2, // Aviso
+            tipo: 'VISTORIA_AVISO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⏰ VISTORIA PRÓXIMA AO PRAZO',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'CONFIRMAR VISTORIA',
+            cor: '#ff9800'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE PAGAMENTO ==========
+      // Se não tem data de pagamento ou está zerado
+      if (!c.dataRetiradaChaves) {
+        const diasSemPagar = Math.floor((hoje - contratoCriado) / (1000 * 60 * 60 * 24));
+        
+        if (diasSemPagar > 30) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'PAGAMENTO_CRÍTICO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '💰 PAGAMENTO CRÍTICO',
+            descricao: `Contrato sem confirmação de pagamento há ${diasSemPagar} dias`,
+            valor: 'Verificar com cliente',
+            acao: 'COBRAR PAGAMENTO',
+            cor: '#ff4444'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE CHAVES ==========
+      if (c.statusChaves === 'pendente') {
+        alertas.push({
+          prioridade: 2, // Aviso
+          tipo: 'CHAVES_PENDENTE',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔑 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves pendentes`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'COBRAR CHAVES',
+          cor: '#ff9800'
+        });
+      } else if (c.statusChaves === 'nao-recebidas') {
+        alertas.push({
+          prioridade: 1, // Crítico
+          tipo: 'CHAVES_CRÍTICA',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔴 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves - Não recebidas pelo prestador`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'AÇÃO IMEDIATA NECESSÁRIA',
+          cor: '#ff4444'
+        });
+      }
+
+      // ========== ALERTAS DE REPAROS ==========
+      if (c.reparos && c.reparos.length > 0) {
+        c.reparos.forEach(reparo => {
+          if (reparo.status !== 'concluído' && reparo.status !== 'finalizado') {
+            if (reparo.dataLimite) {
+              const dataReparo = new Date(reparo.dataLimite);
+              const diasAtrasoReparo = Math.floor((hoje - dataReparo) / (1000 * 60 * 60 * 24));
+
+              if (diasAtrasoReparo > 10) {
+                alertas.push({
+                  prioridade: 1, // Crítico
+                  tipo: 'REPARO_CRÍTICO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '🔧 REPARO MUITO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'COBRAR CONCLUSÃO',
+                  cor: '#ff4444'
+                });
+              } else if (diasAtrasoReparo > 0) {
+                alertas.push({
+                  prioridade: 2, // Aviso
+                  tipo: 'REPARO_AVISO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '⚠️ REPARO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'ACOMPANHAR REPARO',
+                  cor: '#ff9800'
+                });
+              }
+            }
+          }
+        });
+      }
+
+      // ========== ALERTAS DE FINALIZAÇÃO ==========
+      if (c.finalizado === 'nao' && c.statusImovel === 'pronto-para-aluguel') {
+        const diasProntos = Math.floor((hoje - new Date(c.dataAtualizacao)) / (1000 * 60 * 60 * 24));
+        
+        if (diasProntos > 3) {
+          alertas.push({
+            prioridade: 3, // Info
+            tipo: 'FINALIZACAO_PENDENTE',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '✅ PRONTO PARA FINALIZAR',
+            descricao: 'Imóvel pronto para aluguel - Finalizar contrato',
+            diasProntos: diasProntos,
+            acao: 'FINALIZAR CONTRATO',
+            cor: '#4CAF50'
+          });
+        }
+      }
+    });
+
+    return alertas.sort((a, b) => a.prioridade - b.prioridade);
+  },
+
+  // 🎨 RENDERIZAR ALERTAS
+  renderizarAlertas(alertas) {
+    const container = document.getElementById('alertas-list-v2');
+    const btn = document.getElementById('alertas-btn-v2');
+    const alertasContainer = document.getElementById('alertas-container-v2');
+
+    if (alertas.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #4CAF50; padding: 20px;">✅ Nenhum alerta! Tudo em dia!</p>';
+      btn.textContent = '✅';
+      btn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+      document.getElementById('alertas-count-v2').textContent = 'Sem pendências';
+      return;
+    }
+
+    btn.textContent = '🚨';
+    btn.style.background = 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)';
+    document.getElementById('alertas-count-v2').textContent = `${alertas.length} alerta(s) pendente(s)`;
+
+    let html = '';
+
+    alertas.forEach(alerta => {
+      const prioridadeTexto = {
+        1: '🔴 CRÍTICO - AÇÃO IMEDIATA!',
+        2: '🟠 AVISO - ATENÇÃO NECESSÁRIA',
+        3: '🟡 INFO - AÇÃO PRÓXIMA'
+      }[alerta.prioridade];
+
+      html += `
+        <div style="
+          background: white;
+          border-left: 4px solid ${alerta.cor};
+          padding: 15px;
+          margin-bottom: 12px;
+          border-radius: 4px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          cursor: pointer;
+          transition: all 0.2s;
+        " onmouseover="this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+          
+          <div style="color: ${alerta.cor}; font-weight: bold; margin-bottom: 5px;">
+            ${prioridadeTexto}
+          </div>
+          
+          <div style="font-weight: bold; margin-bottom: 3px;">
+            ${alerta.contrato} - ${alerta.locatario}
+          </div>
+          
+          <div style="color: #333; margin-bottom: 8px;">
+            <strong>${alerta.titulo}</strong><br>
+            ${alerta.descricao}
+            ${alerta.dataLimite ? `<br>⏰ Data limite: ${alerta.dataLimite}` : ''}
+            ${alerta.valor ? `<br>💰 ${alerta.valor}` : ''}
+            ${alerta.atraso ? `<br>⚠️ ${alerta.atraso}` : ''}
+            ${alerta.responsavel ? `<br>👤 ${alerta.responsavel}` : ''}
+            ${alerta.vistoriador ? `<br>👤 Vistoriador: ${alerta.vistoriador}` : ''}
+          </div>
+          
+          <button style="
+            background: ${alerta.cor};
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+          ">
+            ${alerta.acao}
+          </button>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  },
+
+  // 📢 VERIFICAR NOVAS ALERTAS CRÍTICAS
+  verificarNovasAlertas(novasAlertas) {
+    const novasCríticas = novasAlertas.filter(a => a.prioridade === 1);
+    const antesCríticas = this.ultimosAlertas.filter(a => a.prioridade === 1);
+
+    if (novasCríticas.length > antesCríticas.length) {
+      this.notificar('🚨 ALERTA CRÍTICO NOVO!', novasCríticas[0].titulo + '\n' + novasCríticas[0].contrato);
+    }
+
+    this.ultimosAlertas = novasAlertas;
+  },
+
+  // 📣 NOTIFICAÇÃO
+  notificar(titulo, mensagem) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(titulo, {
+        body: mensagem,
+        icon: '🚨'
+      });
+    }
+
+    // Popup visual
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff4444;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      font-weight: bold;
+      animation: slideDown 0.3s ease;
+    `;
+    popup.textContent = titulo;
+    document.body.appendChild(popup);
+
+    setTimeout(() => popup.remove(), 5000);
+  },
+
+  // 💬 MENSAGEM
+  mostrarMensagem(texto) {
+    const container = document.getElementById('alertas-list-v2');
+    if (container) {
+      container.innerHTML = `<p style="text-align: center; color: #999; padding: 20px;">${texto}</p>`;
+    }
+  }
+};
+
+// ════════════════════════════════════════════════════════════════
+// 🚀 INICIAR QUANDO PÁGINA CARREGAR
+// ════════════════════════════════════════════════════════════════
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+  });
+} else {
+  setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+}
+
+// Pedir permissão para notificações
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+console.log('✅ Sistema de Alertas V2 carregado!');
+
+</script>
+
 </body>
 </html>
       `;
@@ -2335,6 +2791,462 @@ body { font-family: Arial, sans-serif; padding: 20px; }
 Documento gerado em: ${agora}<br>
 Protocolo: REC-RET-${new Date().getTime()}
 </div>
+
+<!-- 🚨 SISTEMA DE ALERTAS V2 -->
+<script>
+// ════════════════════════════════════════════════════════════════
+// 🚨 SISTEMA DE ALERTAS INTELIGENTE V2
+// ════════════════════════════════════════════════════════════════
+// Insira este código na parte final do seu index.html (antes de </body>)
+
+const SistemaAlertasV2 = {
+  ultimosAlertas: [],
+  intervaloAtualiz: null,
+
+  // 🎯 INICIAR SISTEMA
+  iniciar() {
+    console.log('🚨 [ALERTAS V2] Sistema iniciado');
+    this.criarInterface();
+    this.atualizarAlertas();
+    
+    // Atualizar a cada 5 minutos (300000ms)
+    this.intervaloAtualiz = setInterval(() => this.atualizarAlertas(), 300000);
+    
+    // Também permitir atualização manual
+    window.atualizarAlertasManual = () => this.atualizarAlertas();
+  },
+
+  // 🎨 CRIAR INTERFACE
+  criarInterface() {
+    const html = `
+      <div id="alertas-container-v2" style="
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        width: 450px;
+        max-height: 85vh;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-family: Arial, sans-serif;
+        display: none;
+        flex-direction: column;
+      ">
+        <div style="
+          background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+          color: white;
+          padding: 15px;
+          border-radius: 8px 8px 0 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        ">
+          <div>
+            <h3 style="margin: 0; font-size: 18px;">🚨 ALERTAS EM TEMPO REAL</h3>
+            <small id="alertas-count-v2" style="opacity: 0.9;">Carregando...</small>
+          </div>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+          ">×</button>
+        </div>
+
+        <div id="alertas-list-v2" style="
+          overflow-y: auto;
+          flex: 1;
+          padding: 15px;
+        ">
+          <p style="text-align: center; color: #999;">Carregando alertas...</p>
+        </div>
+
+        <div style="
+          background: #f5f5f5;
+          padding: 10px 15px;
+          border-top: 1px solid #eee;
+          border-radius: 0 0 8px 8px;
+          display: flex;
+          gap: 10px;
+          justify-content: space-between;
+        ">
+          <button onclick="atualizarAlertasManual()" style="
+            flex: 1;
+            padding: 8px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+          ">🔄 Atualizar Agora</button>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            flex: 1;
+            padding: 8px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          ">Fechar</button>
+        </div>
+      </div>
+
+      <button id="alertas-btn-v2" onclick="document.getElementById('alertas-container-v2').style.display='flex'" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        color: white;
+        border: none;
+        font-size: 30px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 9998;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        🚨
+      </button>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+  },
+
+  // 🔄 BUSCAR E PROCESSAR ALERTAS
+  async atualizarAlertas() {
+    try {
+      console.log('🔄 [ALERTAS V2] Atualizando...');
+      
+      const resposta = await fetch('https://integrativa-desocupacao.onrender.com/api/contracts');
+      const contratos = await resposta.json();
+
+      if (!Array.isArray(contratos) || contratos.length === 0) {
+        this.mostrarMensagem('Nenhum contrato encontrado');
+        return;
+      }
+
+      const alertas = this.gerarAlertas(contratos);
+      this.renderizarAlertas(alertas);
+
+      // Notificar se novos alertas críticos apareceram
+      this.verificarNovasAlertas(alertas);
+
+    } catch (erro) {
+      console.error('❌ [ALERTAS V2] Erro:', erro);
+      this.mostrarMensagem('Erro ao buscar alertas: ' + erro.message);
+    }
+  },
+
+  // 🎯 GERAR ALERTAS COM REGRAS DE NEGÓCIO
+  gerarAlertas(contratos) {
+    const alertas = [];
+    const hoje = new Date();
+
+    contratos.forEach(c => {
+      const contratoCriado = new Date(c.dataCriacao);
+
+      // ========== ALERTAS DE VISTORIA ==========
+      if (c.agendamentoVistoria) {
+        const dataVistoria = new Date(c.agendamentoVistoria);
+        const diasAtraso = Math.floor((hoje - dataVistoria) / (1000 * 60 * 60 * 24));
+
+        if (diasAtraso > 15) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'VISTORIA_CRÍTICA',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⚠️ VISTORIA ATRASADA',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'AGENDAR VISTORIA AGORA',
+            cor: '#ff4444'
+          });
+        } else if (diasAtraso > 5) {
+          alertas.push({
+            prioridade: 2, // Aviso
+            tipo: 'VISTORIA_AVISO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⏰ VISTORIA PRÓXIMA AO PRAZO',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'CONFIRMAR VISTORIA',
+            cor: '#ff9800'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE PAGAMENTO ==========
+      // Se não tem data de pagamento ou está zerado
+      if (!c.dataRetiradaChaves) {
+        const diasSemPagar = Math.floor((hoje - contratoCriado) / (1000 * 60 * 60 * 24));
+        
+        if (diasSemPagar > 30) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'PAGAMENTO_CRÍTICO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '💰 PAGAMENTO CRÍTICO',
+            descricao: `Contrato sem confirmação de pagamento há ${diasSemPagar} dias`,
+            valor: 'Verificar com cliente',
+            acao: 'COBRAR PAGAMENTO',
+            cor: '#ff4444'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE CHAVES ==========
+      if (c.statusChaves === 'pendente') {
+        alertas.push({
+          prioridade: 2, // Aviso
+          tipo: 'CHAVES_PENDENTE',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔑 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves pendentes`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'COBRAR CHAVES',
+          cor: '#ff9800'
+        });
+      } else if (c.statusChaves === 'nao-recebidas') {
+        alertas.push({
+          prioridade: 1, // Crítico
+          tipo: 'CHAVES_CRÍTICA',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔴 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves - Não recebidas pelo prestador`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'AÇÃO IMEDIATA NECESSÁRIA',
+          cor: '#ff4444'
+        });
+      }
+
+      // ========== ALERTAS DE REPAROS ==========
+      if (c.reparos && c.reparos.length > 0) {
+        c.reparos.forEach(reparo => {
+          if (reparo.status !== 'concluído' && reparo.status !== 'finalizado') {
+            if (reparo.dataLimite) {
+              const dataReparo = new Date(reparo.dataLimite);
+              const diasAtrasoReparo = Math.floor((hoje - dataReparo) / (1000 * 60 * 60 * 24));
+
+              if (diasAtrasoReparo > 10) {
+                alertas.push({
+                  prioridade: 1, // Crítico
+                  tipo: 'REPARO_CRÍTICO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '🔧 REPARO MUITO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'COBRAR CONCLUSÃO',
+                  cor: '#ff4444'
+                });
+              } else if (diasAtrasoReparo > 0) {
+                alertas.push({
+                  prioridade: 2, // Aviso
+                  tipo: 'REPARO_AVISO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '⚠️ REPARO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'ACOMPANHAR REPARO',
+                  cor: '#ff9800'
+                });
+              }
+            }
+          }
+        });
+      }
+
+      // ========== ALERTAS DE FINALIZAÇÃO ==========
+      if (c.finalizado === 'nao' && c.statusImovel === 'pronto-para-aluguel') {
+        const diasProntos = Math.floor((hoje - new Date(c.dataAtualizacao)) / (1000 * 60 * 60 * 24));
+        
+        if (diasProntos > 3) {
+          alertas.push({
+            prioridade: 3, // Info
+            tipo: 'FINALIZACAO_PENDENTE',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '✅ PRONTO PARA FINALIZAR',
+            descricao: 'Imóvel pronto para aluguel - Finalizar contrato',
+            diasProntos: diasProntos,
+            acao: 'FINALIZAR CONTRATO',
+            cor: '#4CAF50'
+          });
+        }
+      }
+    });
+
+    return alertas.sort((a, b) => a.prioridade - b.prioridade);
+  },
+
+  // 🎨 RENDERIZAR ALERTAS
+  renderizarAlertas(alertas) {
+    const container = document.getElementById('alertas-list-v2');
+    const btn = document.getElementById('alertas-btn-v2');
+    const alertasContainer = document.getElementById('alertas-container-v2');
+
+    if (alertas.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #4CAF50; padding: 20px;">✅ Nenhum alerta! Tudo em dia!</p>';
+      btn.textContent = '✅';
+      btn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+      document.getElementById('alertas-count-v2').textContent = 'Sem pendências';
+      return;
+    }
+
+    btn.textContent = '🚨';
+    btn.style.background = 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)';
+    document.getElementById('alertas-count-v2').textContent = `${alertas.length} alerta(s) pendente(s)`;
+
+    let html = '';
+
+    alertas.forEach(alerta => {
+      const prioridadeTexto = {
+        1: '🔴 CRÍTICO - AÇÃO IMEDIATA!',
+        2: '🟠 AVISO - ATENÇÃO NECESSÁRIA',
+        3: '🟡 INFO - AÇÃO PRÓXIMA'
+      }[alerta.prioridade];
+
+      html += `
+        <div style="
+          background: white;
+          border-left: 4px solid ${alerta.cor};
+          padding: 15px;
+          margin-bottom: 12px;
+          border-radius: 4px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          cursor: pointer;
+          transition: all 0.2s;
+        " onmouseover="this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+          
+          <div style="color: ${alerta.cor}; font-weight: bold; margin-bottom: 5px;">
+            ${prioridadeTexto}
+          </div>
+          
+          <div style="font-weight: bold; margin-bottom: 3px;">
+            ${alerta.contrato} - ${alerta.locatario}
+          </div>
+          
+          <div style="color: #333; margin-bottom: 8px;">
+            <strong>${alerta.titulo}</strong><br>
+            ${alerta.descricao}
+            ${alerta.dataLimite ? `<br>⏰ Data limite: ${alerta.dataLimite}` : ''}
+            ${alerta.valor ? `<br>💰 ${alerta.valor}` : ''}
+            ${alerta.atraso ? `<br>⚠️ ${alerta.atraso}` : ''}
+            ${alerta.responsavel ? `<br>👤 ${alerta.responsavel}` : ''}
+            ${alerta.vistoriador ? `<br>👤 Vistoriador: ${alerta.vistoriador}` : ''}
+          </div>
+          
+          <button style="
+            background: ${alerta.cor};
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+          ">
+            ${alerta.acao}
+          </button>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  },
+
+  // 📢 VERIFICAR NOVAS ALERTAS CRÍTICAS
+  verificarNovasAlertas(novasAlertas) {
+    const novasCríticas = novasAlertas.filter(a => a.prioridade === 1);
+    const antesCríticas = this.ultimosAlertas.filter(a => a.prioridade === 1);
+
+    if (novasCríticas.length > antesCríticas.length) {
+      this.notificar('🚨 ALERTA CRÍTICO NOVO!', novasCríticas[0].titulo + '\n' + novasCríticas[0].contrato);
+    }
+
+    this.ultimosAlertas = novasAlertas;
+  },
+
+  // 📣 NOTIFICAÇÃO
+  notificar(titulo, mensagem) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(titulo, {
+        body: mensagem,
+        icon: '🚨'
+      });
+    }
+
+    // Popup visual
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff4444;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      font-weight: bold;
+      animation: slideDown 0.3s ease;
+    `;
+    popup.textContent = titulo;
+    document.body.appendChild(popup);
+
+    setTimeout(() => popup.remove(), 5000);
+  },
+
+  // 💬 MENSAGEM
+  mostrarMensagem(texto) {
+    const container = document.getElementById('alertas-list-v2');
+    if (container) {
+      container.innerHTML = `<p style="text-align: center; color: #999; padding: 20px;">${texto}</p>`;
+    }
+  }
+};
+
+// ════════════════════════════════════════════════════════════════
+// 🚀 INICIAR QUANDO PÁGINA CARREGAR
+// ════════════════════════════════════════════════════════════════
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+  });
+} else {
+  setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+}
+
+// Pedir permissão para notificações
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+console.log('✅ Sistema de Alertas V2 carregado!');
+
+</script>
+
 </body>
 </html>
       `;
@@ -2442,6 +3354,462 @@ body { font-family: Arial, sans-serif; padding: 20px; }
 Documento gerado em: ${agora}<br>
 Protocolo: REC-DEV-${new Date().getTime()}
 </div>
+
+<!-- 🚨 SISTEMA DE ALERTAS V2 -->
+<script>
+// ════════════════════════════════════════════════════════════════
+// 🚨 SISTEMA DE ALERTAS INTELIGENTE V2
+// ════════════════════════════════════════════════════════════════
+// Insira este código na parte final do seu index.html (antes de </body>)
+
+const SistemaAlertasV2 = {
+  ultimosAlertas: [],
+  intervaloAtualiz: null,
+
+  // 🎯 INICIAR SISTEMA
+  iniciar() {
+    console.log('🚨 [ALERTAS V2] Sistema iniciado');
+    this.criarInterface();
+    this.atualizarAlertas();
+    
+    // Atualizar a cada 5 minutos (300000ms)
+    this.intervaloAtualiz = setInterval(() => this.atualizarAlertas(), 300000);
+    
+    // Também permitir atualização manual
+    window.atualizarAlertasManual = () => this.atualizarAlertas();
+  },
+
+  // 🎨 CRIAR INTERFACE
+  criarInterface() {
+    const html = `
+      <div id="alertas-container-v2" style="
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        width: 450px;
+        max-height: 85vh;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-family: Arial, sans-serif;
+        display: none;
+        flex-direction: column;
+      ">
+        <div style="
+          background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+          color: white;
+          padding: 15px;
+          border-radius: 8px 8px 0 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        ">
+          <div>
+            <h3 style="margin: 0; font-size: 18px;">🚨 ALERTAS EM TEMPO REAL</h3>
+            <small id="alertas-count-v2" style="opacity: 0.9;">Carregando...</small>
+          </div>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+          ">×</button>
+        </div>
+
+        <div id="alertas-list-v2" style="
+          overflow-y: auto;
+          flex: 1;
+          padding: 15px;
+        ">
+          <p style="text-align: center; color: #999;">Carregando alertas...</p>
+        </div>
+
+        <div style="
+          background: #f5f5f5;
+          padding: 10px 15px;
+          border-top: 1px solid #eee;
+          border-radius: 0 0 8px 8px;
+          display: flex;
+          gap: 10px;
+          justify-content: space-between;
+        ">
+          <button onclick="atualizarAlertasManual()" style="
+            flex: 1;
+            padding: 8px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+          ">🔄 Atualizar Agora</button>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            flex: 1;
+            padding: 8px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          ">Fechar</button>
+        </div>
+      </div>
+
+      <button id="alertas-btn-v2" onclick="document.getElementById('alertas-container-v2').style.display='flex'" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        color: white;
+        border: none;
+        font-size: 30px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 9998;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        🚨
+      </button>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+  },
+
+  // 🔄 BUSCAR E PROCESSAR ALERTAS
+  async atualizarAlertas() {
+    try {
+      console.log('🔄 [ALERTAS V2] Atualizando...');
+      
+      const resposta = await fetch('https://integrativa-desocupacao.onrender.com/api/contracts');
+      const contratos = await resposta.json();
+
+      if (!Array.isArray(contratos) || contratos.length === 0) {
+        this.mostrarMensagem('Nenhum contrato encontrado');
+        return;
+      }
+
+      const alertas = this.gerarAlertas(contratos);
+      this.renderizarAlertas(alertas);
+
+      // Notificar se novos alertas críticos apareceram
+      this.verificarNovasAlertas(alertas);
+
+    } catch (erro) {
+      console.error('❌ [ALERTAS V2] Erro:', erro);
+      this.mostrarMensagem('Erro ao buscar alertas: ' + erro.message);
+    }
+  },
+
+  // 🎯 GERAR ALERTAS COM REGRAS DE NEGÓCIO
+  gerarAlertas(contratos) {
+    const alertas = [];
+    const hoje = new Date();
+
+    contratos.forEach(c => {
+      const contratoCriado = new Date(c.dataCriacao);
+
+      // ========== ALERTAS DE VISTORIA ==========
+      if (c.agendamentoVistoria) {
+        const dataVistoria = new Date(c.agendamentoVistoria);
+        const diasAtraso = Math.floor((hoje - dataVistoria) / (1000 * 60 * 60 * 24));
+
+        if (diasAtraso > 15) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'VISTORIA_CRÍTICA',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⚠️ VISTORIA ATRASADA',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'AGENDAR VISTORIA AGORA',
+            cor: '#ff4444'
+          });
+        } else if (diasAtraso > 5) {
+          alertas.push({
+            prioridade: 2, // Aviso
+            tipo: 'VISTORIA_AVISO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⏰ VISTORIA PRÓXIMA AO PRAZO',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'CONFIRMAR VISTORIA',
+            cor: '#ff9800'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE PAGAMENTO ==========
+      // Se não tem data de pagamento ou está zerado
+      if (!c.dataRetiradaChaves) {
+        const diasSemPagar = Math.floor((hoje - contratoCriado) / (1000 * 60 * 60 * 24));
+        
+        if (diasSemPagar > 30) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'PAGAMENTO_CRÍTICO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '💰 PAGAMENTO CRÍTICO',
+            descricao: `Contrato sem confirmação de pagamento há ${diasSemPagar} dias`,
+            valor: 'Verificar com cliente',
+            acao: 'COBRAR PAGAMENTO',
+            cor: '#ff4444'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE CHAVES ==========
+      if (c.statusChaves === 'pendente') {
+        alertas.push({
+          prioridade: 2, // Aviso
+          tipo: 'CHAVES_PENDENTE',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔑 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves pendentes`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'COBRAR CHAVES',
+          cor: '#ff9800'
+        });
+      } else if (c.statusChaves === 'nao-recebidas') {
+        alertas.push({
+          prioridade: 1, // Crítico
+          tipo: 'CHAVES_CRÍTICA',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔴 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves - Não recebidas pelo prestador`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'AÇÃO IMEDIATA NECESSÁRIA',
+          cor: '#ff4444'
+        });
+      }
+
+      // ========== ALERTAS DE REPAROS ==========
+      if (c.reparos && c.reparos.length > 0) {
+        c.reparos.forEach(reparo => {
+          if (reparo.status !== 'concluído' && reparo.status !== 'finalizado') {
+            if (reparo.dataLimite) {
+              const dataReparo = new Date(reparo.dataLimite);
+              const diasAtrasoReparo = Math.floor((hoje - dataReparo) / (1000 * 60 * 60 * 24));
+
+              if (diasAtrasoReparo > 10) {
+                alertas.push({
+                  prioridade: 1, // Crítico
+                  tipo: 'REPARO_CRÍTICO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '🔧 REPARO MUITO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'COBRAR CONCLUSÃO',
+                  cor: '#ff4444'
+                });
+              } else if (diasAtrasoReparo > 0) {
+                alertas.push({
+                  prioridade: 2, // Aviso
+                  tipo: 'REPARO_AVISO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '⚠️ REPARO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'ACOMPANHAR REPARO',
+                  cor: '#ff9800'
+                });
+              }
+            }
+          }
+        });
+      }
+
+      // ========== ALERTAS DE FINALIZAÇÃO ==========
+      if (c.finalizado === 'nao' && c.statusImovel === 'pronto-para-aluguel') {
+        const diasProntos = Math.floor((hoje - new Date(c.dataAtualizacao)) / (1000 * 60 * 60 * 24));
+        
+        if (diasProntos > 3) {
+          alertas.push({
+            prioridade: 3, // Info
+            tipo: 'FINALIZACAO_PENDENTE',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '✅ PRONTO PARA FINALIZAR',
+            descricao: 'Imóvel pronto para aluguel - Finalizar contrato',
+            diasProntos: diasProntos,
+            acao: 'FINALIZAR CONTRATO',
+            cor: '#4CAF50'
+          });
+        }
+      }
+    });
+
+    return alertas.sort((a, b) => a.prioridade - b.prioridade);
+  },
+
+  // 🎨 RENDERIZAR ALERTAS
+  renderizarAlertas(alertas) {
+    const container = document.getElementById('alertas-list-v2');
+    const btn = document.getElementById('alertas-btn-v2');
+    const alertasContainer = document.getElementById('alertas-container-v2');
+
+    if (alertas.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #4CAF50; padding: 20px;">✅ Nenhum alerta! Tudo em dia!</p>';
+      btn.textContent = '✅';
+      btn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+      document.getElementById('alertas-count-v2').textContent = 'Sem pendências';
+      return;
+    }
+
+    btn.textContent = '🚨';
+    btn.style.background = 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)';
+    document.getElementById('alertas-count-v2').textContent = `${alertas.length} alerta(s) pendente(s)`;
+
+    let html = '';
+
+    alertas.forEach(alerta => {
+      const prioridadeTexto = {
+        1: '🔴 CRÍTICO - AÇÃO IMEDIATA!',
+        2: '🟠 AVISO - ATENÇÃO NECESSÁRIA',
+        3: '🟡 INFO - AÇÃO PRÓXIMA'
+      }[alerta.prioridade];
+
+      html += `
+        <div style="
+          background: white;
+          border-left: 4px solid ${alerta.cor};
+          padding: 15px;
+          margin-bottom: 12px;
+          border-radius: 4px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          cursor: pointer;
+          transition: all 0.2s;
+        " onmouseover="this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+          
+          <div style="color: ${alerta.cor}; font-weight: bold; margin-bottom: 5px;">
+            ${prioridadeTexto}
+          </div>
+          
+          <div style="font-weight: bold; margin-bottom: 3px;">
+            ${alerta.contrato} - ${alerta.locatario}
+          </div>
+          
+          <div style="color: #333; margin-bottom: 8px;">
+            <strong>${alerta.titulo}</strong><br>
+            ${alerta.descricao}
+            ${alerta.dataLimite ? `<br>⏰ Data limite: ${alerta.dataLimite}` : ''}
+            ${alerta.valor ? `<br>💰 ${alerta.valor}` : ''}
+            ${alerta.atraso ? `<br>⚠️ ${alerta.atraso}` : ''}
+            ${alerta.responsavel ? `<br>👤 ${alerta.responsavel}` : ''}
+            ${alerta.vistoriador ? `<br>👤 Vistoriador: ${alerta.vistoriador}` : ''}
+          </div>
+          
+          <button style="
+            background: ${alerta.cor};
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+          ">
+            ${alerta.acao}
+          </button>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  },
+
+  // 📢 VERIFICAR NOVAS ALERTAS CRÍTICAS
+  verificarNovasAlertas(novasAlertas) {
+    const novasCríticas = novasAlertas.filter(a => a.prioridade === 1);
+    const antesCríticas = this.ultimosAlertas.filter(a => a.prioridade === 1);
+
+    if (novasCríticas.length > antesCríticas.length) {
+      this.notificar('🚨 ALERTA CRÍTICO NOVO!', novasCríticas[0].titulo + '\n' + novasCríticas[0].contrato);
+    }
+
+    this.ultimosAlertas = novasAlertas;
+  },
+
+  // 📣 NOTIFICAÇÃO
+  notificar(titulo, mensagem) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(titulo, {
+        body: mensagem,
+        icon: '🚨'
+      });
+    }
+
+    // Popup visual
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff4444;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      font-weight: bold;
+      animation: slideDown 0.3s ease;
+    `;
+    popup.textContent = titulo;
+    document.body.appendChild(popup);
+
+    setTimeout(() => popup.remove(), 5000);
+  },
+
+  // 💬 MENSAGEM
+  mostrarMensagem(texto) {
+    const container = document.getElementById('alertas-list-v2');
+    if (container) {
+      container.innerHTML = `<p style="text-align: center; color: #999; padding: 20px;">${texto}</p>`;
+    }
+  }
+};
+
+// ════════════════════════════════════════════════════════════════
+// 🚀 INICIAR QUANDO PÁGINA CARREGAR
+// ════════════════════════════════════════════════════════════════
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+  });
+} else {
+  setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+}
+
+// Pedir permissão para notificações
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+console.log('✅ Sistema de Alertas V2 carregado!');
+
+</script>
+
 </body>
 </html>
       `;
@@ -2536,6 +3904,462 @@ tr:nth-child(even) { background: #f9f9f9; }
 <div class="total" style="margin-top: 20px; padding: 12px; text-align: center;">
   Total de Contratos com Chaves Entregues: <strong>${chavasRecebidas.length}</strong>
 </div>
+
+<!-- 🚨 SISTEMA DE ALERTAS V2 -->
+<script>
+// ════════════════════════════════════════════════════════════════
+// 🚨 SISTEMA DE ALERTAS INTELIGENTE V2
+// ════════════════════════════════════════════════════════════════
+// Insira este código na parte final do seu index.html (antes de </body>)
+
+const SistemaAlertasV2 = {
+  ultimosAlertas: [],
+  intervaloAtualiz: null,
+
+  // 🎯 INICIAR SISTEMA
+  iniciar() {
+    console.log('🚨 [ALERTAS V2] Sistema iniciado');
+    this.criarInterface();
+    this.atualizarAlertas();
+    
+    // Atualizar a cada 5 minutos (300000ms)
+    this.intervaloAtualiz = setInterval(() => this.atualizarAlertas(), 300000);
+    
+    // Também permitir atualização manual
+    window.atualizarAlertasManual = () => this.atualizarAlertas();
+  },
+
+  // 🎨 CRIAR INTERFACE
+  criarInterface() {
+    const html = `
+      <div id="alertas-container-v2" style="
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        width: 450px;
+        max-height: 85vh;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-family: Arial, sans-serif;
+        display: none;
+        flex-direction: column;
+      ">
+        <div style="
+          background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+          color: white;
+          padding: 15px;
+          border-radius: 8px 8px 0 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        ">
+          <div>
+            <h3 style="margin: 0; font-size: 18px;">🚨 ALERTAS EM TEMPO REAL</h3>
+            <small id="alertas-count-v2" style="opacity: 0.9;">Carregando...</small>
+          </div>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+          ">×</button>
+        </div>
+
+        <div id="alertas-list-v2" style="
+          overflow-y: auto;
+          flex: 1;
+          padding: 15px;
+        ">
+          <p style="text-align: center; color: #999;">Carregando alertas...</p>
+        </div>
+
+        <div style="
+          background: #f5f5f5;
+          padding: 10px 15px;
+          border-top: 1px solid #eee;
+          border-radius: 0 0 8px 8px;
+          display: flex;
+          gap: 10px;
+          justify-content: space-between;
+        ">
+          <button onclick="atualizarAlertasManual()" style="
+            flex: 1;
+            padding: 8px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+          ">🔄 Atualizar Agora</button>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            flex: 1;
+            padding: 8px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          ">Fechar</button>
+        </div>
+      </div>
+
+      <button id="alertas-btn-v2" onclick="document.getElementById('alertas-container-v2').style.display='flex'" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        color: white;
+        border: none;
+        font-size: 30px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 9998;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        🚨
+      </button>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+  },
+
+  // 🔄 BUSCAR E PROCESSAR ALERTAS
+  async atualizarAlertas() {
+    try {
+      console.log('🔄 [ALERTAS V2] Atualizando...');
+      
+      const resposta = await fetch('https://integrativa-desocupacao.onrender.com/api/contracts');
+      const contratos = await resposta.json();
+
+      if (!Array.isArray(contratos) || contratos.length === 0) {
+        this.mostrarMensagem('Nenhum contrato encontrado');
+        return;
+      }
+
+      const alertas = this.gerarAlertas(contratos);
+      this.renderizarAlertas(alertas);
+
+      // Notificar se novos alertas críticos apareceram
+      this.verificarNovasAlertas(alertas);
+
+    } catch (erro) {
+      console.error('❌ [ALERTAS V2] Erro:', erro);
+      this.mostrarMensagem('Erro ao buscar alertas: ' + erro.message);
+    }
+  },
+
+  // 🎯 GERAR ALERTAS COM REGRAS DE NEGÓCIO
+  gerarAlertas(contratos) {
+    const alertas = [];
+    const hoje = new Date();
+
+    contratos.forEach(c => {
+      const contratoCriado = new Date(c.dataCriacao);
+
+      // ========== ALERTAS DE VISTORIA ==========
+      if (c.agendamentoVistoria) {
+        const dataVistoria = new Date(c.agendamentoVistoria);
+        const diasAtraso = Math.floor((hoje - dataVistoria) / (1000 * 60 * 60 * 24));
+
+        if (diasAtraso > 15) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'VISTORIA_CRÍTICA',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⚠️ VISTORIA ATRASADA',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'AGENDAR VISTORIA AGORA',
+            cor: '#ff4444'
+          });
+        } else if (diasAtraso > 5) {
+          alertas.push({
+            prioridade: 2, // Aviso
+            tipo: 'VISTORIA_AVISO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⏰ VISTORIA PRÓXIMA AO PRAZO',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'CONFIRMAR VISTORIA',
+            cor: '#ff9800'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE PAGAMENTO ==========
+      // Se não tem data de pagamento ou está zerado
+      if (!c.dataRetiradaChaves) {
+        const diasSemPagar = Math.floor((hoje - contratoCriado) / (1000 * 60 * 60 * 24));
+        
+        if (diasSemPagar > 30) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'PAGAMENTO_CRÍTICO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '💰 PAGAMENTO CRÍTICO',
+            descricao: `Contrato sem confirmação de pagamento há ${diasSemPagar} dias`,
+            valor: 'Verificar com cliente',
+            acao: 'COBRAR PAGAMENTO',
+            cor: '#ff4444'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE CHAVES ==========
+      if (c.statusChaves === 'pendente') {
+        alertas.push({
+          prioridade: 2, // Aviso
+          tipo: 'CHAVES_PENDENTE',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔑 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves pendentes`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'COBRAR CHAVES',
+          cor: '#ff9800'
+        });
+      } else if (c.statusChaves === 'nao-recebidas') {
+        alertas.push({
+          prioridade: 1, // Crítico
+          tipo: 'CHAVES_CRÍTICA',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔴 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves - Não recebidas pelo prestador`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'AÇÃO IMEDIATA NECESSÁRIA',
+          cor: '#ff4444'
+        });
+      }
+
+      // ========== ALERTAS DE REPAROS ==========
+      if (c.reparos && c.reparos.length > 0) {
+        c.reparos.forEach(reparo => {
+          if (reparo.status !== 'concluído' && reparo.status !== 'finalizado') {
+            if (reparo.dataLimite) {
+              const dataReparo = new Date(reparo.dataLimite);
+              const diasAtrasoReparo = Math.floor((hoje - dataReparo) / (1000 * 60 * 60 * 24));
+
+              if (diasAtrasoReparo > 10) {
+                alertas.push({
+                  prioridade: 1, // Crítico
+                  tipo: 'REPARO_CRÍTICO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '🔧 REPARO MUITO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'COBRAR CONCLUSÃO',
+                  cor: '#ff4444'
+                });
+              } else if (diasAtrasoReparo > 0) {
+                alertas.push({
+                  prioridade: 2, // Aviso
+                  tipo: 'REPARO_AVISO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '⚠️ REPARO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'ACOMPANHAR REPARO',
+                  cor: '#ff9800'
+                });
+              }
+            }
+          }
+        });
+      }
+
+      // ========== ALERTAS DE FINALIZAÇÃO ==========
+      if (c.finalizado === 'nao' && c.statusImovel === 'pronto-para-aluguel') {
+        const diasProntos = Math.floor((hoje - new Date(c.dataAtualizacao)) / (1000 * 60 * 60 * 24));
+        
+        if (diasProntos > 3) {
+          alertas.push({
+            prioridade: 3, // Info
+            tipo: 'FINALIZACAO_PENDENTE',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '✅ PRONTO PARA FINALIZAR',
+            descricao: 'Imóvel pronto para aluguel - Finalizar contrato',
+            diasProntos: diasProntos,
+            acao: 'FINALIZAR CONTRATO',
+            cor: '#4CAF50'
+          });
+        }
+      }
+    });
+
+    return alertas.sort((a, b) => a.prioridade - b.prioridade);
+  },
+
+  // 🎨 RENDERIZAR ALERTAS
+  renderizarAlertas(alertas) {
+    const container = document.getElementById('alertas-list-v2');
+    const btn = document.getElementById('alertas-btn-v2');
+    const alertasContainer = document.getElementById('alertas-container-v2');
+
+    if (alertas.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #4CAF50; padding: 20px;">✅ Nenhum alerta! Tudo em dia!</p>';
+      btn.textContent = '✅';
+      btn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+      document.getElementById('alertas-count-v2').textContent = 'Sem pendências';
+      return;
+    }
+
+    btn.textContent = '🚨';
+    btn.style.background = 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)';
+    document.getElementById('alertas-count-v2').textContent = `${alertas.length} alerta(s) pendente(s)`;
+
+    let html = '';
+
+    alertas.forEach(alerta => {
+      const prioridadeTexto = {
+        1: '🔴 CRÍTICO - AÇÃO IMEDIATA!',
+        2: '🟠 AVISO - ATENÇÃO NECESSÁRIA',
+        3: '🟡 INFO - AÇÃO PRÓXIMA'
+      }[alerta.prioridade];
+
+      html += `
+        <div style="
+          background: white;
+          border-left: 4px solid ${alerta.cor};
+          padding: 15px;
+          margin-bottom: 12px;
+          border-radius: 4px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          cursor: pointer;
+          transition: all 0.2s;
+        " onmouseover="this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+          
+          <div style="color: ${alerta.cor}; font-weight: bold; margin-bottom: 5px;">
+            ${prioridadeTexto}
+          </div>
+          
+          <div style="font-weight: bold; margin-bottom: 3px;">
+            ${alerta.contrato} - ${alerta.locatario}
+          </div>
+          
+          <div style="color: #333; margin-bottom: 8px;">
+            <strong>${alerta.titulo}</strong><br>
+            ${alerta.descricao}
+            ${alerta.dataLimite ? `<br>⏰ Data limite: ${alerta.dataLimite}` : ''}
+            ${alerta.valor ? `<br>💰 ${alerta.valor}` : ''}
+            ${alerta.atraso ? `<br>⚠️ ${alerta.atraso}` : ''}
+            ${alerta.responsavel ? `<br>👤 ${alerta.responsavel}` : ''}
+            ${alerta.vistoriador ? `<br>👤 Vistoriador: ${alerta.vistoriador}` : ''}
+          </div>
+          
+          <button style="
+            background: ${alerta.cor};
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+          ">
+            ${alerta.acao}
+          </button>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  },
+
+  // 📢 VERIFICAR NOVAS ALERTAS CRÍTICAS
+  verificarNovasAlertas(novasAlertas) {
+    const novasCríticas = novasAlertas.filter(a => a.prioridade === 1);
+    const antesCríticas = this.ultimosAlertas.filter(a => a.prioridade === 1);
+
+    if (novasCríticas.length > antesCríticas.length) {
+      this.notificar('🚨 ALERTA CRÍTICO NOVO!', novasCríticas[0].titulo + '\n' + novasCríticas[0].contrato);
+    }
+
+    this.ultimosAlertas = novasAlertas;
+  },
+
+  // 📣 NOTIFICAÇÃO
+  notificar(titulo, mensagem) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(titulo, {
+        body: mensagem,
+        icon: '🚨'
+      });
+    }
+
+    // Popup visual
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff4444;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      font-weight: bold;
+      animation: slideDown 0.3s ease;
+    `;
+    popup.textContent = titulo;
+    document.body.appendChild(popup);
+
+    setTimeout(() => popup.remove(), 5000);
+  },
+
+  // 💬 MENSAGEM
+  mostrarMensagem(texto) {
+    const container = document.getElementById('alertas-list-v2');
+    if (container) {
+      container.innerHTML = `<p style="text-align: center; color: #999; padding: 20px;">${texto}</p>`;
+    }
+  }
+};
+
+// ════════════════════════════════════════════════════════════════
+// 🚀 INICIAR QUANDO PÁGINA CARREGAR
+// ════════════════════════════════════════════════════════════════
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+  });
+} else {
+  setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+}
+
+// Pedir permissão para notificações
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+console.log('✅ Sistema de Alertas V2 carregado!');
+
+</script>
+
 </body>
 </html>
       `;
@@ -2610,6 +4434,462 @@ tr:nth-child(even) { background: #f9f9f9; }
 <div class="total" style="margin-top: 20px; padding: 12px; text-align: center;">
   Total de Imóveis Finalizados: <strong>${finalizados.length}</strong>
 </div>
+
+<!-- 🚨 SISTEMA DE ALERTAS V2 -->
+<script>
+// ════════════════════════════════════════════════════════════════
+// 🚨 SISTEMA DE ALERTAS INTELIGENTE V2
+// ════════════════════════════════════════════════════════════════
+// Insira este código na parte final do seu index.html (antes de </body>)
+
+const SistemaAlertasV2 = {
+  ultimosAlertas: [],
+  intervaloAtualiz: null,
+
+  // 🎯 INICIAR SISTEMA
+  iniciar() {
+    console.log('🚨 [ALERTAS V2] Sistema iniciado');
+    this.criarInterface();
+    this.atualizarAlertas();
+    
+    // Atualizar a cada 5 minutos (300000ms)
+    this.intervaloAtualiz = setInterval(() => this.atualizarAlertas(), 300000);
+    
+    // Também permitir atualização manual
+    window.atualizarAlertasManual = () => this.atualizarAlertas();
+  },
+
+  // 🎨 CRIAR INTERFACE
+  criarInterface() {
+    const html = `
+      <div id="alertas-container-v2" style="
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        width: 450px;
+        max-height: 85vh;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-family: Arial, sans-serif;
+        display: none;
+        flex-direction: column;
+      ">
+        <div style="
+          background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+          color: white;
+          padding: 15px;
+          border-radius: 8px 8px 0 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        ">
+          <div>
+            <h3 style="margin: 0; font-size: 18px;">🚨 ALERTAS EM TEMPO REAL</h3>
+            <small id="alertas-count-v2" style="opacity: 0.9;">Carregando...</small>
+          </div>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+          ">×</button>
+        </div>
+
+        <div id="alertas-list-v2" style="
+          overflow-y: auto;
+          flex: 1;
+          padding: 15px;
+        ">
+          <p style="text-align: center; color: #999;">Carregando alertas...</p>
+        </div>
+
+        <div style="
+          background: #f5f5f5;
+          padding: 10px 15px;
+          border-top: 1px solid #eee;
+          border-radius: 0 0 8px 8px;
+          display: flex;
+          gap: 10px;
+          justify-content: space-between;
+        ">
+          <button onclick="atualizarAlertasManual()" style="
+            flex: 1;
+            padding: 8px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+          ">🔄 Atualizar Agora</button>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            flex: 1;
+            padding: 8px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          ">Fechar</button>
+        </div>
+      </div>
+
+      <button id="alertas-btn-v2" onclick="document.getElementById('alertas-container-v2').style.display='flex'" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        color: white;
+        border: none;
+        font-size: 30px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 9998;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        🚨
+      </button>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+  },
+
+  // 🔄 BUSCAR E PROCESSAR ALERTAS
+  async atualizarAlertas() {
+    try {
+      console.log('🔄 [ALERTAS V2] Atualizando...');
+      
+      const resposta = await fetch('https://integrativa-desocupacao.onrender.com/api/contracts');
+      const contratos = await resposta.json();
+
+      if (!Array.isArray(contratos) || contratos.length === 0) {
+        this.mostrarMensagem('Nenhum contrato encontrado');
+        return;
+      }
+
+      const alertas = this.gerarAlertas(contratos);
+      this.renderizarAlertas(alertas);
+
+      // Notificar se novos alertas críticos apareceram
+      this.verificarNovasAlertas(alertas);
+
+    } catch (erro) {
+      console.error('❌ [ALERTAS V2] Erro:', erro);
+      this.mostrarMensagem('Erro ao buscar alertas: ' + erro.message);
+    }
+  },
+
+  // 🎯 GERAR ALERTAS COM REGRAS DE NEGÓCIO
+  gerarAlertas(contratos) {
+    const alertas = [];
+    const hoje = new Date();
+
+    contratos.forEach(c => {
+      const contratoCriado = new Date(c.dataCriacao);
+
+      // ========== ALERTAS DE VISTORIA ==========
+      if (c.agendamentoVistoria) {
+        const dataVistoria = new Date(c.agendamentoVistoria);
+        const diasAtraso = Math.floor((hoje - dataVistoria) / (1000 * 60 * 60 * 24));
+
+        if (diasAtraso > 15) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'VISTORIA_CRÍTICA',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⚠️ VISTORIA ATRASADA',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'AGENDAR VISTORIA AGORA',
+            cor: '#ff4444'
+          });
+        } else if (diasAtraso > 5) {
+          alertas.push({
+            prioridade: 2, // Aviso
+            tipo: 'VISTORIA_AVISO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⏰ VISTORIA PRÓXIMA AO PRAZO',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'CONFIRMAR VISTORIA',
+            cor: '#ff9800'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE PAGAMENTO ==========
+      // Se não tem data de pagamento ou está zerado
+      if (!c.dataRetiradaChaves) {
+        const diasSemPagar = Math.floor((hoje - contratoCriado) / (1000 * 60 * 60 * 24));
+        
+        if (diasSemPagar > 30) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'PAGAMENTO_CRÍTICO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '💰 PAGAMENTO CRÍTICO',
+            descricao: `Contrato sem confirmação de pagamento há ${diasSemPagar} dias`,
+            valor: 'Verificar com cliente',
+            acao: 'COBRAR PAGAMENTO',
+            cor: '#ff4444'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE CHAVES ==========
+      if (c.statusChaves === 'pendente') {
+        alertas.push({
+          prioridade: 2, // Aviso
+          tipo: 'CHAVES_PENDENTE',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔑 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves pendentes`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'COBRAR CHAVES',
+          cor: '#ff9800'
+        });
+      } else if (c.statusChaves === 'nao-recebidas') {
+        alertas.push({
+          prioridade: 1, // Crítico
+          tipo: 'CHAVES_CRÍTICA',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔴 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves - Não recebidas pelo prestador`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'AÇÃO IMEDIATA NECESSÁRIA',
+          cor: '#ff4444'
+        });
+      }
+
+      // ========== ALERTAS DE REPAROS ==========
+      if (c.reparos && c.reparos.length > 0) {
+        c.reparos.forEach(reparo => {
+          if (reparo.status !== 'concluído' && reparo.status !== 'finalizado') {
+            if (reparo.dataLimite) {
+              const dataReparo = new Date(reparo.dataLimite);
+              const diasAtrasoReparo = Math.floor((hoje - dataReparo) / (1000 * 60 * 60 * 24));
+
+              if (diasAtrasoReparo > 10) {
+                alertas.push({
+                  prioridade: 1, // Crítico
+                  tipo: 'REPARO_CRÍTICO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '🔧 REPARO MUITO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'COBRAR CONCLUSÃO',
+                  cor: '#ff4444'
+                });
+              } else if (diasAtrasoReparo > 0) {
+                alertas.push({
+                  prioridade: 2, // Aviso
+                  tipo: 'REPARO_AVISO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '⚠️ REPARO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'ACOMPANHAR REPARO',
+                  cor: '#ff9800'
+                });
+              }
+            }
+          }
+        });
+      }
+
+      // ========== ALERTAS DE FINALIZAÇÃO ==========
+      if (c.finalizado === 'nao' && c.statusImovel === 'pronto-para-aluguel') {
+        const diasProntos = Math.floor((hoje - new Date(c.dataAtualizacao)) / (1000 * 60 * 60 * 24));
+        
+        if (diasProntos > 3) {
+          alertas.push({
+            prioridade: 3, // Info
+            tipo: 'FINALIZACAO_PENDENTE',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '✅ PRONTO PARA FINALIZAR',
+            descricao: 'Imóvel pronto para aluguel - Finalizar contrato',
+            diasProntos: diasProntos,
+            acao: 'FINALIZAR CONTRATO',
+            cor: '#4CAF50'
+          });
+        }
+      }
+    });
+
+    return alertas.sort((a, b) => a.prioridade - b.prioridade);
+  },
+
+  // 🎨 RENDERIZAR ALERTAS
+  renderizarAlertas(alertas) {
+    const container = document.getElementById('alertas-list-v2');
+    const btn = document.getElementById('alertas-btn-v2');
+    const alertasContainer = document.getElementById('alertas-container-v2');
+
+    if (alertas.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #4CAF50; padding: 20px;">✅ Nenhum alerta! Tudo em dia!</p>';
+      btn.textContent = '✅';
+      btn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+      document.getElementById('alertas-count-v2').textContent = 'Sem pendências';
+      return;
+    }
+
+    btn.textContent = '🚨';
+    btn.style.background = 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)';
+    document.getElementById('alertas-count-v2').textContent = `${alertas.length} alerta(s) pendente(s)`;
+
+    let html = '';
+
+    alertas.forEach(alerta => {
+      const prioridadeTexto = {
+        1: '🔴 CRÍTICO - AÇÃO IMEDIATA!',
+        2: '🟠 AVISO - ATENÇÃO NECESSÁRIA',
+        3: '🟡 INFO - AÇÃO PRÓXIMA'
+      }[alerta.prioridade];
+
+      html += `
+        <div style="
+          background: white;
+          border-left: 4px solid ${alerta.cor};
+          padding: 15px;
+          margin-bottom: 12px;
+          border-radius: 4px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          cursor: pointer;
+          transition: all 0.2s;
+        " onmouseover="this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+          
+          <div style="color: ${alerta.cor}; font-weight: bold; margin-bottom: 5px;">
+            ${prioridadeTexto}
+          </div>
+          
+          <div style="font-weight: bold; margin-bottom: 3px;">
+            ${alerta.contrato} - ${alerta.locatario}
+          </div>
+          
+          <div style="color: #333; margin-bottom: 8px;">
+            <strong>${alerta.titulo}</strong><br>
+            ${alerta.descricao}
+            ${alerta.dataLimite ? `<br>⏰ Data limite: ${alerta.dataLimite}` : ''}
+            ${alerta.valor ? `<br>💰 ${alerta.valor}` : ''}
+            ${alerta.atraso ? `<br>⚠️ ${alerta.atraso}` : ''}
+            ${alerta.responsavel ? `<br>👤 ${alerta.responsavel}` : ''}
+            ${alerta.vistoriador ? `<br>👤 Vistoriador: ${alerta.vistoriador}` : ''}
+          </div>
+          
+          <button style="
+            background: ${alerta.cor};
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+          ">
+            ${alerta.acao}
+          </button>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  },
+
+  // 📢 VERIFICAR NOVAS ALERTAS CRÍTICAS
+  verificarNovasAlertas(novasAlertas) {
+    const novasCríticas = novasAlertas.filter(a => a.prioridade === 1);
+    const antesCríticas = this.ultimosAlertas.filter(a => a.prioridade === 1);
+
+    if (novasCríticas.length > antesCríticas.length) {
+      this.notificar('🚨 ALERTA CRÍTICO NOVO!', novasCríticas[0].titulo + '\n' + novasCríticas[0].contrato);
+    }
+
+    this.ultimosAlertas = novasAlertas;
+  },
+
+  // 📣 NOTIFICAÇÃO
+  notificar(titulo, mensagem) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(titulo, {
+        body: mensagem,
+        icon: '🚨'
+      });
+    }
+
+    // Popup visual
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff4444;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      font-weight: bold;
+      animation: slideDown 0.3s ease;
+    `;
+    popup.textContent = titulo;
+    document.body.appendChild(popup);
+
+    setTimeout(() => popup.remove(), 5000);
+  },
+
+  // 💬 MENSAGEM
+  mostrarMensagem(texto) {
+    const container = document.getElementById('alertas-list-v2');
+    if (container) {
+      container.innerHTML = `<p style="text-align: center; color: #999; padding: 20px;">${texto}</p>`;
+    }
+  }
+};
+
+// ════════════════════════════════════════════════════════════════
+// 🚀 INICIAR QUANDO PÁGINA CARREGAR
+// ════════════════════════════════════════════════════════════════
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+  });
+} else {
+  setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+}
+
+// Pedir permissão para notificações
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+console.log('✅ Sistema de Alertas V2 carregado!');
+
+</script>
+
 </body>
 </html>
       `;
@@ -2684,6 +4964,462 @@ tr:nth-child(even) { background: #f9f9f9; }
 <div class="total" style="margin-top: 20px; padding: 12px; text-align: center;">
   Total de Imóveis em Manutenção: <strong>${emReparo.length}</strong>
 </div>
+
+<!-- 🚨 SISTEMA DE ALERTAS V2 -->
+<script>
+// ════════════════════════════════════════════════════════════════
+// 🚨 SISTEMA DE ALERTAS INTELIGENTE V2
+// ════════════════════════════════════════════════════════════════
+// Insira este código na parte final do seu index.html (antes de </body>)
+
+const SistemaAlertasV2 = {
+  ultimosAlertas: [],
+  intervaloAtualiz: null,
+
+  // 🎯 INICIAR SISTEMA
+  iniciar() {
+    console.log('🚨 [ALERTAS V2] Sistema iniciado');
+    this.criarInterface();
+    this.atualizarAlertas();
+    
+    // Atualizar a cada 5 minutos (300000ms)
+    this.intervaloAtualiz = setInterval(() => this.atualizarAlertas(), 300000);
+    
+    // Também permitir atualização manual
+    window.atualizarAlertasManual = () => this.atualizarAlertas();
+  },
+
+  // 🎨 CRIAR INTERFACE
+  criarInterface() {
+    const html = `
+      <div id="alertas-container-v2" style="
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        width: 450px;
+        max-height: 85vh;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-family: Arial, sans-serif;
+        display: none;
+        flex-direction: column;
+      ">
+        <div style="
+          background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+          color: white;
+          padding: 15px;
+          border-radius: 8px 8px 0 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        ">
+          <div>
+            <h3 style="margin: 0; font-size: 18px;">🚨 ALERTAS EM TEMPO REAL</h3>
+            <small id="alertas-count-v2" style="opacity: 0.9;">Carregando...</small>
+          </div>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+          ">×</button>
+        </div>
+
+        <div id="alertas-list-v2" style="
+          overflow-y: auto;
+          flex: 1;
+          padding: 15px;
+        ">
+          <p style="text-align: center; color: #999;">Carregando alertas...</p>
+        </div>
+
+        <div style="
+          background: #f5f5f5;
+          padding: 10px 15px;
+          border-top: 1px solid #eee;
+          border-radius: 0 0 8px 8px;
+          display: flex;
+          gap: 10px;
+          justify-content: space-between;
+        ">
+          <button onclick="atualizarAlertasManual()" style="
+            flex: 1;
+            padding: 8px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+          ">🔄 Atualizar Agora</button>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            flex: 1;
+            padding: 8px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          ">Fechar</button>
+        </div>
+      </div>
+
+      <button id="alertas-btn-v2" onclick="document.getElementById('alertas-container-v2').style.display='flex'" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        color: white;
+        border: none;
+        font-size: 30px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 9998;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        🚨
+      </button>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+  },
+
+  // 🔄 BUSCAR E PROCESSAR ALERTAS
+  async atualizarAlertas() {
+    try {
+      console.log('🔄 [ALERTAS V2] Atualizando...');
+      
+      const resposta = await fetch('https://integrativa-desocupacao.onrender.com/api/contracts');
+      const contratos = await resposta.json();
+
+      if (!Array.isArray(contratos) || contratos.length === 0) {
+        this.mostrarMensagem('Nenhum contrato encontrado');
+        return;
+      }
+
+      const alertas = this.gerarAlertas(contratos);
+      this.renderizarAlertas(alertas);
+
+      // Notificar se novos alertas críticos apareceram
+      this.verificarNovasAlertas(alertas);
+
+    } catch (erro) {
+      console.error('❌ [ALERTAS V2] Erro:', erro);
+      this.mostrarMensagem('Erro ao buscar alertas: ' + erro.message);
+    }
+  },
+
+  // 🎯 GERAR ALERTAS COM REGRAS DE NEGÓCIO
+  gerarAlertas(contratos) {
+    const alertas = [];
+    const hoje = new Date();
+
+    contratos.forEach(c => {
+      const contratoCriado = new Date(c.dataCriacao);
+
+      // ========== ALERTAS DE VISTORIA ==========
+      if (c.agendamentoVistoria) {
+        const dataVistoria = new Date(c.agendamentoVistoria);
+        const diasAtraso = Math.floor((hoje - dataVistoria) / (1000 * 60 * 60 * 24));
+
+        if (diasAtraso > 15) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'VISTORIA_CRÍTICA',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⚠️ VISTORIA ATRASADA',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'AGENDAR VISTORIA AGORA',
+            cor: '#ff4444'
+          });
+        } else if (diasAtraso > 5) {
+          alertas.push({
+            prioridade: 2, // Aviso
+            tipo: 'VISTORIA_AVISO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⏰ VISTORIA PRÓXIMA AO PRAZO',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'CONFIRMAR VISTORIA',
+            cor: '#ff9800'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE PAGAMENTO ==========
+      // Se não tem data de pagamento ou está zerado
+      if (!c.dataRetiradaChaves) {
+        const diasSemPagar = Math.floor((hoje - contratoCriado) / (1000 * 60 * 60 * 24));
+        
+        if (diasSemPagar > 30) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'PAGAMENTO_CRÍTICO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '💰 PAGAMENTO CRÍTICO',
+            descricao: `Contrato sem confirmação de pagamento há ${diasSemPagar} dias`,
+            valor: 'Verificar com cliente',
+            acao: 'COBRAR PAGAMENTO',
+            cor: '#ff4444'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE CHAVES ==========
+      if (c.statusChaves === 'pendente') {
+        alertas.push({
+          prioridade: 2, // Aviso
+          tipo: 'CHAVES_PENDENTE',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔑 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves pendentes`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'COBRAR CHAVES',
+          cor: '#ff9800'
+        });
+      } else if (c.statusChaves === 'nao-recebidas') {
+        alertas.push({
+          prioridade: 1, // Crítico
+          tipo: 'CHAVES_CRÍTICA',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔴 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves - Não recebidas pelo prestador`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'AÇÃO IMEDIATA NECESSÁRIA',
+          cor: '#ff4444'
+        });
+      }
+
+      // ========== ALERTAS DE REPAROS ==========
+      if (c.reparos && c.reparos.length > 0) {
+        c.reparos.forEach(reparo => {
+          if (reparo.status !== 'concluído' && reparo.status !== 'finalizado') {
+            if (reparo.dataLimite) {
+              const dataReparo = new Date(reparo.dataLimite);
+              const diasAtrasoReparo = Math.floor((hoje - dataReparo) / (1000 * 60 * 60 * 24));
+
+              if (diasAtrasoReparo > 10) {
+                alertas.push({
+                  prioridade: 1, // Crítico
+                  tipo: 'REPARO_CRÍTICO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '🔧 REPARO MUITO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'COBRAR CONCLUSÃO',
+                  cor: '#ff4444'
+                });
+              } else if (diasAtrasoReparo > 0) {
+                alertas.push({
+                  prioridade: 2, // Aviso
+                  tipo: 'REPARO_AVISO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '⚠️ REPARO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'ACOMPANHAR REPARO',
+                  cor: '#ff9800'
+                });
+              }
+            }
+          }
+        });
+      }
+
+      // ========== ALERTAS DE FINALIZAÇÃO ==========
+      if (c.finalizado === 'nao' && c.statusImovel === 'pronto-para-aluguel') {
+        const diasProntos = Math.floor((hoje - new Date(c.dataAtualizacao)) / (1000 * 60 * 60 * 24));
+        
+        if (diasProntos > 3) {
+          alertas.push({
+            prioridade: 3, // Info
+            tipo: 'FINALIZACAO_PENDENTE',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '✅ PRONTO PARA FINALIZAR',
+            descricao: 'Imóvel pronto para aluguel - Finalizar contrato',
+            diasProntos: diasProntos,
+            acao: 'FINALIZAR CONTRATO',
+            cor: '#4CAF50'
+          });
+        }
+      }
+    });
+
+    return alertas.sort((a, b) => a.prioridade - b.prioridade);
+  },
+
+  // 🎨 RENDERIZAR ALERTAS
+  renderizarAlertas(alertas) {
+    const container = document.getElementById('alertas-list-v2');
+    const btn = document.getElementById('alertas-btn-v2');
+    const alertasContainer = document.getElementById('alertas-container-v2');
+
+    if (alertas.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #4CAF50; padding: 20px;">✅ Nenhum alerta! Tudo em dia!</p>';
+      btn.textContent = '✅';
+      btn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+      document.getElementById('alertas-count-v2').textContent = 'Sem pendências';
+      return;
+    }
+
+    btn.textContent = '🚨';
+    btn.style.background = 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)';
+    document.getElementById('alertas-count-v2').textContent = `${alertas.length} alerta(s) pendente(s)`;
+
+    let html = '';
+
+    alertas.forEach(alerta => {
+      const prioridadeTexto = {
+        1: '🔴 CRÍTICO - AÇÃO IMEDIATA!',
+        2: '🟠 AVISO - ATENÇÃO NECESSÁRIA',
+        3: '🟡 INFO - AÇÃO PRÓXIMA'
+      }[alerta.prioridade];
+
+      html += `
+        <div style="
+          background: white;
+          border-left: 4px solid ${alerta.cor};
+          padding: 15px;
+          margin-bottom: 12px;
+          border-radius: 4px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          cursor: pointer;
+          transition: all 0.2s;
+        " onmouseover="this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+          
+          <div style="color: ${alerta.cor}; font-weight: bold; margin-bottom: 5px;">
+            ${prioridadeTexto}
+          </div>
+          
+          <div style="font-weight: bold; margin-bottom: 3px;">
+            ${alerta.contrato} - ${alerta.locatario}
+          </div>
+          
+          <div style="color: #333; margin-bottom: 8px;">
+            <strong>${alerta.titulo}</strong><br>
+            ${alerta.descricao}
+            ${alerta.dataLimite ? `<br>⏰ Data limite: ${alerta.dataLimite}` : ''}
+            ${alerta.valor ? `<br>💰 ${alerta.valor}` : ''}
+            ${alerta.atraso ? `<br>⚠️ ${alerta.atraso}` : ''}
+            ${alerta.responsavel ? `<br>👤 ${alerta.responsavel}` : ''}
+            ${alerta.vistoriador ? `<br>👤 Vistoriador: ${alerta.vistoriador}` : ''}
+          </div>
+          
+          <button style="
+            background: ${alerta.cor};
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+          ">
+            ${alerta.acao}
+          </button>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  },
+
+  // 📢 VERIFICAR NOVAS ALERTAS CRÍTICAS
+  verificarNovasAlertas(novasAlertas) {
+    const novasCríticas = novasAlertas.filter(a => a.prioridade === 1);
+    const antesCríticas = this.ultimosAlertas.filter(a => a.prioridade === 1);
+
+    if (novasCríticas.length > antesCríticas.length) {
+      this.notificar('🚨 ALERTA CRÍTICO NOVO!', novasCríticas[0].titulo + '\n' + novasCríticas[0].contrato);
+    }
+
+    this.ultimosAlertas = novasAlertas;
+  },
+
+  // 📣 NOTIFICAÇÃO
+  notificar(titulo, mensagem) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(titulo, {
+        body: mensagem,
+        icon: '🚨'
+      });
+    }
+
+    // Popup visual
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff4444;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      font-weight: bold;
+      animation: slideDown 0.3s ease;
+    `;
+    popup.textContent = titulo;
+    document.body.appendChild(popup);
+
+    setTimeout(() => popup.remove(), 5000);
+  },
+
+  // 💬 MENSAGEM
+  mostrarMensagem(texto) {
+    const container = document.getElementById('alertas-list-v2');
+    if (container) {
+      container.innerHTML = `<p style="text-align: center; color: #999; padding: 20px;">${texto}</p>`;
+    }
+  }
+};
+
+// ════════════════════════════════════════════════════════════════
+// 🚀 INICIAR QUANDO PÁGINA CARREGAR
+// ════════════════════════════════════════════════════════════════
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+  });
+} else {
+  setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+}
+
+// Pedir permissão para notificações
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+console.log('✅ Sistema de Alertas V2 carregado!');
+
+</script>
+
 </body>
 </html>
       `;
@@ -2766,6 +5502,462 @@ tr:nth-child(even) { background: #f9f9f9; }
 <div class="total" style="margin-top: 20px; padding: 12px; text-align: center;">
   Total de Vistorias Agendadas (30 dias): <strong>${vistoriasProximas.length}</strong>
 </div>
+
+<!-- 🚨 SISTEMA DE ALERTAS V2 -->
+<script>
+// ════════════════════════════════════════════════════════════════
+// 🚨 SISTEMA DE ALERTAS INTELIGENTE V2
+// ════════════════════════════════════════════════════════════════
+// Insira este código na parte final do seu index.html (antes de </body>)
+
+const SistemaAlertasV2 = {
+  ultimosAlertas: [],
+  intervaloAtualiz: null,
+
+  // 🎯 INICIAR SISTEMA
+  iniciar() {
+    console.log('🚨 [ALERTAS V2] Sistema iniciado');
+    this.criarInterface();
+    this.atualizarAlertas();
+    
+    // Atualizar a cada 5 minutos (300000ms)
+    this.intervaloAtualiz = setInterval(() => this.atualizarAlertas(), 300000);
+    
+    // Também permitir atualização manual
+    window.atualizarAlertasManual = () => this.atualizarAlertas();
+  },
+
+  // 🎨 CRIAR INTERFACE
+  criarInterface() {
+    const html = `
+      <div id="alertas-container-v2" style="
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        width: 450px;
+        max-height: 85vh;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-family: Arial, sans-serif;
+        display: none;
+        flex-direction: column;
+      ">
+        <div style="
+          background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+          color: white;
+          padding: 15px;
+          border-radius: 8px 8px 0 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        ">
+          <div>
+            <h3 style="margin: 0; font-size: 18px;">🚨 ALERTAS EM TEMPO REAL</h3>
+            <small id="alertas-count-v2" style="opacity: 0.9;">Carregando...</small>
+          </div>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+          ">×</button>
+        </div>
+
+        <div id="alertas-list-v2" style="
+          overflow-y: auto;
+          flex: 1;
+          padding: 15px;
+        ">
+          <p style="text-align: center; color: #999;">Carregando alertas...</p>
+        </div>
+
+        <div style="
+          background: #f5f5f5;
+          padding: 10px 15px;
+          border-top: 1px solid #eee;
+          border-radius: 0 0 8px 8px;
+          display: flex;
+          gap: 10px;
+          justify-content: space-between;
+        ">
+          <button onclick="atualizarAlertasManual()" style="
+            flex: 1;
+            padding: 8px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+          ">🔄 Atualizar Agora</button>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            flex: 1;
+            padding: 8px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          ">Fechar</button>
+        </div>
+      </div>
+
+      <button id="alertas-btn-v2" onclick="document.getElementById('alertas-container-v2').style.display='flex'" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        color: white;
+        border: none;
+        font-size: 30px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 9998;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        🚨
+      </button>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+  },
+
+  // 🔄 BUSCAR E PROCESSAR ALERTAS
+  async atualizarAlertas() {
+    try {
+      console.log('🔄 [ALERTAS V2] Atualizando...');
+      
+      const resposta = await fetch('https://integrativa-desocupacao.onrender.com/api/contracts');
+      const contratos = await resposta.json();
+
+      if (!Array.isArray(contratos) || contratos.length === 0) {
+        this.mostrarMensagem('Nenhum contrato encontrado');
+        return;
+      }
+
+      const alertas = this.gerarAlertas(contratos);
+      this.renderizarAlertas(alertas);
+
+      // Notificar se novos alertas críticos apareceram
+      this.verificarNovasAlertas(alertas);
+
+    } catch (erro) {
+      console.error('❌ [ALERTAS V2] Erro:', erro);
+      this.mostrarMensagem('Erro ao buscar alertas: ' + erro.message);
+    }
+  },
+
+  // 🎯 GERAR ALERTAS COM REGRAS DE NEGÓCIO
+  gerarAlertas(contratos) {
+    const alertas = [];
+    const hoje = new Date();
+
+    contratos.forEach(c => {
+      const contratoCriado = new Date(c.dataCriacao);
+
+      // ========== ALERTAS DE VISTORIA ==========
+      if (c.agendamentoVistoria) {
+        const dataVistoria = new Date(c.agendamentoVistoria);
+        const diasAtraso = Math.floor((hoje - dataVistoria) / (1000 * 60 * 60 * 24));
+
+        if (diasAtraso > 15) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'VISTORIA_CRÍTICA',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⚠️ VISTORIA ATRASADA',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'AGENDAR VISTORIA AGORA',
+            cor: '#ff4444'
+          });
+        } else if (diasAtraso > 5) {
+          alertas.push({
+            prioridade: 2, // Aviso
+            tipo: 'VISTORIA_AVISO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⏰ VISTORIA PRÓXIMA AO PRAZO',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'CONFIRMAR VISTORIA',
+            cor: '#ff9800'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE PAGAMENTO ==========
+      // Se não tem data de pagamento ou está zerado
+      if (!c.dataRetiradaChaves) {
+        const diasSemPagar = Math.floor((hoje - contratoCriado) / (1000 * 60 * 60 * 24));
+        
+        if (diasSemPagar > 30) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'PAGAMENTO_CRÍTICO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '💰 PAGAMENTO CRÍTICO',
+            descricao: `Contrato sem confirmação de pagamento há ${diasSemPagar} dias`,
+            valor: 'Verificar com cliente',
+            acao: 'COBRAR PAGAMENTO',
+            cor: '#ff4444'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE CHAVES ==========
+      if (c.statusChaves === 'pendente') {
+        alertas.push({
+          prioridade: 2, // Aviso
+          tipo: 'CHAVES_PENDENTE',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔑 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves pendentes`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'COBRAR CHAVES',
+          cor: '#ff9800'
+        });
+      } else if (c.statusChaves === 'nao-recebidas') {
+        alertas.push({
+          prioridade: 1, // Crítico
+          tipo: 'CHAVES_CRÍTICA',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔴 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves - Não recebidas pelo prestador`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'AÇÃO IMEDIATA NECESSÁRIA',
+          cor: '#ff4444'
+        });
+      }
+
+      // ========== ALERTAS DE REPAROS ==========
+      if (c.reparos && c.reparos.length > 0) {
+        c.reparos.forEach(reparo => {
+          if (reparo.status !== 'concluído' && reparo.status !== 'finalizado') {
+            if (reparo.dataLimite) {
+              const dataReparo = new Date(reparo.dataLimite);
+              const diasAtrasoReparo = Math.floor((hoje - dataReparo) / (1000 * 60 * 60 * 24));
+
+              if (diasAtrasoReparo > 10) {
+                alertas.push({
+                  prioridade: 1, // Crítico
+                  tipo: 'REPARO_CRÍTICO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '🔧 REPARO MUITO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'COBRAR CONCLUSÃO',
+                  cor: '#ff4444'
+                });
+              } else if (diasAtrasoReparo > 0) {
+                alertas.push({
+                  prioridade: 2, // Aviso
+                  tipo: 'REPARO_AVISO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '⚠️ REPARO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'ACOMPANHAR REPARO',
+                  cor: '#ff9800'
+                });
+              }
+            }
+          }
+        });
+      }
+
+      // ========== ALERTAS DE FINALIZAÇÃO ==========
+      if (c.finalizado === 'nao' && c.statusImovel === 'pronto-para-aluguel') {
+        const diasProntos = Math.floor((hoje - new Date(c.dataAtualizacao)) / (1000 * 60 * 60 * 24));
+        
+        if (diasProntos > 3) {
+          alertas.push({
+            prioridade: 3, // Info
+            tipo: 'FINALIZACAO_PENDENTE',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '✅ PRONTO PARA FINALIZAR',
+            descricao: 'Imóvel pronto para aluguel - Finalizar contrato',
+            diasProntos: diasProntos,
+            acao: 'FINALIZAR CONTRATO',
+            cor: '#4CAF50'
+          });
+        }
+      }
+    });
+
+    return alertas.sort((a, b) => a.prioridade - b.prioridade);
+  },
+
+  // 🎨 RENDERIZAR ALERTAS
+  renderizarAlertas(alertas) {
+    const container = document.getElementById('alertas-list-v2');
+    const btn = document.getElementById('alertas-btn-v2');
+    const alertasContainer = document.getElementById('alertas-container-v2');
+
+    if (alertas.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #4CAF50; padding: 20px;">✅ Nenhum alerta! Tudo em dia!</p>';
+      btn.textContent = '✅';
+      btn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+      document.getElementById('alertas-count-v2').textContent = 'Sem pendências';
+      return;
+    }
+
+    btn.textContent = '🚨';
+    btn.style.background = 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)';
+    document.getElementById('alertas-count-v2').textContent = `${alertas.length} alerta(s) pendente(s)`;
+
+    let html = '';
+
+    alertas.forEach(alerta => {
+      const prioridadeTexto = {
+        1: '🔴 CRÍTICO - AÇÃO IMEDIATA!',
+        2: '🟠 AVISO - ATENÇÃO NECESSÁRIA',
+        3: '🟡 INFO - AÇÃO PRÓXIMA'
+      }[alerta.prioridade];
+
+      html += `
+        <div style="
+          background: white;
+          border-left: 4px solid ${alerta.cor};
+          padding: 15px;
+          margin-bottom: 12px;
+          border-radius: 4px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          cursor: pointer;
+          transition: all 0.2s;
+        " onmouseover="this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+          
+          <div style="color: ${alerta.cor}; font-weight: bold; margin-bottom: 5px;">
+            ${prioridadeTexto}
+          </div>
+          
+          <div style="font-weight: bold; margin-bottom: 3px;">
+            ${alerta.contrato} - ${alerta.locatario}
+          </div>
+          
+          <div style="color: #333; margin-bottom: 8px;">
+            <strong>${alerta.titulo}</strong><br>
+            ${alerta.descricao}
+            ${alerta.dataLimite ? `<br>⏰ Data limite: ${alerta.dataLimite}` : ''}
+            ${alerta.valor ? `<br>💰 ${alerta.valor}` : ''}
+            ${alerta.atraso ? `<br>⚠️ ${alerta.atraso}` : ''}
+            ${alerta.responsavel ? `<br>👤 ${alerta.responsavel}` : ''}
+            ${alerta.vistoriador ? `<br>👤 Vistoriador: ${alerta.vistoriador}` : ''}
+          </div>
+          
+          <button style="
+            background: ${alerta.cor};
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+          ">
+            ${alerta.acao}
+          </button>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  },
+
+  // 📢 VERIFICAR NOVAS ALERTAS CRÍTICAS
+  verificarNovasAlertas(novasAlertas) {
+    const novasCríticas = novasAlertas.filter(a => a.prioridade === 1);
+    const antesCríticas = this.ultimosAlertas.filter(a => a.prioridade === 1);
+
+    if (novasCríticas.length > antesCríticas.length) {
+      this.notificar('🚨 ALERTA CRÍTICO NOVO!', novasCríticas[0].titulo + '\n' + novasCríticas[0].contrato);
+    }
+
+    this.ultimosAlertas = novasAlertas;
+  },
+
+  // 📣 NOTIFICAÇÃO
+  notificar(titulo, mensagem) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(titulo, {
+        body: mensagem,
+        icon: '🚨'
+      });
+    }
+
+    // Popup visual
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff4444;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      font-weight: bold;
+      animation: slideDown 0.3s ease;
+    `;
+    popup.textContent = titulo;
+    document.body.appendChild(popup);
+
+    setTimeout(() => popup.remove(), 5000);
+  },
+
+  // 💬 MENSAGEM
+  mostrarMensagem(texto) {
+    const container = document.getElementById('alertas-list-v2');
+    if (container) {
+      container.innerHTML = `<p style="text-align: center; color: #999; padding: 20px;">${texto}</p>`;
+    }
+  }
+};
+
+// ════════════════════════════════════════════════════════════════
+// 🚀 INICIAR QUANDO PÁGINA CARREGAR
+// ════════════════════════════════════════════════════════════════
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+  });
+} else {
+  setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+}
+
+// Pedir permissão para notificações
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+console.log('✅ Sistema de Alertas V2 carregado!');
+
+</script>
+
 </body>
 </html>
       `;
@@ -3262,5 +6454,461 @@ tr:nth-child(even) { background: #f9f9f9; }
       carregarDados();
     }
   </script>
+
+<!-- 🚨 SISTEMA DE ALERTAS V2 -->
+<script>
+// ════════════════════════════════════════════════════════════════
+// 🚨 SISTEMA DE ALERTAS INTELIGENTE V2
+// ════════════════════════════════════════════════════════════════
+// Insira este código na parte final do seu index.html (antes de </body>)
+
+const SistemaAlertasV2 = {
+  ultimosAlertas: [],
+  intervaloAtualiz: null,
+
+  // 🎯 INICIAR SISTEMA
+  iniciar() {
+    console.log('🚨 [ALERTAS V2] Sistema iniciado');
+    this.criarInterface();
+    this.atualizarAlertas();
+    
+    // Atualizar a cada 5 minutos (300000ms)
+    this.intervaloAtualiz = setInterval(() => this.atualizarAlertas(), 300000);
+    
+    // Também permitir atualização manual
+    window.atualizarAlertasManual = () => this.atualizarAlertas();
+  },
+
+  // 🎨 CRIAR INTERFACE
+  criarInterface() {
+    const html = `
+      <div id="alertas-container-v2" style="
+        position: fixed;
+        top: 10px;
+        right: 10px;
+        width: 450px;
+        max-height: 85vh;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        font-family: Arial, sans-serif;
+        display: none;
+        flex-direction: column;
+      ">
+        <div style="
+          background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+          color: white;
+          padding: 15px;
+          border-radius: 8px 8px 0 0;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+        ">
+          <div>
+            <h3 style="margin: 0; font-size: 18px;">🚨 ALERTAS EM TEMPO REAL</h3>
+            <small id="alertas-count-v2" style="opacity: 0.9;">Carregando...</small>
+          </div>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            width: 30px;
+            height: 30px;
+            border-radius: 4px;
+          ">×</button>
+        </div>
+
+        <div id="alertas-list-v2" style="
+          overflow-y: auto;
+          flex: 1;
+          padding: 15px;
+        ">
+          <p style="text-align: center; color: #999;">Carregando alertas...</p>
+        </div>
+
+        <div style="
+          background: #f5f5f5;
+          padding: 10px 15px;
+          border-top: 1px solid #eee;
+          border-radius: 0 0 8px 8px;
+          display: flex;
+          gap: 10px;
+          justify-content: space-between;
+        ">
+          <button onclick="atualizarAlertasManual()" style="
+            flex: 1;
+            padding: 8px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+          ">🔄 Atualizar Agora</button>
+          <button onclick="document.getElementById('alertas-container-v2').style.display='none'" style="
+            flex: 1;
+            padding: 8px;
+            background: #666;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+          ">Fechar</button>
+        </div>
+      </div>
+
+      <button id="alertas-btn-v2" onclick="document.getElementById('alertas-container-v2').style.display='flex'" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        color: white;
+        border: none;
+        font-size: 30px;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 9998;
+        transition: all 0.3s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      " onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
+        🚨
+      </button>
+    `;
+
+    document.body.insertAdjacentHTML('beforeend', html);
+  },
+
+  // 🔄 BUSCAR E PROCESSAR ALERTAS
+  async atualizarAlertas() {
+    try {
+      console.log('🔄 [ALERTAS V2] Atualizando...');
+      
+      const resposta = await fetch('https://integrativa-desocupacao.onrender.com/api/contracts');
+      const contratos = await resposta.json();
+
+      if (!Array.isArray(contratos) || contratos.length === 0) {
+        this.mostrarMensagem('Nenhum contrato encontrado');
+        return;
+      }
+
+      const alertas = this.gerarAlertas(contratos);
+      this.renderizarAlertas(alertas);
+
+      // Notificar se novos alertas críticos apareceram
+      this.verificarNovasAlertas(alertas);
+
+    } catch (erro) {
+      console.error('❌ [ALERTAS V2] Erro:', erro);
+      this.mostrarMensagem('Erro ao buscar alertas: ' + erro.message);
+    }
+  },
+
+  // 🎯 GERAR ALERTAS COM REGRAS DE NEGÓCIO
+  gerarAlertas(contratos) {
+    const alertas = [];
+    const hoje = new Date();
+
+    contratos.forEach(c => {
+      const contratoCriado = new Date(c.dataCriacao);
+
+      // ========== ALERTAS DE VISTORIA ==========
+      if (c.agendamentoVistoria) {
+        const dataVistoria = new Date(c.agendamentoVistoria);
+        const diasAtraso = Math.floor((hoje - dataVistoria) / (1000 * 60 * 60 * 24));
+
+        if (diasAtraso > 15) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'VISTORIA_CRÍTICA',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⚠️ VISTORIA ATRASADA',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'AGENDAR VISTORIA AGORA',
+            cor: '#ff4444'
+          });
+        } else if (diasAtraso > 5) {
+          alertas.push({
+            prioridade: 2, // Aviso
+            tipo: 'VISTORIA_AVISO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '⏰ VISTORIA PRÓXIMA AO PRAZO',
+            descricao: `Atraso de ${diasAtraso} dias`,
+            dataLimite: dataVistoria.toLocaleDateString('pt-BR'),
+            acao: 'CONFIRMAR VISTORIA',
+            cor: '#ff9800'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE PAGAMENTO ==========
+      // Se não tem data de pagamento ou está zerado
+      if (!c.dataRetiradaChaves) {
+        const diasSemPagar = Math.floor((hoje - contratoCriado) / (1000 * 60 * 60 * 24));
+        
+        if (diasSemPagar > 30) {
+          alertas.push({
+            prioridade: 1, // Crítico
+            tipo: 'PAGAMENTO_CRÍTICO',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '💰 PAGAMENTO CRÍTICO',
+            descricao: `Contrato sem confirmação de pagamento há ${diasSemPagar} dias`,
+            valor: 'Verificar com cliente',
+            acao: 'COBRAR PAGAMENTO',
+            cor: '#ff4444'
+          });
+        }
+      }
+
+      // ========== ALERTAS DE CHAVES ==========
+      if (c.statusChaves === 'pendente') {
+        alertas.push({
+          prioridade: 2, // Aviso
+          tipo: 'CHAVES_PENDENTE',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔑 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves pendentes`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'COBRAR CHAVES',
+          cor: '#ff9800'
+        });
+      } else if (c.statusChaves === 'nao-recebidas') {
+        alertas.push({
+          prioridade: 1, // Crítico
+          tipo: 'CHAVES_CRÍTICA',
+          contrato: c.contrato,
+          locatario: c.locatario,
+          titulo: '🔴 CHAVES NÃO RECEBIDAS',
+          descricao: `${c.quantidadeChaves} chaves - Não recebidas pelo prestador`,
+          vistoriador: c.nomeVistoriador || 'Não atribuído',
+          acao: 'AÇÃO IMEDIATA NECESSÁRIA',
+          cor: '#ff4444'
+        });
+      }
+
+      // ========== ALERTAS DE REPAROS ==========
+      if (c.reparos && c.reparos.length > 0) {
+        c.reparos.forEach(reparo => {
+          if (reparo.status !== 'concluído' && reparo.status !== 'finalizado') {
+            if (reparo.dataLimite) {
+              const dataReparo = new Date(reparo.dataLimite);
+              const diasAtrasoReparo = Math.floor((hoje - dataReparo) / (1000 * 60 * 60 * 24));
+
+              if (diasAtrasoReparo > 10) {
+                alertas.push({
+                  prioridade: 1, // Crítico
+                  tipo: 'REPARO_CRÍTICO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '🔧 REPARO MUITO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'COBRAR CONCLUSÃO',
+                  cor: '#ff4444'
+                });
+              } else if (diasAtrasoReparo > 0) {
+                alertas.push({
+                  prioridade: 2, // Aviso
+                  tipo: 'REPARO_AVISO',
+                  contrato: c.contrato,
+                  locatario: c.locatario,
+                  titulo: '⚠️ REPARO ATRASADO',
+                  descricao: reparo.descricao,
+                  atraso: `${diasAtrasoReparo} dias de atraso`,
+                  responsavel: reparo.prestadorNome || 'Não atribuído',
+                  acao: 'ACOMPANHAR REPARO',
+                  cor: '#ff9800'
+                });
+              }
+            }
+          }
+        });
+      }
+
+      // ========== ALERTAS DE FINALIZAÇÃO ==========
+      if (c.finalizado === 'nao' && c.statusImovel === 'pronto-para-aluguel') {
+        const diasProntos = Math.floor((hoje - new Date(c.dataAtualizacao)) / (1000 * 60 * 60 * 24));
+        
+        if (diasProntos > 3) {
+          alertas.push({
+            prioridade: 3, // Info
+            tipo: 'FINALIZACAO_PENDENTE',
+            contrato: c.contrato,
+            locatario: c.locatario,
+            titulo: '✅ PRONTO PARA FINALIZAR',
+            descricao: 'Imóvel pronto para aluguel - Finalizar contrato',
+            diasProntos: diasProntos,
+            acao: 'FINALIZAR CONTRATO',
+            cor: '#4CAF50'
+          });
+        }
+      }
+    });
+
+    return alertas.sort((a, b) => a.prioridade - b.prioridade);
+  },
+
+  // 🎨 RENDERIZAR ALERTAS
+  renderizarAlertas(alertas) {
+    const container = document.getElementById('alertas-list-v2');
+    const btn = document.getElementById('alertas-btn-v2');
+    const alertasContainer = document.getElementById('alertas-container-v2');
+
+    if (alertas.length === 0) {
+      container.innerHTML = '<p style="text-align: center; color: #4CAF50; padding: 20px;">✅ Nenhum alerta! Tudo em dia!</p>';
+      btn.textContent = '✅';
+      btn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+      document.getElementById('alertas-count-v2').textContent = 'Sem pendências';
+      return;
+    }
+
+    btn.textContent = '🚨';
+    btn.style.background = 'linear-gradient(135deg, #ff4444 0%, #cc0000 100%)';
+    document.getElementById('alertas-count-v2').textContent = `${alertas.length} alerta(s) pendente(s)`;
+
+    let html = '';
+
+    alertas.forEach(alerta => {
+      const prioridadeTexto = {
+        1: '🔴 CRÍTICO - AÇÃO IMEDIATA!',
+        2: '🟠 AVISO - ATENÇÃO NECESSÁRIA',
+        3: '🟡 INFO - AÇÃO PRÓXIMA'
+      }[alerta.prioridade];
+
+      html += `
+        <div style="
+          background: white;
+          border-left: 4px solid ${alerta.cor};
+          padding: 15px;
+          margin-bottom: 12px;
+          border-radius: 4px;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+          cursor: pointer;
+          transition: all 0.2s;
+        " onmouseover="this.style.boxShadow='0 4px 8px rgba(0,0,0,0.2)'" onmouseout="this.style.boxShadow='0 2px 4px rgba(0,0,0,0.1)'">
+          
+          <div style="color: ${alerta.cor}; font-weight: bold; margin-bottom: 5px;">
+            ${prioridadeTexto}
+          </div>
+          
+          <div style="font-weight: bold; margin-bottom: 3px;">
+            ${alerta.contrato} - ${alerta.locatario}
+          </div>
+          
+          <div style="color: #333; margin-bottom: 8px;">
+            <strong>${alerta.titulo}</strong><br>
+            ${alerta.descricao}
+            ${alerta.dataLimite ? `<br>⏰ Data limite: ${alerta.dataLimite}` : ''}
+            ${alerta.valor ? `<br>💰 ${alerta.valor}` : ''}
+            ${alerta.atraso ? `<br>⚠️ ${alerta.atraso}` : ''}
+            ${alerta.responsavel ? `<br>👤 ${alerta.responsavel}` : ''}
+            ${alerta.vistoriador ? `<br>👤 Vistoriador: ${alerta.vistoriador}` : ''}
+          </div>
+          
+          <button style="
+            background: ${alerta.cor};
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            width: 100%;
+          ">
+            ${alerta.acao}
+          </button>
+        </div>
+      `;
+    });
+
+    container.innerHTML = html;
+  },
+
+  // 📢 VERIFICAR NOVAS ALERTAS CRÍTICAS
+  verificarNovasAlertas(novasAlertas) {
+    const novasCríticas = novasAlertas.filter(a => a.prioridade === 1);
+    const antesCríticas = this.ultimosAlertas.filter(a => a.prioridade === 1);
+
+    if (novasCríticas.length > antesCríticas.length) {
+      this.notificar('🚨 ALERTA CRÍTICO NOVO!', novasCríticas[0].titulo + '\n' + novasCríticas[0].contrato);
+    }
+
+    this.ultimosAlertas = novasAlertas;
+  },
+
+  // 📣 NOTIFICAÇÃO
+  notificar(titulo, mensagem) {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(titulo, {
+        body: mensagem,
+        icon: '🚨'
+      });
+    }
+
+    // Popup visual
+    const popup = document.createElement('div');
+    popup.style.cssText = `
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ff4444;
+      color: white;
+      padding: 15px 25px;
+      border-radius: 4px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      z-index: 10000;
+      font-weight: bold;
+      animation: slideDown 0.3s ease;
+    `;
+    popup.textContent = titulo;
+    document.body.appendChild(popup);
+
+    setTimeout(() => popup.remove(), 5000);
+  },
+
+  // 💬 MENSAGEM
+  mostrarMensagem(texto) {
+    const container = document.getElementById('alertas-list-v2');
+    if (container) {
+      container.innerHTML = `<p style="text-align: center; color: #999; padding: 20px;">${texto}</p>`;
+    }
+  }
+};
+
+// ════════════════════════════════════════════════════════════════
+// 🚀 INICIAR QUANDO PÁGINA CARREGAR
+// ════════════════════════════════════════════════════════════════
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+  });
+} else {
+  setTimeout(() => SistemaAlertasV2.iniciar(), 1000);
+}
+
+// Pedir permissão para notificações
+if ('Notification' in window && Notification.permission === 'default') {
+  Notification.requestPermission();
+}
+
+console.log('✅ Sistema de Alertas V2 carregado!');
+
+</script>
+
 </body>
 </html>
