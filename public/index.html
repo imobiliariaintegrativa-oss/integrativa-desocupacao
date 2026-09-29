@@ -616,8 +616,8 @@
         grid-template-columns: repeat(2, 1fr);
       }
     }
-  </style>
 
+    /* ===== GRÁFICOS V26 ===== */
     .charts-section {
       margin-top: 30px;
       padding: 20px;
@@ -666,6 +666,7 @@
       color: #999;
       margin-top: 10px;
     }
+  </style>
 </head>
 <body>
   <div class="header">
@@ -3330,12 +3331,27 @@ tr:nth-child(even) { background: #f9f9f9; }
       setTimeout(() => toast.remove(), 3000);
     }
 
+    if (localStorage.getItem('darkMode') === 'true') {
+      document.body.classList.add('dark-mode');
+    }
 
-    // ========= GRÁFICOS V26 - DADOS INTEGRADOS =========
+    carregarDados();
+    // ========= CARREGAR DADOS AUTOMATICAMENTE AO ABRIR A PÁGINA =========
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('✅ Página carregada! Buscando contratos...');
+      carregarLogoLocalStorage(); // Carregar logo salvo (V25.12)
+      carregarDados();
+    });
+
+    // Também carregar se o script for executado depois do DOM estar pronto
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', carregarDados);
+    } else {
+
+    // ========= GRÁFICOS V26 - INTEGRAÇÃO FINAL =========
     let chartInstances = {};
 
     function inicializarGraficos() {
-      // Destruir gráficos antigos se existirem
       Object.values(chartInstances).forEach(chart => {
         if (chart) chart.destroy();
       });
@@ -3349,7 +3365,6 @@ tr:nth-child(even) { background: #f9f9f9; }
 
       if (!ctx1 || !ctx2 || !ctx3 || !ctx4) return;
 
-      // Calcular dados
       const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
       const pendentes = contratos.filter(c => c.finalizado !== 'sim').length;
       const emReparo = contratos.filter(c => c.statusImovel === 'em-reparo').length;
@@ -3370,7 +3385,6 @@ tr:nth-child(even) { background: #f9f9f9; }
         }
       };
 
-      // Gráfico 1: Status dos Contratos
       chartInstances.status = new Chart(ctx1, {
         type: 'doughnut',
         data: {
@@ -3385,7 +3399,6 @@ tr:nth-child(even) { background: #f9f9f9; }
         options: configPadrao
       });
 
-      // Gráfico 2: Status do Imóvel
       chartInstances.imovel = new Chart(ctx2, {
         type: 'doughnut',
         data: {
@@ -3400,7 +3413,6 @@ tr:nth-child(even) { background: #f9f9f9; }
         options: configPadrao
       });
 
-      // Gráfico 3: Tipo de Desocupação
       chartInstances.desocupacao = new Chart(ctx3, {
         type: 'doughnut',
         data: {
@@ -3415,7 +3427,6 @@ tr:nth-child(even) { background: #f9f9f9; }
         options: configPadrao
       });
 
-      // Gráfico 4: Recebimento de Chaves
       chartInstances.chaves = new Chart(ctx4, {
         type: 'doughnut',
         data: {
@@ -3455,29 +3466,13 @@ tr:nth-child(even) { background: #f9f9f9; }
       mostrarToast(`📊 ${dado.titulo}: ${dado.items.map(i => `${i.label} (${i.valor})`).join(' | ')}`);
     }
 
-    // Modificar função carregarDados original para chamar inicializarGraficos
+    // Hook para atualizar gráficos quando dados carregam
     const carregarDadosOriginal = window.carregarDados;
     window.carregarDados = function() {
       carregarDadosOriginal();
       setTimeout(inicializarGraficos, 500);
     };
 
-    if (localStorage.getItem('darkMode') === 'true') {
-      document.body.classList.add('dark-mode');
-    }
-
-    carregarDados();
-    // ========= CARREGAR DADOS AUTOMATICAMENTE AO ABRIR A PÁGINA =========
-    window.addEventListener('DOMContentLoaded', () => {
-      console.log('✅ Página carregada! Buscando contratos...');
-      carregarLogoLocalStorage(); // Carregar logo salvo (V25.12)
-      carregarDados();
-    });
-
-    // Também carregar se o script for executado depois do DOM estar pronto
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', carregarDados);
-    } else {
       carregarDados();
     }
   </script>
