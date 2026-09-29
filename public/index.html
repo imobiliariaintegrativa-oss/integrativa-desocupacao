@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Integrativa Desocupação - Painel de Gerenciamento</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -616,6 +617,55 @@
       }
     }
   </style>
+
+    .charts-section {
+      margin-top: 30px;
+      padding: 20px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+
+    .chart-card {
+      background: white;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .chart-card:hover {
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transform: translateY(-2px);
+    }
+
+    .chart-card h3 {
+      margin-bottom: 15px;
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .chart-container {
+      position: relative;
+      height: 280px;
+    }
+
+    .chart-hint {
+      text-align: center;
+      font-size: 11px;
+      color: #999;
+      margin-top: 10px;
+    }
 </head>
 <body>
   <div class="header">
@@ -660,6 +710,43 @@
         </div>
       </div>
 
+
+      <h2 class="section-title">📊 VISUALIZAÇÕES INTERATIVAS V26</h2>
+      <div class="charts-section">
+        <div class="charts-grid">
+          <div class="chart-card" onclick="expandirGrafico('status')">
+            <h3>📈 Status dos Contratos</h3>
+            <div class="chart-container">
+              <canvas id="chartStatus"></canvas>
+            </div>
+            <div class="chart-hint">Clique para mais detalhes</div>
+          </div>
+
+          <div class="chart-card" onclick="expandirGrafico('imovel')">
+            <h3>🏠 Status do Imóvel</h3>
+            <div class="chart-container">
+              <canvas id="chartImovel"></canvas>
+            </div>
+            <div class="chart-hint">Clique para mais detalhes</div>
+          </div>
+
+          <div class="chart-card" onclick="expandirGrafico('desocupacao')">
+            <h3>⚖️ Tipo de Desocupação</h3>
+            <div class="chart-container">
+              <canvas id="chartDesocupacao"></canvas>
+            </div>
+            <div class="chart-hint">Clique para mais detalhes</div>
+          </div>
+
+          <div class="chart-card" onclick="expandirGrafico('chaves')">
+            <h3>🔑 Recebimento de Chaves</h3>
+            <div class="chart-container">
+              <canvas id="chartChaves"></canvas>
+            </div>
+            <div class="chart-hint">Clique para mais detalhes</div>
+          </div>
+        </div>
+      </div>
       <h2 class="section-title">📊 ALERTAS CRÍTICOS</h2>
       <div id="alertasContainer"></div>
 
@@ -3242,6 +3329,138 @@ tr:nth-child(even) { background: #f9f9f9; }
       document.body.appendChild(toast);
       setTimeout(() => toast.remove(), 3000);
     }
+
+
+    // ========= GRÁFICOS V26 - DADOS INTEGRADOS =========
+    let chartInstances = {};
+
+    function inicializarGraficos() {
+      // Destruir gráficos antigos se existirem
+      Object.values(chartInstances).forEach(chart => {
+        if (chart) chart.destroy();
+      });
+
+      if (!contratos || contratos.length === 0) return;
+
+      const ctx1 = document.getElementById('chartStatus');
+      const ctx2 = document.getElementById('chartImovel');
+      const ctx3 = document.getElementById('chartDesocupacao');
+      const ctx4 = document.getElementById('chartChaves');
+
+      if (!ctx1 || !ctx2 || !ctx3 || !ctx4) return;
+
+      // Calcular dados
+      const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
+      const pendentes = contratos.filter(c => c.finalizado !== 'sim').length;
+      const emReparo = contratos.filter(c => c.statusImovel === 'em-reparo').length;
+      const prontoAluguel = contratos.filter(c => c.statusImovel === 'pronto-para-aluguel').length;
+      const comuns = contratos.filter(c => c.tipoDesocupacao === 'comum').length;
+      const despejos = contratos.filter(c => c.tipoDesocupacao === 'despejo').length;
+      const chavasRecebidas = contratos.filter(c => c.statusChaves === 'recebidas').length;
+      const chavesPendentes = contratos.filter(c => c.statusChaves === 'pendente' || c.statusChaves === 'nao-recebidas').length;
+
+      const configPadrao = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: { font: { size: 12 }, padding: 12 }
+          }
+        }
+      };
+
+      // Gráfico 1: Status dos Contratos
+      chartInstances.status = new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+          labels: ['Finalizados', 'Pendentes'],
+          datasets: [{
+            data: [finalizados, pendentes],
+            backgroundColor: ['#27ae60', '#f39c12'],
+            borderColor: 'white',
+            borderWidth: 2
+          }]
+        },
+        options: configPadrao
+      });
+
+      // Gráfico 2: Status do Imóvel
+      chartInstances.imovel = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+          labels: ['Em Reparo', 'Pronto para Aluguel'],
+          datasets: [{
+            data: [emReparo, prontoAluguel],
+            backgroundColor: ['#e74c3c', '#27ae60'],
+            borderColor: 'white',
+            borderWidth: 2
+          }]
+        },
+        options: configPadrao
+      });
+
+      // Gráfico 3: Tipo de Desocupação
+      chartInstances.desocupacao = new Chart(ctx3, {
+        type: 'doughnut',
+        data: {
+          labels: ['Comum', 'Despejo'],
+          datasets: [{
+            data: [comuns, despejos],
+            backgroundColor: ['#3498db', '#c0392b'],
+            borderColor: 'white',
+            borderWidth: 2
+          }]
+        },
+        options: configPadrao
+      });
+
+      // Gráfico 4: Recebimento de Chaves
+      chartInstances.chaves = new Chart(ctx4, {
+        type: 'doughnut',
+        data: {
+          labels: ['Recebidas', 'Pendentes'],
+          datasets: [{
+            data: [chavasRecebidas, chavesPendentes],
+            backgroundColor: ['#27ae60', '#f39c12'],
+            borderColor: 'white',
+            borderWidth: 2
+          }]
+        },
+        options: configPadrao
+      });
+    }
+
+    function expandirGrafico(tipo) {
+      const dados = {
+        status: { titulo: 'Status dos Contratos', items: [
+          { label: 'Finalizados', valor: contratos.filter(c => c.finalizado === 'sim').length },
+          { label: 'Pendentes', valor: contratos.filter(c => c.finalizado !== 'sim').length }
+        ]},
+        imovel: { titulo: 'Status do Imóvel', items: [
+          { label: 'Em Reparo', valor: contratos.filter(c => c.statusImovel === 'em-reparo').length },
+          { label: 'Pronto para Aluguel', valor: contratos.filter(c => c.statusImovel === 'pronto-para-aluguel').length }
+        ]},
+        desocupacao: { titulo: 'Tipo de Desocupação', items: [
+          { label: 'Comum', valor: contratos.filter(c => c.tipoDesocupacao === 'comum').length },
+          { label: 'Despejo', valor: contratos.filter(c => c.tipoDesocupacao === 'despejo').length }
+        ]},
+        chaves: { titulo: 'Recebimento de Chaves', items: [
+          { label: 'Recebidas', valor: contratos.filter(c => c.statusChaves === 'recebidas').length },
+          { label: 'Pendentes', valor: contratos.filter(c => c.statusChaves === 'pendente' || c.statusChaves === 'nao-recebidas').length }
+        ]}
+      };
+
+      const dado = dados[tipo];
+      mostrarToast(`📊 ${dado.titulo}: ${dado.items.map(i => `${i.label} (${i.valor})`).join(' | ')}`);
+    }
+
+    // Modificar função carregarDados original para chamar inicializarGraficos
+    const carregarDadosOriginal = window.carregarDados;
+    window.carregarDados = function() {
+      carregarDadosOriginal();
+      setTimeout(inicializarGraficos, 500);
+    };
 
     if (localStorage.getItem('darkMode') === 'true') {
       document.body.classList.add('dark-mode');
