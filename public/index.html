@@ -1696,7 +1696,7 @@
           console.log(`📋 dadosAtivos = ${dadosAtivos.length}`);
           
           atualizarDashboard();
-          atualizarAlertas();
+          // atualizarAlertas(); - Removido (seção de alertas foi removida)
           atualizarTabela();
           calcularMetricas(); // Atualizar métricas operacionais (V25.7)
           atualizarResumoRelatorios(); // Atualizar resumo de relatórios (V25.10)
@@ -1733,94 +1733,6 @@
       document.getElementById('despejos').textContent = despejos;
     }
 
-    function atualizarAlertas() {
-      let alerts = [];
-
-      const chavasEntregues = contratos.filter(c => {
-        if (!c.entregaChaves) return false;
-        const dias = calcularDiasAte(c.entregaChaves);
-        return dias !== null && dias <= 7 && dias >= 0;
-      });
-
-      if (chavasEntregues.length > 0) {
-        alerts.push({
-          tipo: 'success',
-          icone: '🔑',
-          titulo: 'Chaves Entregues (esta semana)',
-          items: chavasEntregues.map(c => `${c.contrato} (${c.locatario}) - ${formatarData(c.entregaChaves)}`)
-        });
-      }
-
-      const vistoriasProximas = contratos.filter(c => {
-        if (!c.agendamentoVistoria) return false;
-        const dias = calcularDiasAte(c.agendamentoVistoria);
-        return dias !== null && dias <= 7 && dias >= 0;
-      });
-
-      if (vistoriasProximas.length > 0) {
-        alerts.push({
-          tipo: 'warning',
-          icone: '⏰',
-          titulo: 'Vistorias Próximas (7 dias)',
-          items: vistoriasProximas.map(c => {
-            const dias = calcularDiasAte(c.agendamentoVistoria);
-            return `${c.contrato} (${c.locatario}) - ${dias}d`;
-          })
-        });
-      }
-
-      const diasAltos = contratos.filter(c => {
-        if (!c.comunicacaoInquilino) return false;
-        const dias = calcularDiasDesde(c.comunicacaoInquilino);
-        return dias !== null && dias > 45;
-      });
-
-      if (diasAltos.length > 0) {
-        alerts.push({
-          tipo: 'danger',
-          icone: '📅',
-          titulo: 'Desocupações Lentas (45+ dias)',
-          items: diasAltos.map(c => {
-            const dias = calcularDiasDesde(c.comunicacaoInquilino);
-            return `${c.contrato} (${c.locatario}) - ${dias} dias!`;
-          })
-        });
-      }
-
-      const repEmManutencao = [];
-      contratos.forEach(c => {
-        if (c.reparos) {
-          const temUrgente = c.reparos.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
-          if (temUrgente) {
-            const urgentes = c.reparos.filter(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO').length;
-            repEmManutencao.push(`${c.contrato} (${c.locatario}) - ${urgentes} reparo(s) urgente(s)`);
-          }
-        }
-      });
-
-      if (repEmManutencao.length > 0) {
-        alerts.push({
-          tipo: 'danger',
-          icone: '🚨',
-          titulo: 'Manutenção Bloqueando Aluguel',
-          items: repEmManutencao
-        });
-      }
-
-      const html = alerts.length > 0
-        ? alerts.map(a => `
-          <div class="alert-box ${a.tipo}">
-            <div class="alert-icon">${a.icone}</div>
-            <div class="alert-content">
-              <h4>${a.titulo}</h4>
-              ${a.items.map(item => `<p>• ${item}</p>`).join('')}
-            </div>
-          </div>
-        `).join('')
-        : '<div class="alert-box success"><div class="alert-icon">✅</div><div class="alert-content"><h4>Tudo em dia!</h4><p>Nenhum alerta crítico.</p></div></div>';
-
-      document.getElementById('alertasContainer').innerHTML = html;
-    }
 
     function atualizarTabela() {
       // Usar dadosAtivos que contém os dados com filtro aplicado
