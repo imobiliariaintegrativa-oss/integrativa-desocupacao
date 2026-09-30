@@ -748,13 +748,6 @@
           </div>
         </div>
       </div>
-      <h2 class="section-title">📊 ALERTAS CRÍTICOS</h2>
-      <div id="alertasContainer"></div>
-
-      <div class="controls">
-        <button onclick="gerarRelatorioPDF()" style="background-color: #e74c3c; font-size: 13px;">📄 Gerar Relatório PDF</button>
-      </div>
-    </div>
 
     <!-- ABA OPERACIONAL - MÉTRICAS -->
     <div id="operacional" class="tab-content">
@@ -3354,6 +3347,7 @@ tr:nth-child(even) { background: #f9f9f9; }
     function inicializarGraficos() {
       Object.values(chartInstances).forEach(chart => {
         if (chart) chart.destroy();
+      console.log("🎨 Inicializando gráficos...", contratos.length, "contratos");
       });
 
       if (!contratos || contratos.length === 0) return;
@@ -3364,6 +3358,7 @@ tr:nth-child(even) { background: #f9f9f9; }
       const ctx4 = document.getElementById('chartChaves');
 
       if (!ctx1 || !ctx2 || !ctx3 || !ctx4) return;
+      console.log("✅ Gráficos criados com sucesso!");
 
       const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
       const pendentes = contratos.filter(c => c.finalizado !== 'sim').length;
