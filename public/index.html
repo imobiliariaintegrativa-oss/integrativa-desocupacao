@@ -2974,75 +2974,6 @@ tr:nth-child(even) { background: #f9f9f9; }
         }
       });
 
-      let alertasHTML = '';
-
-      const chavasEntregues = contratos.filter(c => {
-        if (!c.entregaChaves) return false;
-        const dias = calcularDiasAte(c.entregaChaves);
-        return dias !== null && dias <= 7 && dias >= 0;
-      });
-
-      if (chavasEntregues.length > 0) {
-        alertasHTML += `<div style="border-left: 4px solid #27ae60; background: #e6ffe6; padding: 10px; margin-bottom: 10px; font-size: 9pt;">
-          <strong>🔑 CHAVES ENTREGUES (esta semana):</strong><br/>
-          ${chavasEntregues.map(c => `• ${c.contrato} (${c.locatario}) - ${formatarDataCompleta(c.entregaChaves)}`).join('<br/>')}
-        </div>`;
-      }
-
-      const vistoriasProximas = contratos.filter(c => {
-        if (!c.agendamentoVistoria) return false;
-        const dias = calcularDiasAte(c.agendamentoVistoria);
-        return dias !== null && dias <= 7 && dias >= 0;
-      });
-
-      if (vistoriasProximas.length > 0) {
-        alertasHTML += `<div style="border-left: 4px solid #ffc107; background: #fff9e6; padding: 10px; margin-bottom: 10px; font-size: 9pt;">
-          <strong>⏰ VISTORIAS PRÓXIMAS (7 dias):</strong><br/>
-          ${vistoriasProximas.map(c => {
-            const dias = calcularDiasAte(c.agendamentoVistoria);
-            return `• ${c.contrato} (${c.locatario}) - ${dias}d`;
-          }).join('<br/>')}
-        </div>`;
-      }
-
-      const diasAltos = contratos.filter(c => {
-        if (!c.comunicacaoInquilino) return false;
-        const dias = calcularDiasDesde(c.comunicacaoInquilino);
-        return dias !== null && dias > 45;
-      });
-
-      if (diasAltos.length > 0) {
-        alertasHTML += `<div style="border-left: 4px solid #e74c3c; background: #ffe6e6; padding: 10px; margin-bottom: 10px; font-size: 9pt;">
-          <strong>📅 DESOCUPAÇÕES LENTAS (45+ dias):</strong><br/>
-          ${diasAltos.map(c => {
-            const dias = calcularDiasDesde(c.comunicacaoInquilino);
-            return `• ${c.contrato} (${c.locatario}) - ${dias} dias!`;
-          }).join('<br/>')}
-        </div>`;
-      }
-
-      const repEmManutencao = [];
-      contratos.forEach(c => {
-        if (c.reparos) {
-          const temUrgente = c.reparos.some(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO');
-          if (temUrgente) {
-            const urgentes = c.reparos.filter(r => r.urgencia === 'URGENTE' && r.status !== 'CONCLUIDO').length;
-            repEmManutencao.push(`• ${c.contrato} (${c.locatario}) - ${urgentes} reparo(s) urgente(s)`);
-          }
-        }
-      });
-
-      if (repEmManutencao.length > 0) {
-        alertasHTML += `<div style="border-left: 4px solid #e74c3c; background: #ffe6e6; padding: 10px; margin-bottom: 10px; font-size: 9pt;">
-          <strong>🚨 MANUTENÇÃO BLOQUEANDO ALUGUEL:</strong><br/>
-          ${repEmManutencao.join('<br/>')}
-        </div>`;
-      }
-
-      if (alertasHTML === '') {
-        alertasHTML = '<div style="border-left: 4px solid #27ae60; background: #e6ffe6; padding: 10px; margin-bottom: 10px; font-size: 9pt;"><strong>✅ Tudo em dia!</strong> Nenhum alerta crítico.</div>';
-      }
-
       const tabelaHTML = `
         <table style="width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 9pt;">
           <thead>
@@ -3104,9 +3035,6 @@ tr:nth-child(even) { background: #f9f9f9; }
               <div style="font-size: 24pt; font-weight: bold; color: #2c5aa0;">${emManutencao}</div>
             </div>
           </div>
-
-          <div style="font-size: 13pt; font-weight: bold; color: #2c5aa0; margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid #2c5aa0; padding-bottom: 8px;">🚨 Alertas Críticos</div>
-          ${alertasHTML}
 
           <div style="font-size: 13pt; font-weight: bold; color: #2c5aa0; margin-top: 20px; margin-bottom: 15px; border-bottom: 2px solid #2c5aa0; padding-bottom: 8px;">📋 Contratos Detalhados</div>
           ${tabelaHTML}
