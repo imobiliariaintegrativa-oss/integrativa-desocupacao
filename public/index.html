@@ -590,7 +590,126 @@
       min-width: 120px;
     }
 
+    /* ===== PRÓXIMAS AÇÕES ===== */
+    .acoes-painel {
+      border: 1px solid #e3e8ef;
+      border-radius: 10px;
+      padding: 18px 20px;
+      margin-bottom: 25px;
+      background: #fbfcfe;
+    }
+    .acoes-cabecalho {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 12px;
+    }
+    .acoes-cabecalho h2 {
+      font-size: 17px;
+      color: var(--dark);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .acoes-contador {
+      background: var(--primary);
+      color: #fff;
+      font-size: 12px;
+      border-radius: 10px;
+      padding: 1px 9px;
+    }
+    .acoes-sub { font-size: 12px; color: #7f8c8d; }
+    .acoes-lista { display: flex; flex-direction: column; gap: 8px; }
+    .acao-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      background: #fff;
+      border: 1px solid #e3e8ef;
+      border-left: 4px solid #95a5a6;
+      border-radius: 6px;
+      padding: 10px 14px;
+    }
+    .acao-item.atrasado { border-left-color: #e74c3c; }
+    .acao-item.hoje { border-left-color: #f39c12; }
+    .acao-item.semana { border-left-color: #3498db; }
+    .acao-item.pendencia { border-left-color: #8e44ad; }
+    .acao-item.pronto { border-left-color: #27ae60; }
+    .acao-quando {
+      min-width: 92px;
+      font-size: 11px;
+      font-weight: bold;
+      text-transform: uppercase;
+      color: #7f8c8d;
+    }
+    .acao-item.atrasado .acao-quando { color: #c0392b; }
+    .acao-item.hoje .acao-quando { color: #d35400; }
+    .acao-texto { flex: 1; min-width: 0; }
+    .acao-titulo { font-size: 13px; font-weight: bold; color: var(--dark); }
+    .acao-detalhe { font-size: 12px; color: #7f8c8d; margin-top: 2px; }
+    .acao-botoes { display: flex; gap: 6px; flex-shrink: 0; }
+    .acao-botoes button { font-size: 12px; padding: 6px 10px; }
+    .acao-botoes .btn-leve { background: #ecf0f1; color: var(--dark); }
+    .acao-botoes .btn-leve:hover { background: #dfe6e9; }
+    .acoes-vazio {
+      padding: 16px;
+      text-align: center;
+      color: #27ae60;
+      font-weight: bold;
+      font-size: 13px;
+    }
+    .acoes-ver-todas {
+      margin-top: 10px;
+      background: none;
+      color: var(--primary);
+      padding: 4px 0;
+      font-size: 12px;
+    }
+    .acoes-ver-todas:hover { background: none; text-decoration: underline; }
+    body.dark-mode .acoes-painel { background: #2f2f2f; border-color: #444; }
+    body.dark-mode .acao-item { background: #383838; border-color: #4a4a4a; }
+    body.dark-mode .acoes-cabecalho h2,
+    body.dark-mode .acao-titulo { color: #ecf0f1; }
+    body.dark-mode .acao-botoes .btn-leve { background: #4a4a4a; color: #ecf0f1; }
+
+    /* ===== ETAPAS NA TABELA ===== */
+    .etapas { display: flex; align-items: center; min-width: 150px; }
+    .etapa {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 2px solid #bdc3c7;
+      background: #fff;
+      flex-shrink: 0;
+    }
+    .etapa.feita { background: #27ae60; border-color: #27ae60; }
+    .etapa.agendada { background: #fff; border-color: #3498db; box-shadow: inset 0 0 0 3px #3498db; }
+    .etapa.atual { border-color: #f39c12; box-shadow: 0 0 0 3px rgba(243,156,18,0.25); }
+    .etapa.atrasada { border-color: #e74c3c; box-shadow: 0 0 0 3px rgba(231,76,60,0.25); }
+    .etapa-linha { height: 2px; width: 14px; background: #bdc3c7; flex-shrink: 0; }
+    .etapa-linha.feita { background: #27ae60; }
+    .etapa-rotulo { font-size: 11px; margin-top: 5px; color: #555; white-space: nowrap; }
+    .etapa-rotulo.atrasada { color: #c0392b; font-weight: bold; }
+    .dias-badge {
+      display: inline-block;
+      margin-left: 6px;
+      padding: 0 6px;
+      border-radius: 8px;
+      font-size: 10px;
+      background: #ecf0f1;
+      color: #555;
+    }
+    .dias-badge.medio { background: #fff3cd; color: #856404; }
+    .dias-badge.alto { background: #f8d7da; color: #721c24; }
+    body.dark-mode .etapa { background: #333; }
+    body.dark-mode .etapa-rotulo { color: #ccc; }
+
     @media (max-width: 768px) {
+      .acao-item { flex-wrap: wrap; }
+      .acao-quando { min-width: 0; width: 100%; }
+      .acao-botoes { width: 100%; }
+
       .header h1 {
         font-size: 20px;
       }
@@ -620,13 +739,14 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V25.12 🎨 Upload de Logo + Todos os PDFs</div>
+    <div class="version-badge">V29 📌 Próximas Ações + Etapas</div>
     <div class="header-controls">
       <div class="nav-tabs">
-        <button class="tab-btn active" onclick="mudarAba('dashboard')">📊 Dashboard</button>
-        <button class="tab-btn" onclick="mudarAba('operacional')">📈 Operacional</button>
-        <button class="tab-btn" onclick="mudarAba('relatorios')">📋 Relatórios</button>
-        <button class="tab-btn" onclick="mudarAba('contratos')">📋 Contratos</button>
+        <button class="tab-btn active" data-aba="dashboard" onclick="mudarAba('dashboard')">📊 Dashboard</button>
+        <button class="tab-btn" data-aba="contratos" onclick="mudarAba('contratos')">🏠 Contratos</button>
+        <button class="tab-btn" data-aba="operacional" onclick="mudarAba('operacional')">📈 Operacional</button>
+        <button class="tab-btn" data-aba="relatorios" onclick="mudarAba('relatorios')">📄 Relatórios</button>
+        <button class="tab-btn" data-aba="configuracoes" onclick="mudarAba('configuracoes')">⚙️ Configurações</button>
       </div>
       <button class="theme-toggle" onclick="toggleDarkMode()">🌙</button>
     </div>
@@ -658,6 +778,15 @@
           <h3>⚖️ Despejos</h3>
           <div class="number" id="despejos" style="color: white;">0</div>
         </div>
+      </div>
+
+      <div class="acoes-painel">
+        <div class="acoes-cabecalho">
+          <h2>📌 Próximas ações <span class="acoes-contador" id="acoesContador">0</span></h2>
+          <span class="acoes-sub">O que precisa ser feito hoje e nos próximos 7 dias</span>
+        </div>
+        <div id="acoesLista" class="acoes-lista"></div>
+        <button id="acoesVerTodas" class="acoes-ver-todas" style="display: none;" onclick="alternarTodasAcoes()"></button>
       </div>
 
       <div class="controls">
@@ -789,6 +918,32 @@
         </div>
       </div>
 
+      <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+        <h3 style="margin-top: 0; color: #2c3e50;">📊 Resumo Rápido</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px;">
+          <div style="background: #ecf7ff; padding: 15px; border-radius: 5px; border-left: 4px solid #3498db;">
+            <div style="font-size: 12px; color: #7f8c8d;">🔑 Chaves Recebidas</div>
+            <div style="font-size: 24px; font-weight: bold; color: #3498db;" id="resumo-chaves">0</div>
+          </div>
+          <div style="background: #f0fff0; padding: 15px; border-radius: 5px; border-left: 4px solid #27ae60;">
+            <div style="font-size: 12px; color: #7f8c8d;">✅ Finalizados</div>
+            <div style="font-size: 24px; font-weight: bold; color: #27ae60;" id="resumo-finalizados">0</div>
+          </div>
+          <div style="background: #fff5f0; padding: 15px; border-radius: 5px; border-left: 4px solid #e74c3c;">
+            <div style="font-size: 12px; color: #7f8c8d;">🔧 Em Reparo</div>
+            <div style="font-size: 24px; font-weight: bold; color: #e74c3c;" id="resumo-reparo">0</div>
+          </div>
+          <div style="background: #fff9f0; padding: 15px; border-radius: 5px; border-left: 4px solid #f39c12;">
+            <div style="font-size: 12px; color: #7f8c8d;">📅 Vistorias 30d</div>
+            <div style="font-size: 24px; font-weight: bold; color: #f39c12;" id="resumo-vistoria">0</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ABA CONFIGURAÇÕES -->
+    <div id="configuracoes" class="tab-content">
+      <h2 class="section-title">⚙️ Configurações</h2>
       <!-- CONFIGURAÇÕES DE LOGO -->
       <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
         <h3 style="margin-top: 0; color: #2c3e50;">⚙️ Configurações - Logo da Imobiliária</h3>
@@ -830,27 +985,6 @@
         </div>
       </div>
 
-      <div style="background: white; padding: 20px; border-radius: 8px; margin-top: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
-        <h3 style="margin-top: 0; color: #2c3e50;">📊 Resumo Rápido</h3>
-        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 15px; margin-top: 15px;">
-          <div style="background: #ecf7ff; padding: 15px; border-radius: 5px; border-left: 4px solid #3498db;">
-            <div style="font-size: 12px; color: #7f8c8d;">🔑 Chaves Recebidas</div>
-            <div style="font-size: 24px; font-weight: bold; color: #3498db;" id="resumo-chaves">0</div>
-          </div>
-          <div style="background: #f0fff0; padding: 15px; border-radius: 5px; border-left: 4px solid #27ae60;">
-            <div style="font-size: 12px; color: #7f8c8d;">✅ Finalizados</div>
-            <div style="font-size: 24px; font-weight: bold; color: #27ae60;" id="resumo-finalizados">0</div>
-          </div>
-          <div style="background: #fff5f0; padding: 15px; border-radius: 5px; border-left: 4px solid #e74c3c;">
-            <div style="font-size: 12px; color: #7f8c8d;">🔧 Em Reparo</div>
-            <div style="font-size: 24px; font-weight: bold; color: #e74c3c;" id="resumo-reparo">0</div>
-          </div>
-          <div style="background: #fff9f0; padding: 15px; border-radius: 5px; border-left: 4px solid #f39c12;">
-            <div style="font-size: 12px; color: #7f8c8d;">📅 Vistorias 30d</div>
-            <div style="font-size: 24px; font-weight: bold; color: #f39c12;" id="resumo-vistoria">0</div>
-          </div>
-        </div>
-      </div>
     </div>
 
     <!-- ABA CONTRATOS -->
@@ -890,10 +1024,7 @@
               <th>Responsável</th>
               <th>Prioridade</th>
               <th>Status Imóvel</th>
-              <th>Com.</th>
-              <th>Vistoria</th>
-              <th>Ent.Chaves</th>
-              <th>Status</th>
+              <th>Etapas</th>
               <th>Manu.</th>
               <th>Tipo</th>
               <th>Ações</th>
@@ -1295,8 +1426,8 @@
       // Renderizar com os dados filtrados
       renderizarTabela(dados);
       
-      // Mudar para aba de contratos
-      mudarAba('contratos');
+      // Mudar para aba de contratos (sem recarregar, para manter o filtro)
+      mudarAba('contratos', false);
       
       // Mostrar indicador de filtro ativo
       if (filtroAtivo) {
@@ -1354,18 +1485,19 @@
       });
     }
 
-    function mudarAba(abaName) {
+    // recarregar = false quando a aba é aberta a partir de um filtro (cards/fila),
+    // para não apagar o filtro recém-aplicado.
+    function mudarAba(abaName, recarregar = true) {
       document.querySelectorAll('.tab-content').forEach(tab => {
         tab.classList.remove('active');
       });
       document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('active');
+        btn.classList.toggle('active', btn.dataset.aba === abaName);
       });
 
       document.getElementById(abaName).classList.add('active');
-      event.target.classList.add('active');
 
-      if (abaName === 'contratos') {
+      if (abaName === 'contratos' && recarregar) {
         carregarDados();
       }
     }
@@ -1612,6 +1744,7 @@
           console.log(`📋 dadosAtivos = ${dadosAtivos.length}`);
           
           atualizarDashboard();
+          atualizarProximasAcoes();
           atualizarTabela();
           calcularMetricas(); // Atualizar métricas operacionais (V25.7)
           atualizarResumoRelatorios(); // Atualizar resumo de relatórios (V25.10)
@@ -1666,6 +1799,8 @@
           baseData = contratos.filter(c => c.finalizado === 'sim');
         } else if (filtroAtivo === 'manutencao') {
           baseData = contratos.filter(c => c.reparos && c.reparos.some(r => r.status !== 'CONCLUIDO'));
+        } else if (filtroAtivo === 'despejos') {
+          baseData = contratos.filter(c => c.tipoDesocupacao === 'despejo');
         }
       }
       
@@ -1714,8 +1849,7 @@
         }
 
         let tipoTexto = isDespejo ? '⚖️ Despejo' : '🏠 Comum';
-        let statusTexto = isFinalizado ? '✅ FINALIZADO' : c.statusChaves === 'recebidas' ? '✅' : '⏳';
-        
+
         // Responsável
         let responsavelTexto = '';
         const respMap = {
@@ -1757,10 +1891,7 @@
           <td>${responsavelTexto}</td>
           <td>${prioridadeTexto}</td>
           <td>${statusImovelTexto}</td>
-          <td>${formatarData(c.comunicacaoInquilino)}</td>
-          <td>${formatarData(c.agendamentoVistoria)}</td>
-          <td>${formatarData(c.entregaChaves)}</td>
-          <td>${statusTexto}</td>
+          <td>${renderizarEtapas(c)}</td>
           <td style="cursor: pointer;" onclick="abrirModalReparos('${c._id}')">${manuTexto}</td>
           <td>${tipoTexto}</td>
           <td>
@@ -1771,6 +1902,266 @@
         </tr>
       `;
       }).join('');
+    }
+
+    // ========= UTILITÁRIOS (V29) =========
+    function escaparHTML(texto) {
+      return String(texto == null ? '' : texto)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    }
+
+    function textoPrazo(dias) {
+      if (dias === 0) return 'hoje';
+      if (dias === 1) return 'amanhã';
+      if (dias > 1) return `em ${dias} dias`;
+      if (dias === -1) return 'há 1 dia';
+      return `há ${Math.abs(dias)} dias`;
+    }
+
+    function reparosPendentes(c) {
+      return (c.reparos || []).filter(r => r.status !== 'CONCLUIDO');
+    }
+
+    // ========= ETAPAS DO CONTRATO (V29) =========
+    // Comunicado → Vistoria → Chaves → Reparos → Finalizado
+    function calcularEtapas(c) {
+      const finalizado = c.finalizado === 'sim';
+      const chavesOk = c.statusChaves === 'recebidas';
+      const pendentes = reparosPendentes(c).length;
+      const diasVistoria = c.agendamentoVistoria ? calcularDiasAte(c.agendamentoVistoria) : null;
+      const diasChaves = c.entregaChaves ? calcularDiasAte(c.entregaChaves) : null;
+
+      return [
+        {
+          nome: 'Comunicado',
+          estado: c.comunicacaoInquilino ? 'feita' : 'pendente',
+          rotulo: 'Comunicar inquilino',
+          dica: c.comunicacaoInquilino ? `Comunicado em ${formatarDataCompleta(c.comunicacaoInquilino)}` : 'Inquilino ainda não comunicado'
+        },
+        {
+          nome: 'Vistoria',
+          estado: diasVistoria === null ? 'pendente' : (diasVistoria <= 0 ? 'feita' : 'agendada'),
+          rotulo: diasVistoria === null ? 'Agendar vistoria' : `Vistoria ${formatarData(c.agendamentoVistoria)} · ${textoPrazo(diasVistoria)}`,
+          dica: diasVistoria === null ? 'Vistoria não agendada' : `Vistoria em ${formatarDataCompleta(c.agendamentoVistoria)}`
+        },
+        {
+          nome: 'Chaves',
+          estado: chavesOk ? 'feita' : (diasChaves !== null && diasChaves < 0 ? 'atrasada' : 'pendente'),
+          rotulo: diasChaves === null
+            ? 'Aguardando chaves'
+            : (diasChaves < 0 ? `Chaves atrasadas ${textoPrazo(diasChaves)}` : `Chaves ${formatarData(c.entregaChaves)} · ${textoPrazo(diasChaves)}`),
+          dica: chavesOk ? 'Chaves recebidas' : (c.entregaChaves ? `Entrega prevista: ${formatarDataCompleta(c.entregaChaves)}` : 'Entrega das chaves sem data')
+        },
+        {
+          nome: 'Reparos',
+          estado: chavesOk && pendentes === 0 ? 'feita' : 'pendente',
+          rotulo: pendentes > 0 ? `${pendentes} reparo(s) em aberto` : 'Verificar reparos',
+          dica: pendentes > 0 ? `${pendentes} reparo(s) em aberto` : 'Nenhum reparo em aberto'
+        },
+        {
+          nome: 'Finalizado',
+          estado: finalizado ? 'feita' : 'pendente',
+          rotulo: 'Pronto para finalizar',
+          dica: finalizado ? 'Desocupação finalizada' : 'Ainda não finalizado'
+        }
+      ];
+    }
+
+    function renderizarEtapas(c) {
+      const etapas = calcularEtapas(c);
+      const finalizado = c.finalizado === 'sim';
+      // Etapa atual = primeira que ainda não foi concluída
+      const idxAtual = finalizado ? -1 : etapas.findIndex(e => e.estado !== 'feita');
+
+      const bolinhas = etapas.map((e, i) => {
+        let classe = e.estado === 'pendente' ? '' : e.estado;
+        if (i === idxAtual && e.estado === 'pendente') classe = 'atual';
+        const linha = i > 0 ? `<span class="etapa-linha ${etapas[i - 1].estado === 'feita' ? 'feita' : ''}"></span>` : '';
+        return `${linha}<span class="etapa ${classe}" title="${escaparHTML(e.nome + ': ' + e.dica)}"></span>`;
+      }).join('');
+
+      let rotulo = '✅ Finalizado';
+      let rotuloClasse = '';
+      if (!finalizado) {
+        const atual = etapas[idxAtual === -1 ? etapas.length - 1 : idxAtual];
+        rotulo = atual.rotulo;
+        if (atual.estado === 'atrasada') rotuloClasse = 'atrasada';
+      }
+
+      // Há quantos dias a desocupação está em andamento (desde a comunicação)
+      let badge = '';
+      if (!finalizado && c.comunicacaoInquilino) {
+        const dias = calcularDiasDesde(c.comunicacaoInquilino);
+        if (dias !== null) {
+          const nivel = dias > 45 ? 'alto' : (dias > 30 ? 'medio' : '');
+          badge = `<span class="dias-badge ${nivel}" title="Dias desde a comunicação ao inquilino">${dias}d</span>`;
+        }
+      }
+
+      return `<div class="etapas">${bolinhas}</div><div class="etapa-rotulo ${rotuloClasse}">${escaparHTML(rotulo)}${badge}</div>`;
+    }
+
+    // ========= PRÓXIMAS AÇÕES (V29) =========
+    let mostrarTodasAcoes = false;
+    const LIMITE_ACOES = 8;
+
+    function montarProximasAcoes() {
+      const acoes = [];
+
+      contratos.forEach(c => {
+        if (c.finalizado === 'sim') return;
+
+        const id = c._id;
+        const chavesOk = c.statusChaves === 'recebidas';
+        const pendentes = reparosPendentes(c);
+        const urgentes = pendentes.filter(r => r.urgencia === 'URGENTE');
+        const base = { id, contrato: c.contrato, locatario: c.locatario };
+
+        // 1. Reparo urgente em aberto
+        if (urgentes.length > 0) {
+          acoes.push({ ...base, nivel: 'atrasado', ordem: 0, dias: -999,
+            quando: 'Urgente',
+            texto: `${urgentes.length} reparo(s) urgente(s) em aberto`,
+            botao: { rotulo: '🔧 Ver reparos', acao: `abrirModalReparos('${id}')` } });
+        }
+
+        // 2. Entrega das chaves (atrasada ou nos próximos 7 dias)
+        if (!chavesOk && c.entregaChaves) {
+          const d = calcularDiasAte(c.entregaChaves);
+          if (d !== null && d <= 7) {
+            acoes.push({ ...base,
+              nivel: d < 0 ? 'atrasado' : (d === 0 ? 'hoje' : 'semana'), ordem: d < 0 ? 0 : 1, dias: d,
+              quando: d < 0 ? 'Atrasado' : textoPrazo(d),
+              texto: d < 0
+                ? `Entrega das chaves atrasada (prevista ${formatarDataCompleta(c.entregaChaves)})`
+                : `Entrega das chaves ${textoPrazo(d)} (${formatarDataCompleta(c.entregaChaves)})`,
+              botao: { rotulo: '🔑 Recebi as chaves', acao: `marcarChavesRecebidas('${id}')` } });
+          }
+        }
+
+        // 3. Vistoria nos próximos 7 dias
+        if (c.agendamentoVistoria) {
+          const d = calcularDiasAte(c.agendamentoVistoria);
+          if (d !== null && d >= 0 && d <= 7) {
+            acoes.push({ ...base,
+              nivel: d === 0 ? 'hoje' : 'semana', ordem: 1, dias: d,
+              quando: textoPrazo(d),
+              texto: `Vistoria ${textoPrazo(d)} (${formatarDataCompleta(c.agendamentoVistoria)})`,
+              botao: { rotulo: '✏️ Abrir', acao: `abrirModalEditar('${id}')` } });
+          }
+        }
+
+        // 4. Inquilino comunicado há 7+ dias e vistoria ainda sem data
+        if (!chavesOk && !c.agendamentoVistoria && c.comunicacaoInquilino) {
+          const desde = calcularDiasDesde(c.comunicacaoInquilino);
+          if (desde !== null && desde >= 7) {
+            acoes.push({ ...base, nivel: 'pendencia', ordem: 2, dias: -desde,
+              quando: 'Pendente',
+              texto: `Agendar vistoria — inquilino comunicado há ${desde} dias`,
+              botao: { rotulo: '📅 Agendar', acao: `abrirModalEditar('${id}')` } });
+          }
+        }
+
+        // 5. Chaves recebidas e nenhum reparo em aberto → pode finalizar
+        if (chavesOk && pendentes.length === 0) {
+          acoes.push({ ...base, nivel: 'pronto', ordem: 3, dias: 0,
+            quando: 'Pronto',
+            texto: 'Chaves recebidas e sem reparos em aberto — pronto para finalizar',
+            botao: { rotulo: '✅ Finalizar', acao: `finalizarContrato('${id}')` } });
+        }
+      });
+
+      acoes.sort((a, b) => a.ordem - b.ordem || a.dias - b.dias);
+      return acoes;
+    }
+
+    function atualizarProximasAcoes() {
+      const lista = document.getElementById('acoesLista');
+      if (!lista) return;
+
+      const acoes = montarProximasAcoes();
+      document.getElementById('acoesContador').textContent = acoes.length;
+
+      if (acoes.length === 0) {
+        lista.innerHTML = '<div class="acoes-vazio">✅ Nada pendente para hoje nem para os próximos 7 dias.</div>';
+        document.getElementById('acoesVerTodas').style.display = 'none';
+        return;
+      }
+
+      const visiveis = mostrarTodasAcoes ? acoes : acoes.slice(0, LIMITE_ACOES);
+      lista.innerHTML = visiveis.map(a => `
+        <div class="acao-item ${a.nivel}">
+          <div class="acao-quando">${escaparHTML(a.quando)}</div>
+          <div class="acao-texto">
+            <div class="acao-titulo">${escaparHTML(a.contrato)} · ${escaparHTML(a.locatario)}</div>
+            <div class="acao-detalhe">${escaparHTML(a.texto)}</div>
+          </div>
+          <div class="acao-botoes">
+            <button onclick="${a.botao.acao}">${a.botao.rotulo}</button>
+            ${a.botao.acao.startsWith('abrirModalEditar') ? '' : `<button class="btn-leve" title="Editar contrato" onclick="abrirModalEditar('${a.id}')">✏️</button>`}
+          </div>
+        </div>
+      `).join('');
+
+      const botaoTodas = document.getElementById('acoesVerTodas');
+      if (acoes.length > LIMITE_ACOES) {
+        botaoTodas.style.display = 'inline-block';
+        botaoTodas.textContent = mostrarTodasAcoes ? 'Mostrar menos' : `Ver todas (${acoes.length})`;
+      } else {
+        botaoTodas.style.display = 'none';
+      }
+    }
+
+    function alternarTodasAcoes() {
+      mostrarTodasAcoes = !mostrarTodasAcoes;
+      atualizarProximasAcoes();
+    }
+
+    // Atualiza só os campos informados (o servidor mantém os demais)
+    function atualizarCamposContrato(id, campos) {
+      atualizarSyncStatus('syncing');
+      return fetch(`${API_URL}/contracts/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(campos)
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (!data.sucesso) throw new Error(data.erro || 'Erro ao atualizar');
+          return data;
+        });
+    }
+
+    function marcarChavesRecebidas(id) {
+      const c = contratos.find(x => x._id === id);
+      if (!c) return;
+      atualizarCamposContrato(id, { statusChaves: 'recebidas' })
+        .then(() => {
+          mostrarAlertsChavesRecebidas(c.contrato, c.locatario);
+          carregarDados();
+        })
+        .catch(erro => {
+          console.error('❌ Erro:', erro);
+          mostrarToast('❌ Erro ao registrar chaves!', true);
+          atualizarSyncStatus('error');
+        });
+    }
+
+    function finalizarContrato(id) {
+      const c = contratos.find(x => x._id === id);
+      if (!c) return;
+      if (!confirm(`Finalizar a desocupação do contrato ${c.contrato} (${c.locatario})?`)) return;
+      atualizarCamposContrato(id, { finalizado: 'sim' })
+        .then(() => {
+          mostrarToast(`✅ ${c.contrato} finalizado!`);
+          carregarDados();
+        })
+        .catch(erro => {
+          console.error('❌ Erro:', erro);
+          mostrarToast('❌ Erro ao finalizar!', true);
+          atualizarSyncStatus('error');
+        });
     }
 
     // ========= NOVO CONTRATO =========
