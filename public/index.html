@@ -1642,7 +1642,7 @@
       if (contratosFinal.length > 0) {
         const tempos = contratosFinal.map(c => {
           const entrega = new Date(c.entregaChaves);
-          const atualizacao = c.dataAtualizacao ? new Date(c.dataAtualizacao) : new Date();
+          const atualizacao = dataFimContrato(c) || new Date();
           const dias = Math.floor((atualizacao - entrega) / (1000 * 60 * 60 * 24));
           return dias >= 0 ? dias : 0;
         });
@@ -1686,7 +1686,7 @@
         if (finalizadosMes.length > 0) {
           const tempos = finalizadosMes.map(c => {
             const entrega = new Date(c.entregaChaves);
-            const atualizacao = c.dataAtualizacao ? new Date(c.dataAtualizacao) : new Date();
+            const atualizacao = dataFimContrato(c) || new Date();
             const d = Math.floor((atualizacao - entrega) / (1000 * 60 * 60 * 24));
             return d >= 0 ? d : 0;
           });
@@ -1727,7 +1727,7 @@
       if (comFinal.length > 0) {
         const tempos = comFinal.map(c => {
           const e = new Date(c.entregaChaves);
-          const a = c.dataAtualizacao ? new Date(c.dataAtualizacao) : new Date();
+          const a = dataFimContrato(c) || new Date();
           return Math.floor((a - e) / (1000 * 60 * 60 * 24));
         });
         comDias = Math.round(tempos.reduce((a, b) => a + b, 0) / tempos.length);
@@ -1738,7 +1738,7 @@
       if (despFinal.length > 0) {
         const tempos = despFinal.map(c => {
           const e = new Date(c.entregaChaves);
-          const a = c.dataAtualizacao ? new Date(c.dataAtualizacao) : new Date();
+          const a = dataFimContrato(c) || new Date();
           return Math.floor((a - e) / (1000 * 60 * 60 * 24));
         });
         despDias = Math.round(tempos.reduce((a, b) => a + b, 0) / tempos.length);
@@ -2863,6 +2863,27 @@ Protocolo: REC-DEV-${new Date().getTime()}
       return !!d && d >= periodo.inicio && d <= periodo.fim;
     }
 
+    // Data em que a desocupação foi finalizada (dia local, sem hora).
+    // Contratos finalizados antes da V31 não têm dataFinalizacao: usa a última atualização.
+    function dataFimContrato(c) {
+      const iso = c.dataFinalizacao || c.dataAtualizacao;
+      if (!iso) return null;
+      const d = new Date(iso);
+      if (isNaN(d)) return null;
+      d.setHours(0, 0, 0, 0);
+      return d;
+    }
+
+    function finalizacaoAproximada(c) {
+      return !c.dataFinalizacao;
+    }
+
+    function finalizadoNoPeriodo(c, periodo) {
+      if (periodo.valor === 'todos') return true;
+      const d = dataFimContrato(c);
+      return !!d && d >= periodo.inicio && d <= periodo.fim;
+    }
+
     function contratosEmManutencao() {
       return contratos.filter(c => reparosPendentes(c).length > 0);
     }
@@ -2888,7 +2909,7 @@ Protocolo: REC-DEV-${new Date().getTime()}
       document.getElementById('resumo-chaves').textContent =
         contratos.filter(c => c.statusChaves === 'recebidas' && dentroDoPeriodo(c.entregaChaves, periodo)).length;
       document.getElementById('resumo-finalizados').textContent =
-        contratos.filter(c => c.finalizado === 'sim' && dentroDoPeriodo(c.dataAtualizacao, periodo)).length;
+        contratos.filter(c => c.finalizado === 'sim' && finalizadoNoPeriodo(c, periodo)).length;
       document.getElementById('resumo-reparo').textContent = contratosEmManutencao().length;
       document.getElementById('resumo-vistoria').textContent = vistoriasProximos30Dias().length;
     }
@@ -3052,15 +3073,19 @@ ${cfg.observacao ? `<div class="obs">${escaparHTML(cfg.observacao)}</div>` : ''}
     function gerarRelatorioImovelFinalizados() {
       const periodo = getPeriodoRelatorio();
       const lista = contratos
-        .filter(c => c.finalizado === 'sim' && dentroDoPeriodo(c.dataAtualizacao, periodo))
-        .sort((a, b) => new Date(b.dataAtualizacao || 0) - new Date(a.dataAtualizacao || 0));
+        .filter(c => c.finalizado === 'sim' && finalizadoNoPeriodo(c, periodo))
+        .sort((a, b) => (dataFimContrato(b) || 0) - (dataFimContrato(a) || 0));
 
       if (lista.length === 0) {
         mostrarToast(`❌ Nenhum imóvel finalizado no período: ${periodo.rotulo}`, true);
         return;
       }
 
-      const duracoes = lista.map(c => diasEntre(c.comunicacaoInquilino, c.dataAtualizacao));
+      const duracoes = lista.map(c => {
+        const inicio = dataLocal(c.comunicacaoInquilino), fim = dataFimContrato(c);
+        return inicio && fim ? Math.round((fim - inicio) / 86400000) : null;
+      });
+      const algumaAproximada = lista.some(finalizacaoAproximada);
       const statusMap = {
         'em-desocupacao': 'Em desocupação', 'em-reparo': 'Em reparo', 'pronto-para-aluguel': 'Pronto para alugar',
         'alugado': 'Alugado', 'bloqueado': 'Bloqueado'
@@ -3077,7 +3102,7 @@ ${cfg.observacao ? `<div class="obs">${escaparHTML(cfg.observacao)}</div>` : ''}
           ['Despejos', lista.filter(c => c.tipoDesocupacao === 'despejo').length],
           ['Já alugados', lista.filter(c => c.statusImovel === 'alugado').length]
         ],
-        colunas: ['Contrato', 'Locatário / Endereço', 'Tipo', 'Responsável', 'Situação do imóvel', 'Duração', 'Última atualização'],
+        colunas: ['Contrato', 'Locatário / Endereço', 'Tipo', 'Responsável', 'Situação do imóvel', 'Duração', 'Finalizado em'],
         linhas: lista.map((c, i) => [
           `<strong>${escaparHTML(c.contrato)}</strong>`,
           `${escaparHTML(c.locatario)}<br><span class="sub">${escaparHTML(c.endereco || '-')}</span>`,
@@ -3085,9 +3110,13 @@ ${cfg.observacao ? `<div class="obs">${escaparHTML(cfg.observacao)}</div>` : ''}
           escaparHTML(nomeResponsavel(c)),
           escaparHTML(statusMap[c.statusImovel] || '-'),
           duracoes[i] !== null ? `${duracoes[i]} dias` : '-',
-          c.dataAtualizacao ? new Date(c.dataAtualizacao).toLocaleDateString('pt-BR') : '-'
+          dataFimContrato(c)
+            ? `${dataFimContrato(c).toLocaleDateString('pt-BR')}${finalizacaoAproximada(c) ? ' <span class="sub">*</span>' : ''}`
+            : '-'
         ]),
-        observacao: 'Duração = da comunicação ao inquilino até a última atualização do contrato. O sistema ainda não grava a data exata da finalização, por isso é usada a data da última atualização.'
+        observacao: 'Duração = da comunicação ao inquilino até a finalização.' + (algumaAproximada
+          ? ' * Finalizado antes de o sistema gravar a data de finalização: foi usada a data da última atualização do contrato.'
+          : '')
       });
     }
 
