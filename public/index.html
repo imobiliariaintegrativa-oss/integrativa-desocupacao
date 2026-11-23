@@ -716,7 +716,7 @@
 
     .quadro {
       display: grid;
-      grid-template-columns: repeat(6, minmax(220px, 1fr));
+      grid-template-columns: repeat(7, minmax(210px, 1fr));
       gap: 12px;
       overflow-x: auto;
       padding-bottom: 8px;
@@ -781,6 +781,42 @@
     body.dark-mode .modo-visao button { background: #383838; color: #ecf0f1; }
     body.dark-mode .modo-visao button.ativo { background: var(--primary); }
 
+    /* ===== RESCISÃO (V33) ===== */
+    .rescisao-cabecalho {
+      background: #f4f7fb;
+      border-left: 4px solid var(--primary);
+      border-radius: 5px;
+      padding: 10px 12px;
+      margin-bottom: 15px;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .rescisao-cabecalho strong { font-size: 13px; }
+    .rescisao-etapas { display: flex; flex-direction: column; gap: 6px; }
+    .rescisao-etapa {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 8px 10px;
+      border: 1px solid #e3e8ef;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: normal !important;
+      color: var(--dark);
+    }
+    .rescisao-etapa:hover { background: #f8f9fa; }
+    .rescisao-etapa input { width: auto !important; min-width: 0; margin-top: 2px; transform: scale(1.2); }
+    .rescisao-etapa.feita { background: #eafaf1; border-color: #b7e4c7; }
+    .rescisao-etapa .sub { display: block; font-size: 11px; color: #7f8c8d; }
+    .rescisao-progresso { margin-top: 8px; font-size: 12px; font-weight: bold; color: var(--primary); }
+    .rescisao-barra { height: 6px; background: #ecf0f1; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .rescisao-barra span { display: block; height: 100%; background: #27ae60; }
+    body.dark-mode .rescisao-cabecalho { background: #383838; }
+    body.dark-mode .rescisao-etapa { color: #ecf0f1; border-color: #4a4a4a; }
+    body.dark-mode .rescisao-etapa:hover { background: #404040; }
+    body.dark-mode .rescisao-etapa.feita { background: #1f3a2b; border-color: #2d5a3f; }
+
     /* ===== RELATÓRIOS ===== */
     .relatorio-periodo {
       display: flex;
@@ -829,7 +865,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V32 ▦ Quadro Kanban</div>
+    <div class="version-badge">V33 📤 Rescisão</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" data-aba="dashboard" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -867,6 +903,10 @@
         <div class="kpi-card" onclick="filtrarPor('despejos')" style="cursor: pointer; transition: transform 0.2s; background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
           <h3>⚖️ Despejos</h3>
           <div class="number" id="despejos" style="color: white;">0</div>
+        </div>
+        <div class="kpi-card" onclick="filtrarPor('rescisao')" style="cursor: pointer; transition: transform 0.2s; background: linear-gradient(135deg, #8e44ad 0%, #6c3483 100%);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+          <h3>📤 Em Rescisão</h3>
+          <div class="number" id="emRescisao">0</div>
         </div>
       </div>
 
@@ -1026,6 +1066,14 @@
           <div style="font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">Vistorias Próximas</div>
           <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Agendadas para os próximos 30 dias</div>
           <button onclick="gerarRelatorioVistoriaProximas()" style="width: 100%; background: #f39c12; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">📄 Gerar PDF</button>
+        </div>
+
+        <!-- Relatório 5: Rescisões (V33) -->
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 24px; margin-bottom: 10px;">📤</div>
+          <div style="font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">Rescisões</div>
+          <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Contratos no administrativo e etapas da rescisão</div>
+          <button onclick="gerarRelatorioRescisoes()" style="width: 100%; background: #8e44ad; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">📄 Gerar PDF</button>
         </div>
       </div>
 
@@ -1487,6 +1535,36 @@
     </div>
   </div>
 
+  <!-- MODAL: RESCISÃO (V33) -->
+  <div id="modalRescisao" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">📤 Rescisão — Administrativo</div>
+      <div id="rescisaoCabecalho" class="rescisao-cabecalho"></div>
+
+      <div class="modal-form-group">
+        <label for="rescisao-responsavel">👤 Responsável no administrativo</label>
+        <input type="text" id="rescisao-responsavel" list="listaResponsaveisRescisao" placeholder="Nome de quem cuida da rescisão">
+        <datalist id="listaResponsaveisRescisao"></datalist>
+      </div>
+
+      <div class="modal-form-group">
+        <label>✅ Etapas da rescisão</label>
+        <div id="rescisaoEtapas" class="rescisao-etapas"></div>
+        <div id="rescisaoProgresso" class="rescisao-progresso"></div>
+      </div>
+
+      <div class="modal-form-group">
+        <label for="rescisao-observacoes">📝 Observações</label>
+        <textarea id="rescisao-observacoes" rows="3" placeholder="Valores combinados, pendências, contatos..."></textarea>
+      </div>
+
+      <div class="modal-buttons">
+        <button type="button" class="btn-primary" onclick="salvarRescisao()">💾 Salvar</button>
+        <button type="button" class="btn-secondary" onclick="fecharModalRescisao()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: VER REPAROS -->
   <div id="modalReparos" class="modal">
     <div class="modal-content">
@@ -1530,6 +1608,9 @@
       } else if (tipo === 'despejos') {
         dados = contratos.filter(c => c.tipoDesocupacao === 'despejo');
         titulo = 'Despejos (Jurídico)';
+      } else if (tipo === 'rescisao') {
+        dados = contratosEmRescisao();
+        titulo = 'Em Rescisão (Administrativo)';
       }
       
       // DEBUG
@@ -1899,6 +1980,7 @@
       document.getElementById('finalizados').textContent = finalizados;
       document.getElementById('emManutencao').textContent = emManutencao;
       document.getElementById('despejos').textContent = despejos;
+      document.getElementById('emRescisao').textContent = contratosEmRescisao().length;
     }
 
     function atualizarTabela() {
@@ -1923,6 +2005,8 @@
           baseData = contratos.filter(c => c.reparos && c.reparos.some(r => r.status !== 'CONCLUIDO'));
         } else if (filtroAtivo === 'despejos') {
           baseData = contratos.filter(c => c.tipoDesocupacao === 'despejo');
+        } else if (filtroAtivo === 'rescisao') {
+          baseData = contratosEmRescisao();
         }
       }
       
@@ -2105,7 +2189,7 @@
         return `${linha}<span class="etapa ${classe}" title="${escaparHTML(e.nome + ': ' + e.dica)}"></span>`;
       }).join('');
 
-      let rotulo = '✅ Finalizado';
+      let rotulo = finalizado ? (infoRescisao(c).pendente ? '📤 ' : '✅ ') + textoRescisao(c) : '';
       let rotuloClasse = '';
       if (!finalizado) {
         const atual = etapas[idxAtual === -1 ? etapas.length - 1 : idxAtual];
@@ -2126,6 +2210,158 @@
       return `<div class="etapas">${bolinhas}</div><div class="etapa-rotulo ${rotuloClasse}">${escaparHTML(rotulo)}${badge}</div>`;
     }
 
+    // ========= RESCISÃO (V33) =========
+    const ETAPAS_RESCISAO = [
+      { chave: 'transferenciaContas', nome: 'Transferência de água e energia', dica: 'Titularidade das contas de consumo' },
+      { chave: 'calculoDebitos', nome: 'Cálculo de débitos', dica: 'Aluguel proporcional, condomínio, IPTU, multas' },
+      { chave: 'descontoReparos', nome: 'Desconto de reparos', dica: 'Abater os reparos do imóvel' },
+      { chave: 'caucao', nome: 'Caução / garantia', dica: 'Devolução ou execução da caução, seguro-fiança ou fiador' },
+      { chave: 'termoAssinado', nome: 'Termo de rescisão assinado', dica: 'Termo assinado pelas partes' }
+    ];
+    let contratoEmRescisao = null;
+
+    // Dias desde um momento gravado com hora (ex.: encaminhamento), pelo calendário local
+    function diasDesdeMomento(iso) {
+      if (!iso) return null;
+      const d = new Date(iso);
+      if (isNaN(d)) return null;
+      d.setHours(0, 0, 0, 0);
+      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+      return Math.max(0, Math.round((hoje - d) / 86400000));
+    }
+
+    // Situação da rescisão de um contrato finalizado
+    function infoRescisao(c) {
+      const r = c.rescisao || {};
+      const encaminhada = c.finalizado === 'sim' && !!r.encaminhadoEm;
+      const feitas = ETAPAS_RESCISAO.filter(e => r[e.chave] === true).length;
+      return {
+        encaminhada,
+        concluida: encaminhada && !!r.concluidaEm,
+        pendente: encaminhada && !r.concluidaEm,
+        feitas,
+        total: ETAPAS_RESCISAO.length,
+        dias: diasDesdeMomento(r.encaminhadoEm),
+        responsavel: r.responsavel || ''
+      };
+    }
+
+    function contratosEmRescisao() {
+      return contratos.filter(c => infoRescisao(c).pendente);
+    }
+
+    function abrirModalRescisao(id) {
+      const c = contratos.find(x => x._id === id);
+      if (!c) return;
+      if (c.finalizado !== 'sim') {
+        mostrarToast('Finalize a desocupação antes de encaminhar a rescisão.', true);
+        return;
+      }
+      contratoEmRescisao = id;
+      const r = c.rescisao || {};
+      const info = infoRescisao(c);
+      const valorReparos = (c.reparos || []).reduce((s, rep) => s + (Number(rep.valorServico) || 0), 0);
+
+      document.getElementById('rescisaoCabecalho').innerHTML = `
+        <strong>${escaparHTML(c.contrato)} · ${escaparHTML(c.locatario)}</strong><br>
+        ${escaparHTML(c.endereco || '-')}<br>
+        Desocupação finalizada em ${dataFimContrato(c) ? dataFimContrato(c).toLocaleDateString('pt-BR') : '-'}
+        · ${info.encaminhada
+          ? `Encaminhado ao administrativo em ${new Date(r.encaminhadoEm).toLocaleDateString('pt-BR')}${info.dias ? ` (há ${info.dias} dias)` : ''}`
+          : '<em>Ainda não encaminhado (será encaminhado ao salvar)</em>'}
+        ${info.concluida ? `<br>✅ Rescisão concluída em ${new Date(r.concluidaEm).toLocaleDateString('pt-BR')}` : ''}`;
+
+      document.getElementById('rescisao-responsavel').value = r.responsavel || '';
+      document.getElementById('rescisao-observacoes').value = r.observacoes || '';
+
+      const nomes = [...new Set(contratos.map(x => (x.rescisao && x.rescisao.responsavel) || '').filter(Boolean))].sort();
+      document.getElementById('listaResponsaveisRescisao').innerHTML = nomes.map(n => `<option value="${escaparHTML(n)}">`).join('');
+
+      document.getElementById('rescisaoEtapas').innerHTML = ETAPAS_RESCISAO.map(e => {
+        const extra = e.chave === 'descontoReparos' && valorReparos > 0
+          ? ` — reparos registrados: ${formatarMoeda(valorReparos)}` : '';
+        return `
+          <label class="rescisao-etapa ${r[e.chave] ? 'feita' : ''}">
+            <input type="checkbox" data-etapa="${e.chave}" ${r[e.chave] ? 'checked' : ''} onchange="atualizarProgressoRescisao()">
+            <span>${escaparHTML(e.nome)}<span class="sub">${escaparHTML(e.dica + extra)}</span></span>
+          </label>`;
+      }).join('');
+      atualizarProgressoRescisao();
+
+      document.getElementById('modalRescisao').classList.add('show');
+    }
+
+    function atualizarProgressoRescisao() {
+      const caixas = [...document.querySelectorAll('#rescisaoEtapas input[type=checkbox]')];
+      caixas.forEach(cx => cx.closest('.rescisao-etapa').classList.toggle('feita', cx.checked));
+      const feitas = caixas.filter(cx => cx.checked).length;
+      const pct = Math.round((feitas / caixas.length) * 100);
+      document.getElementById('rescisaoProgresso').innerHTML =
+        `${feitas} de ${caixas.length} etapas concluídas${feitas === caixas.length ? ' — a rescisão será marcada como concluída' : ''}
+         <div class="rescisao-barra"><span style="width: ${pct}%"></span></div>`;
+    }
+
+    function fecharModalRescisao() {
+      document.getElementById('modalRescisao').classList.remove('show');
+      contratoEmRescisao = null;
+    }
+
+    function enviarRescisao(id, dados) {
+      atualizarSyncStatus('syncing');
+      return fetch(`${API_URL}/contracts/${id}/rescisao`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(dados)
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (!data.sucesso) throw new Error(data.erro || 'Erro ao salvar a rescisão');
+          return data;
+        });
+    }
+
+    function salvarRescisao() {
+      if (!contratoEmRescisao) return;
+      const id = contratoEmRescisao;
+      const dados = {
+        responsavel: document.getElementById('rescisao-responsavel').value,
+        observacoes: document.getElementById('rescisao-observacoes').value
+      };
+      document.querySelectorAll('#rescisaoEtapas input[type=checkbox]').forEach(cx => {
+        dados[cx.dataset.etapa] = cx.checked;
+      });
+
+      enviarRescisao(id, dados)
+        .then(data => {
+          const concluida = data.contrato && data.contrato.rescisao && data.contrato.rescisao.concluidaEm;
+          mostrarToast(concluida ? '✅ Rescisão concluída!' : '💾 Rescisão atualizada!');
+          fecharModalRescisao();
+          carregarDados();
+        })
+        .catch(erro => {
+          console.error('❌ Erro:', erro);
+          mostrarToast(`❌ ${erro.message}`, true);
+          atualizarSyncStatus('error');
+        });
+    }
+
+    // Para contratos finalizados antes da V33, que ainda não foram encaminhados
+    function encaminharRescisao(id) {
+      const c = contratos.find(x => x._id === id);
+      if (!c) return;
+      if (!confirm(`Encaminhar o contrato ${c.contrato} (${c.locatario}) ao administrativo para a rescisão?`)) return;
+      enviarRescisao(id, {})
+        .then(() => {
+          mostrarToast(`📤 ${c.contrato} encaminhado ao administrativo`);
+          carregarDados();
+        })
+        .catch(erro => {
+          console.error('❌ Erro:', erro);
+          mostrarToast(`❌ ${erro.message}`, true);
+          atualizarSyncStatus('error');
+        });
+    }
+
     // ========= QUADRO KANBAN (V32) =========
     const COLUNAS_QUADRO = [
       { titulo: '📨 Comunicar inquilino', cor: '#95a5a6' },
@@ -2133,15 +2369,18 @@
       { titulo: '🔑 Aguardando chaves', cor: '#f39c12' },
       { titulo: '🔧 Reparos', cor: '#e74c3c' },
       { titulo: '✅ Pronto para finalizar', cor: '#27ae60' },
-      { titulo: '🏁 Finalizados', cor: '#2c5aa0' }
+      { titulo: '📤 Rescisão (Administrativo)', cor: '#8e44ad' },
+      { titulo: '🏁 Encerrados', cor: '#2c5aa0' }
     ];
     const LIMITE_FINALIZADOS_QUADRO = 8;
     let mostrarTodosFinalizadosQuadro = false;
     let cartaoArrastado = null;
 
-    // Em qual coluna o contrato está (0 a 5), pela primeira etapa ainda não concluída
+    // Em qual coluna o contrato está (0 a 6), pela primeira etapa ainda não concluída.
+    // Finalizados: 5 = rescisão em andamento no administrativo; 6 = encerrado
+    // (rescisão concluída, ou finalizado antes da V33 sem encaminhamento).
     function estagioKanban(c) {
-      if (c.finalizado === 'sim') return 5;
+      if (c.finalizado === 'sim') return infoRescisao(c).pendente ? 5 : 6;
       const idx = calcularEtapas(c).findIndex(e => e.estado !== 'feita');
       return idx === -1 ? 4 : idx;
     }
@@ -2155,15 +2394,24 @@
       if (estagio === 2) return { rotulo: '🔑 Recebi as chaves', acao: `marcarChavesRecebidas('${id}')` };
       if (estagio === 3) return { rotulo: '🔧 Reparos', acao: `abrirModalReparos('${id}')` };
       if (estagio === 4) return { rotulo: '✅ Finalizar', acao: `finalizarContrato('${id}')` };
+      if (estagio === 5) return { rotulo: '📋 Rescisão', acao: `abrirModalRescisao('${id}')` };
+      if (estagio === 6) return infoRescisao(c).encaminhada
+        ? { rotulo: '📋 Ver', acao: `abrirModalRescisao('${id}')` }
+        : { rotulo: '📤 Encaminhar', acao: `encaminharRescisao('${id}')` };
       return null;
+    }
+
+    function textoRescisao(c) {
+      const info = infoRescisao(c);
+      if (info.pendente) return `Rescisão ${info.feitas}/${info.total}${info.dias !== null ? ` · ${info.dias === 0 ? 'desde hoje' : `há ${info.dias} dias`}` : ''}`;
+      if (info.concluida) return `Rescisão concluída em ${new Date(c.rescisao.concluidaEm).toLocaleDateString('pt-BR')}`;
+      return 'Finalizado · sem rescisão registrada';
     }
 
     function renderizarCartao(c, estagio) {
       const etapas = calcularEtapas(c);
       const atual = estagio < 5 ? etapas[Math.min(estagio, etapas.length - 1)] : null;
-      const proximo = estagio === 5
-        ? `Finalizado em ${dataFimContrato(c) ? dataFimContrato(c).toLocaleDateString('pt-BR') : '-'}`
-        : atual.rotulo;
+      const proximo = estagio >= 5 ? textoRescisao(c) : atual.rotulo;
       const atrasada = atual && atual.estado === 'atrasada';
 
       let dias = '';
@@ -2172,11 +2420,21 @@
         if (d !== null) dias = `<span class="dias-badge ${d > 45 ? 'alto' : (d > 30 ? 'medio' : '')}" title="Dias desde a comunicação">${d}d</span>`;
       }
 
+      if (estagio === 5) {
+        const info = infoRescisao(c);
+        if (info.dias !== null) dias = `<span class="dias-badge ${info.dias > 30 ? 'alto' : (info.dias > 15 ? 'medio' : '')}" title="Dias desde o encaminhamento ao administrativo">${info.dias}d</span>`;
+      }
+
       const acao = acaoCartao(c, estagio);
+      // Cartões finalizados abrem a rescisão; os demais abrem a edição do contrato
+      const aoClicar = estagio >= 5 && infoRescisao(c).encaminhada
+        ? `abrirModalRescisao('${c._id}')` : `abrirModalEditar('${c._id}')`;
+      const resp = estagio >= 5 && infoRescisao(c).responsavel
+        ? `Adm.: ${infoRescisao(c).responsavel}` : nomeResponsavel(c);
       return `
         <div class="cartao prio-${escaparHTML(c.prioridade || 'media')}" draggable="true" data-id="${c._id}"
              ondragstart="iniciarArraste(event, '${c._id}')" ondragend="terminarArraste(event)"
-             onclick="abrirModalEditar('${c._id}')" title="Clique para editar">
+             onclick="${aoClicar}" title="Clique para abrir">
           <div class="cartao-topo">
             <span class="cartao-contrato">${escaparHTML(c.contrato)}</span>
             <span>${c.tipoDesocupacao === 'despejo' ? '<span class="tag-despejo">DESPEJO</span>' : ''}${dias}</span>
@@ -2185,7 +2443,7 @@
           <div class="cartao-endereco" title="${escaparHTML(c.endereco || '')}">${escaparHTML(c.endereco || '-')}</div>
           <div class="cartao-proximo ${atrasada ? 'atrasada' : ''}">➜ ${escaparHTML(proximo)}</div>
           <div class="cartao-rodape">
-            <span class="cartao-resp">${escaparHTML(nomeResponsavel(c))}</span>
+            <span class="cartao-resp">${escaparHTML(resp)}</span>
             ${acao ? `<button class="cartao-acao" onclick="event.stopPropagation(); ${acao.acao}">${acao.rotulo}</button>` : ''}
           </div>
         </div>`;
@@ -2198,16 +2456,18 @@
       const colunas = COLUNAS_QUADRO.map(() => []);
       dados.forEach(c => colunas[estagioKanban(c)].push(c));
 
-      // Abertos: mais antigos primeiro. Finalizados: mais recentes primeiro.
+      // Abertos: mais antigos primeiro. Rescisão: há mais tempo no administrativo primeiro.
+      // Encerrados: mais recentes primeiro.
       for (let i = 0; i < 5; i++) {
         colunas[i].sort((a, b) => (calcularDiasDesde(b.comunicacaoInquilino) ?? -1) - (calcularDiasDesde(a.comunicacaoInquilino) ?? -1));
       }
-      colunas[5].sort((a, b) => (dataFimContrato(b) || 0) - (dataFimContrato(a) || 0));
+      colunas[5].sort((a, b) => (infoRescisao(b).dias ?? -1) - (infoRescisao(a).dias ?? -1));
+      colunas[6].sort((a, b) => (dataFimContrato(b) || 0) - (dataFimContrato(a) || 0));
 
       quadro.innerHTML = COLUNAS_QUADRO.map((col, i) => {
         let lista = colunas[i];
         let mais = '';
-        if (i === 5 && lista.length > LIMITE_FINALIZADOS_QUADRO) {
+        if (i === 6 && lista.length > LIMITE_FINALIZADOS_QUADRO) {
           mais = `<button class="quadro-mais" onclick="alternarFinalizadosQuadro()">${mostrarTodosFinalizadosQuadro ? 'Mostrar menos' : `Ver todos (${lista.length})`}</button>`;
           if (!mostrarTodosFinalizadosQuadro) lista = lista.slice(0, LIMITE_FINALIZADOS_QUADRO);
         }
@@ -2278,18 +2538,28 @@
       if (origem === destino) return;
       const nomeColuna = COLUNAS_QUADRO[destino].titulo.replace(/^\S+\s/, '');
 
-      // Finalizar
-      if (destino === 5) {
+      // Finalizar (de qualquer etapa aberta para Rescisão/Encerrados): o servidor encaminha ao administrativo
+      if (destino >= 5 && origem < 5) {
         const aviso = origem < 4 ? '\n\nAtenção: ainda há etapas anteriores não concluídas.' : '';
-        if (!confirm(`Finalizar a desocupação do contrato ${c.contrato} (${c.locatario})?${aviso}`)) return;
+        if (!confirm(`Finalizar a desocupação do contrato ${c.contrato} (${c.locatario}) e encaminhar ao administrativo para a rescisão?${aviso}`)) return;
         atualizarCamposContrato(id, { finalizado: 'sim' })
-          .then(() => { mostrarToast(`✅ ${c.contrato} finalizado!`); carregarDados(); })
+          .then(() => { mostrarToast(`✅ ${c.contrato} finalizado e encaminhado ao administrativo`); carregarDados(); })
           .catch(erroMover);
         return;
       }
 
+      // Entre Rescisão e Encerrados: depende do checklist da rescisão
+      if (origem >= 5 && destino >= 5) {
+        if (!infoRescisao(c).encaminhada) { encaminharRescisao(id); return; }
+        mostrarToast(destino === 6
+          ? '📋 Marque todas as etapas da rescisão para encerrar.'
+          : '📋 Desmarque uma etapa para reabrir a rescisão.');
+        abrirModalRescisao(id);
+        return;
+      }
+
       // Reabrir um finalizado
-      if (origem === 5) {
+      if (origem >= 5) {
         if (!confirm(`Reabrir o contrato ${c.contrato} (${c.locatario})? Ele deixará de constar como finalizado.`)) return;
         atualizarCamposContrato(id, { finalizado: 'nao' })
           .then(() => { mostrarToast(`↩️ ${c.contrato} reaberto`); carregarDados(); })
@@ -2356,7 +2626,19 @@
       const acoes = [];
 
       contratos.forEach(c => {
-        if (c.finalizado === 'sim') return;
+        if (c.finalizado === 'sim') {
+          // Rescisão em andamento no administrativo
+          const info = infoRescisao(c);
+          if (info.pendente) {
+            acoes.push({ id: c._id, contrato: c.contrato, locatario: c.locatario,
+              nivel: info.dias !== null && info.dias > 30 ? 'atrasado' : 'pendencia',
+              ordem: info.dias !== null && info.dias > 30 ? 0 : 2, dias: -(info.dias || 0),
+              quando: 'Rescisão',
+              texto: `Rescisão no administrativo — ${info.feitas} de ${info.total} etapas${info.dias ? ` · encaminhado há ${info.dias} dias` : ' · encaminhado hoje'}${info.responsavel ? ` · ${info.responsavel}` : ''}`,
+              botao: { rotulo: '📋 Rescisão', acao: `abrirModalRescisao('${c._id}')` } });
+          }
+          return;
+        }
 
         const id = c._id;
         const chavesOk = c.statusChaves === 'recebidas';
@@ -2497,10 +2779,10 @@
     function finalizarContrato(id) {
       const c = contratos.find(x => x._id === id);
       if (!c) return;
-      if (!confirm(`Finalizar a desocupação do contrato ${c.contrato} (${c.locatario})?`)) return;
+      if (!confirm(`Finalizar a desocupação do contrato ${c.contrato} (${c.locatario})?\n\nO contrato será encaminhado ao administrativo para a rescisão.`)) return;
       atualizarCamposContrato(id, { finalizado: 'sim' })
         .then(() => {
-          mostrarToast(`✅ ${c.contrato} finalizado!`);
+          mostrarToast(`✅ ${c.contrato} finalizado e encaminhado ao administrativo`);
           carregarDados();
         })
         .catch(erro => {
@@ -3516,6 +3798,58 @@ ${cfg.observacao ? `<div class="obs">${escaparHTML(cfg.observacao)}</div>` : ''}
             prioridadeHTML(c)
           ];
         })
+      });
+    }
+
+    function gerarRelatorioRescisoes() {
+      const periodo = getPeriodoRelatorio();
+      // Em andamento: todas. Concluídas: só as do período escolhido.
+      const lista = contratos.filter(c => {
+        const info = infoRescisao(c);
+        if (info.pendente) return true;
+        return info.concluida && dentroDoPeriodo(c.rescisao.concluidaEm, periodo);
+      }).sort((a, b) => {
+        const ia = infoRescisao(a), ib = infoRescisao(b);
+        if (ia.pendente !== ib.pendente) return ia.pendente ? -1 : 1;
+        return (ib.dias ?? -1) - (ia.dias ?? -1);
+      });
+
+      if (lista.length === 0) {
+        mostrarToast('❌ Nenhuma rescisão em andamento ou concluída no período!', true);
+        return;
+      }
+
+      const pendentes = lista.filter(c => infoRescisao(c).pendente);
+      const marca = ok => ok ? '<span style="color:#27ae60; font-weight:bold;">✔</span>' : '<span style="color:#c0392b;">✘</span>';
+
+      abrirRelatorio({
+        titulo: 'Rescisões — Administrativo',
+        descricao: 'Contratos encaminhados ao administrativo após a desocupação',
+        cor: '#8e44ad',
+        paisagem: true,
+        periodo: `Concluídas: ${periodo.rotulo}`,
+        resumo: [
+          ['Em andamento', pendentes.length],
+          ['Concluídas no período', lista.length - pendentes.length],
+          ['Há mais de 30 dias', pendentes.filter(c => (infoRescisao(c).dias || 0) > 30).length],
+          ['Média de dias (em andamento)', media(pendentes.map(c => infoRescisao(c).dias)) ?? '-']
+        ],
+        colunas: ['Contrato', 'Locatário / Endereço', 'Encaminhado', 'Responsável', 'Água/energia', 'Débitos', 'Reparos', 'Caução', 'Termo', 'Situação'],
+        linhas: lista.map(c => {
+          const r = c.rescisao || {};
+          const info = infoRescisao(c);
+          return [
+            `<strong>${escaparHTML(c.contrato)}</strong>`,
+            `${escaparHTML(c.locatario)}<br><span class="sub">${escaparHTML(c.endereco || '-')}</span>`,
+            `${new Date(r.encaminhadoEm).toLocaleDateString('pt-BR')}${info.dias !== null ? `<br><span class="sub ${info.pendente && info.dias > 30 ? 'alerta' : ''}">${info.dias === 0 ? 'hoje' : `há ${info.dias} dias`}</span>` : ''}`,
+            escaparHTML(info.responsavel || '-'),
+            marca(r.transferenciaContas), marca(r.calculoDebitos), marca(r.descontoReparos), marca(r.caucao), marca(r.termoAssinado),
+            info.concluida
+              ? `Concluída em ${new Date(r.concluidaEm).toLocaleDateString('pt-BR')}`
+              : `<strong>${info.feitas}/${info.total}</strong> etapas`
+          ];
+        }),
+        observacao: 'Contratos finalizados antes desta versão só aparecem aqui depois de encaminhados (botão "📤 Encaminhar" no quadro).'
       });
     }
 
