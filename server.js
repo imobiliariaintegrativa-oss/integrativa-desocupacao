@@ -2,14 +2,29 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import path from 'path';
+import crypto from 'crypto';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+app.set('trust proxy', 1); // Render fica atrás de um proxy: req.ip passa a ser o IP real
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '1mb' }));
+
+// ===== LOGIN (V34) =====
+// JWT_SECRET deve ser configurado no Render. Sem ele, gera um segredo temporário:
+// funciona, mas todos precisam entrar de novo sempre que o servidor reiniciar.
+const JWT_SECRET = process.env.JWT_SECRET || crypto.randomBytes(48).toString('hex');
+if (!process.env.JWT_SECRET) {
+  console.warn('⚠️  JWT_SECRET não configurado: usando segredo temporário (sessões caem a cada reinício).');
+}
+const DURACAO_SESSAO = '12h';
+const SENHA_MINIMA = 8;
+const HASH_FICTICIO = bcrypt.hashSync(crypto.randomBytes(16).toString('hex'), 10);
 
 // Servir arquivos estáticos
 app.use(express.static(path.join(__dirname, 'public')));
@@ -78,9 +93,115 @@ function atualizarConclusaoRescisao(contrato) {
   if (!todas) contrato.set('rescisao.concluidaEm', undefined);
 }
 
+// USUÁRIOS (V34)
+const usuarioSchema = new mongoose.Schema({
+  nome: { type: String, required: true, trim: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  senhaHash: { type: String, required: true },
+  papel: { type: String, enum: ['admin', 'usuario'], default: 'usuario' },
+  ativo: { type: Boolean, default: true },
+  trocarSenha: { type: Boolean, default: false }, // obriga a trocar a senha no próximo acesso
+  senhaAlteradaEm: Date,                          // sessões abertas antes disso deixam de valer
+  ultimoAcesso: Date,
+  dataCriacao: { type: Date, default: Date.now }
+});
+const Usuario = mongoose.model('Usuario', usuarioSchema);
+
+function usuarioPublico(u) {
+  return {
+    id: String(u._id), nome: u.nome, email: u.email, papel: u.papel, ativo: u.ativo,
+    trocarSenha: !!u.trocarSenha, ultimoAcesso: u.ultimoAcesso || null, dataCriacao: u.dataCriacao || null
+  };
+}
+
+function emailValido(email) {
+  return typeof email === 'string' && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
+
+function senhaValida(senha) {
+  return typeof senha === 'string' && senha.length >= SENHA_MINIMA;
+}
+
+function agoraEmSegundos() {
+  return new Date(Math.floor(Date.now() / 1000) * 1000);
+}
+
+function gerarToken(u) {
+  return jwt.sign({ id: String(u._id), papel: u.papel }, JWT_SECRET, { expiresIn: DURACAO_SESSAO });
+}
+
+async function contarAdminsAtivos() {
+  return Usuario.countDocuments({ papel: 'admin', ativo: true });
+}
+
+// Cria o primeiro administrador a partir das variáveis ADMIN_EMAIL e ADMIN_SENHA (só se não houver usuários)
+async function criarAdminInicial() {
+  const total = await Usuario.countDocuments({});
+  if (total > 0) return;
+  const email = (process.env.ADMIN_EMAIL || '').trim().toLowerCase();
+  const senha = process.env.ADMIN_SENHA || '';
+  if (!emailValido(email) || !senhaValida(senha)) {
+    console.warn(`⚠️  Nenhum usuário cadastrado. Configure ADMIN_EMAIL e ADMIN_SENHA (mín. ${SENHA_MINIMA} caracteres) no Render para criar o primeiro administrador.`);
+    return;
+  }
+  const admin = new Usuario({
+    nome: process.env.ADMIN_NOME || 'Administrador', email, papel: 'admin',
+    senhaHash: await bcrypt.hash(senha, 10), trocarSenha: true
+  });
+  await admin.save();
+  console.log(`✅ Administrador inicial criado: ${email} (deverá trocar a senha no primeiro acesso)`);
+}
+
+// Limite de tentativas de login: 5 erros a cada 15 minutos por IP + e-mail
+const tentativasLogin = new Map();
+const LIMITE_TENTATIVAS = 5;
+const JANELA_TENTATIVAS_MS = 15 * 60 * 1000;
+
+function chaveTentativa(req, email) { return `${req.ip}|${email}`; }
+
+function bloqueadoPorTentativas(chave) {
+  const t = tentativasLogin.get(chave);
+  if (!t) return false;
+  if (Date.now() - t.inicio > JANELA_TENTATIVAS_MS) { tentativasLogin.delete(chave); return false; }
+  return t.erros >= LIMITE_TENTATIVAS;
+}
+
+function registrarErroLogin(chave) {
+  const t = tentativasLogin.get(chave);
+  if (!t || Date.now() - t.inicio > JANELA_TENTATIVAS_MS) tentativasLogin.set(chave, { erros: 1, inicio: Date.now() });
+  else t.erros++;
+}
+
+// Exige um token válido de um usuário ativo
+async function exigirLogin(req, res, next) {
+  try {
+    const cab = req.headers.authorization || '';
+    const token = cab.startsWith('Bearer ') ? cab.slice(7) : null;
+    if (!token) return res.status(401).json({ sucesso: false, erro: 'Faça login para continuar' });
+
+    const dados = jwt.verify(token, JWT_SECRET);
+    const u = await Usuario.findById(dados.id);
+    if (!u || !u.ativo) return res.status(401).json({ sucesso: false, erro: 'Acesso não autorizado' });
+    if (u.senhaAlteradaEm && dados.iat * 1000 < u.senhaAlteradaEm.getTime()) {
+      return res.status(401).json({ sucesso: false, erro: 'Sessão expirada. Entre novamente.' });
+    }
+    req.usuario = u;
+    next();
+  } catch (erro) {
+    return res.status(401).json({ sucesso: false, erro: 'Sessão inválida ou expirada. Entre novamente.' });
+  }
+}
+
+function exigirAdmin(req, res, next) {
+  if (!req.usuario || req.usuario.papel !== 'admin') {
+    return res.status(403).json({ sucesso: false, erro: 'Apenas administradores podem fazer isso' });
+  }
+  next();
+}
+
 // CONECTAR MONGODB
 mongoose.connect(process.env.MONGODB_URI)
-  .then(() => console.log('✅ MongoDB conectado'))
+  .then(() => { console.log('✅ MongoDB conectado'); return criarAdminInicial(); })
   .catch(err => console.error('❌ Erro:', err));
 
 // ROTAS
@@ -92,7 +213,140 @@ app.get('/', (req, res) => {
 
 // Health
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', version: 'V28-TipoDesocupacao' });
+  res.json({ status: 'ok', version: 'V34-Login' });
+});
+
+// LOGIN (público)
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const senha = String(req.body.senha || '');
+    const chave = chaveTentativa(req, email);
+
+    if (bloqueadoPorTentativas(chave)) {
+      return res.status(429).json({ sucesso: false, erro: 'Muitas tentativas. Aguarde 15 minutos e tente de novo.' });
+    }
+
+    const u = email ? await Usuario.findOne({ email }) : null;
+    // Compara mesmo quando o e-mail não existe, para o tempo de resposta não revelar quem é usuário
+    const senhaOk = await bcrypt.compare(senha, u ? u.senhaHash : HASH_FICTICIO) && !!u && u.ativo;
+    if (!senhaOk) {
+      registrarErroLogin(chave);
+      return res.status(401).json({ sucesso: false, erro: 'E-mail ou senha incorretos' });
+    }
+
+    tentativasLogin.delete(chave);
+    u.ultimoAcesso = new Date();
+    await u.save();
+    res.json({ sucesso: true, token: gerarToken(u), usuario: usuarioPublico(u) });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// ===== A PARTIR DAQUI, TODA ROTA /api EXIGE LOGIN =====
+app.use('/api', exigirLogin);
+
+// Quem está logado
+app.get('/api/auth/me', (req, res) => {
+  res.json({ sucesso: true, usuario: usuarioPublico(req.usuario) });
+});
+
+// Trocar a própria senha
+app.post('/api/auth/alterar-senha', async (req, res) => {
+  try {
+    const { senhaAtual, novaSenha } = req.body;
+    const u = req.usuario;
+    if (!(await bcrypt.compare(String(senhaAtual || ''), u.senhaHash))) {
+      return res.status(400).json({ sucesso: false, erro: 'Senha atual incorreta' });
+    }
+    if (!senhaValida(novaSenha)) {
+      return res.status(400).json({ sucesso: false, erro: `A nova senha precisa ter pelo menos ${SENHA_MINIMA} caracteres` });
+    }
+    if (await bcrypt.compare(novaSenha, u.senhaHash)) {
+      return res.status(400).json({ sucesso: false, erro: 'A nova senha precisa ser diferente da atual' });
+    }
+    u.senhaHash = await bcrypt.hash(novaSenha, 10);
+    u.trocarSenha = false;
+    u.senhaAlteradaEm = agoraEmSegundos(); // derruba as outras sessões abertas
+    await u.save();
+    res.json({ sucesso: true, token: gerarToken(u), usuario: usuarioPublico(u) });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// USUÁRIOS (somente administradores)
+app.get('/api/usuarios', exigirAdmin, async (req, res) => {
+  try {
+    const lista = (await Usuario.find({})).map(usuarioPublico).sort((a, b) => a.nome.localeCompare(b.nome));
+    res.json({ sucesso: true, usuarios: lista });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+app.post('/api/usuarios', exigirAdmin, async (req, res) => {
+  try {
+    const nome = String(req.body.nome || '').trim();
+    const email = String(req.body.email || '').trim().toLowerCase();
+    const senha = req.body.senha;
+    const papel = req.body.papel === 'admin' ? 'admin' : 'usuario';
+
+    if (!nome) return res.status(400).json({ sucesso: false, erro: 'Informe o nome' });
+    if (!emailValido(email)) return res.status(400).json({ sucesso: false, erro: 'E-mail inválido' });
+    if (!senhaValida(senha)) return res.status(400).json({ sucesso: false, erro: `A senha precisa ter pelo menos ${SENHA_MINIMA} caracteres` });
+    if (await Usuario.findOne({ email })) return res.status(409).json({ sucesso: false, erro: 'Já existe um usuário com este e-mail' });
+
+    const u = new Usuario({ nome, email, papel, senhaHash: await bcrypt.hash(senha, 10), trocarSenha: true });
+    await u.save();
+    res.status(201).json({ sucesso: true, usuario: usuarioPublico(u) });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// Editar nome/papel, ativar/desativar ou redefinir a senha de um usuário
+app.put('/api/usuarios/:id', exigirAdmin, async (req, res) => {
+  try {
+    const u = await Usuario.findById(req.params.id);
+    if (!u) return res.status(404).json({ sucesso: false, erro: 'Usuário não encontrado' });
+    const eleMesmo = String(u._id) === String(req.usuario._id);
+
+    const novoPapel = req.body.papel === undefined ? u.papel : (req.body.papel === 'admin' ? 'admin' : 'usuario');
+    const novoAtivo = typeof req.body.ativo === 'boolean' ? req.body.ativo : u.ativo;
+
+    // Nunca deixar o sistema sem administrador ativo, nem o admin se bloquear sozinho
+    if (eleMesmo && (!novoAtivo || novoPapel !== 'admin')) {
+      return res.status(400).json({ sucesso: false, erro: 'Você não pode desativar nem remover o acesso de administrador da sua própria conta' });
+    }
+    if (u.papel === 'admin' && u.ativo && (novoPapel !== 'admin' || !novoAtivo) && (await contarAdminsAtivos()) <= 1) {
+      return res.status(400).json({ sucesso: false, erro: 'É preciso manter pelo menos um administrador ativo' });
+    }
+
+    if (req.body.nome !== undefined) {
+      const nome = String(req.body.nome).trim();
+      if (!nome) return res.status(400).json({ sucesso: false, erro: 'Informe o nome' });
+      u.nome = nome;
+    }
+    u.papel = novoPapel;
+    if (u.ativo && !novoAtivo) u.senhaAlteradaEm = agoraEmSegundos(); // derruba as sessões de quem foi desativado
+    u.ativo = novoAtivo;
+
+    if (req.body.novaSenha !== undefined) {
+      if (!senhaValida(req.body.novaSenha)) {
+        return res.status(400).json({ sucesso: false, erro: `A senha precisa ter pelo menos ${SENHA_MINIMA} caracteres` });
+      }
+      u.senhaHash = await bcrypt.hash(req.body.novaSenha, 10);
+      u.trocarSenha = !eleMesmo;
+      u.senhaAlteradaEm = agoraEmSegundos();
+    }
+
+    await u.save();
+    res.json({ sucesso: true, usuario: usuarioPublico(u) });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
 });
 
 // GET contratos
@@ -293,8 +547,8 @@ app.delete('/api/repairs/:contractId/:reparoId', async (req, res) => {
   }
 });
 
-// SEED
-app.post('/api/seed', async (req, res) => {
+// SEED (somente administradores)
+app.post('/api/seed', exigirAdmin, async (req, res) => {
   try {
     const existe = await Contract.findOne({ contrato: 'CA0535/1' });
     if (existe) return res.json({ sucesso: false, mensagem: 'Banco já populado' });
@@ -322,5 +576,5 @@ app.post('/api/seed', async (req, res) => {
 // START
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`✅ Servidor V28-TipoDesocupacao rodando na porta ${PORT}`);
+  console.log(`✅ Servidor V34-Login rodando na porta ${PORT}`);
 });
