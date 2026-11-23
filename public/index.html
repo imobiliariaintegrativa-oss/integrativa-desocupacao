@@ -704,6 +704,83 @@
     .dias-badge.alto { background: #f8d7da; color: #721c24; }
     body.dark-mode .etapa { background: #333; }
 
+    /* ===== QUADRO KANBAN (V32) ===== */
+    .modo-visao { display: inline-flex; border: 1px solid var(--border); border-radius: 5px; overflow: hidden; }
+    .modo-visao button { background: #fff; color: var(--dark); border-radius: 0; padding: 8px 12px; font-size: 13px; }
+    .modo-visao button:hover { background: #ecf0f1; }
+    .modo-visao button.ativo { background: var(--primary); color: #fff; }
+    #contratos:not(.modo-quadro) .quadro,
+    #contratos:not(.modo-quadro) .quadro-dica { display: none; }
+    #contratos.modo-quadro #tabela { display: none !important; }
+    #contratos.modo-quadro .table-wrapper { border: none; box-shadow: none; background: none; }
+
+    .quadro {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(220px, 1fr));
+      gap: 12px;
+      overflow-x: auto;
+      padding-bottom: 8px;
+      align-items: start;
+    }
+    .quadro-coluna {
+      background: #f1f4f8;
+      border-radius: 8px;
+      border-top: 4px solid #95a5a6;
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+    }
+    .quadro-coluna.arrastando-sobre { background: #e3edf9; outline: 2px dashed var(--primary); outline-offset: -2px; }
+    .quadro-cabecalho {
+      padding: 10px 12px;
+      font-weight: bold;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: var(--dark);
+    }
+    .quadro-contagem { background: #fff; border-radius: 10px; padding: 0 8px; font-size: 12px; color: #555; }
+    .quadro-cartoes { padding: 0 8px 10px; display: flex; flex-direction: column; gap: 8px; flex: 1; }
+    .quadro-vazio { font-size: 12px; color: #95a5a6; text-align: center; padding: 16px 4px; }
+    .cartao {
+      background: #fff;
+      border: 1px solid #e3e8ef;
+      border-left: 4px solid #bdc3c7;
+      border-radius: 6px;
+      padding: 9px 10px;
+      cursor: grab;
+      font-size: 12px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .cartao:hover { box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
+    .cartao.arrastando { opacity: 0.5; }
+    .cartao.prio-critica { border-left-color: #c0392b; }
+    .cartao.prio-alta { border-left-color: #e67e22; }
+    .cartao.prio-media { border-left-color: #f1c40f; }
+    .cartao.prio-baixa { border-left-color: #27ae60; }
+    .cartao-topo { display: flex; justify-content: space-between; align-items: center; gap: 6px; }
+    .cartao-contrato { font-weight: bold; color: var(--primary); }
+    .cartao-locatario { margin-top: 3px; font-weight: bold; color: var(--dark); }
+    .cartao-endereco { color: #7f8c8d; font-size: 11px; margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cartao-proximo { margin-top: 6px; font-size: 11px; color: #555; }
+    .cartao-proximo.atrasada { color: #c0392b; font-weight: bold; }
+    .cartao-rodape { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 6px; }
+    .cartao-resp { font-size: 11px; color: #7f8c8d; }
+    .cartao-acao { font-size: 11px; padding: 4px 8px; }
+    .tag-despejo { background: #c0392b; color: #fff; border-radius: 8px; padding: 0 6px; font-size: 10px; font-weight: bold; }
+    .quadro-mais { font-size: 12px; background: none; color: var(--primary); padding: 4px; }
+    .quadro-mais:hover { background: none; text-decoration: underline; }
+    .quadro-dica { font-size: 11px; color: #95a5a6; margin-top: 6px; }
+    body.dark-mode .quadro-coluna { background: #2f2f2f; }
+    body.dark-mode .quadro-cabecalho { color: #ecf0f1; }
+    body.dark-mode .quadro-contagem { background: #444; color: #ddd; }
+    body.dark-mode .cartao { background: #383838; border-color: #4a4a4a; }
+    body.dark-mode .cartao-locatario { color: #ecf0f1; }
+    body.dark-mode .cartao-proximo { color: #ccc; }
+    body.dark-mode .modo-visao button { background: #383838; color: #ecf0f1; }
+    body.dark-mode .modo-visao button.ativo { background: var(--primary); }
+
     /* ===== RELATÓRIOS ===== */
     .relatorio-periodo {
       display: flex;
@@ -752,7 +829,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V30 📄 Relatórios renovados</div>
+    <div class="version-badge">V32 ▦ Quadro Kanban</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" data-aba="dashboard" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -1034,7 +1111,12 @@
         </div>
         <button onclick="abrirModalNovoContrato()" class="btn-success" style="background-color: #27ae60;">➕ Novo Contrato</button>
         <button onclick="recarregarDados()" style="background-color: #95a5a6;">🔄 Atualizar</button>
-        
+
+        <div class="modo-visao" role="group" aria-label="Modo de visualização">
+          <button type="button" id="btnModoTabela" class="ativo" onclick="definirModoVisao('tabela')">☰ Tabela</button>
+          <button type="button" id="btnModoQuadro" onclick="definirModoVisao('quadro')">▦ Quadro</button>
+        </div>
+
         <div style="display: flex; gap: 8px; align-items: center;">
           <label style="font-size: 12px; color: #2c3e50; font-weight: bold;">📊 Ordenar por:</label>
           <select id="ordenarPor" onchange="ordenarContratos(this.value)" style="padding: 8px 10px; border: 1px solid #bdc3c7; border-radius: 5px; cursor: pointer; font-size: 12px;">
@@ -1068,6 +1150,10 @@
           </tbody>
         </table>
       </div>
+
+      <!-- QUADRO KANBAN (V32) -->
+      <div id="quadro" class="quadro"></div>
+      <div class="quadro-dica">Arraste os cartões entre as colunas ou use o botão de cada cartão. Clique no cartão para editar.</div>
     </div>
   </div>
 
@@ -1822,7 +1908,9 @@
     }
 
     function filtrarDados() {
-      const busca = document.getElementById('busca').value.toLowerCase();
+      // Busca sem diferenciar maiúsculas nem acentos ("olimpia" encontra "Olímpia")
+      const normalizar = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+      const busca = normalizar(document.getElementById('busca').value);
       
       // Primeiro aplicar o filtro ativo (se existir)
       let baseData = contratos;
@@ -1841,9 +1929,9 @@
       // Depois filtrar por texto de busca
       const filtrados = baseData.filter(c => {
         return busca === '' || 
-               c.contrato.toLowerCase().includes(busca) || 
-               c.locatario.toLowerCase().includes(busca) ||
-               (c.endereco && c.endereco.toLowerCase().includes(busca));
+               normalizar(c.contrato).includes(busca) ||
+               normalizar(c.locatario).includes(busca) ||
+               normalizar(c.endereco).includes(busca);
       });
       
       // IMPORTANTE: Armazenar em dadosAtivos
@@ -1936,6 +2024,8 @@
         </tr>
       `;
       }).join('');
+
+      renderizarQuadro(dados);
     }
 
     // ========= UTILITÁRIOS (V29) =========
@@ -2034,6 +2124,228 @@
       }
 
       return `<div class="etapas">${bolinhas}</div><div class="etapa-rotulo ${rotuloClasse}">${escaparHTML(rotulo)}${badge}</div>`;
+    }
+
+    // ========= QUADRO KANBAN (V32) =========
+    const COLUNAS_QUADRO = [
+      { titulo: '📨 Comunicar inquilino', cor: '#95a5a6' },
+      { titulo: '📅 Vistoria', cor: '#3498db' },
+      { titulo: '🔑 Aguardando chaves', cor: '#f39c12' },
+      { titulo: '🔧 Reparos', cor: '#e74c3c' },
+      { titulo: '✅ Pronto para finalizar', cor: '#27ae60' },
+      { titulo: '🏁 Finalizados', cor: '#2c5aa0' }
+    ];
+    const LIMITE_FINALIZADOS_QUADRO = 8;
+    let mostrarTodosFinalizadosQuadro = false;
+    let cartaoArrastado = null;
+
+    // Em qual coluna o contrato está (0 a 5), pela primeira etapa ainda não concluída
+    function estagioKanban(c) {
+      if (c.finalizado === 'sim') return 5;
+      const idx = calcularEtapas(c).findIndex(e => e.estado !== 'feita');
+      return idx === -1 ? 4 : idx;
+    }
+
+    function acaoCartao(c, estagio) {
+      const id = c._id;
+      if (estagio === 0) return { rotulo: '📨 Comunicar', acao: `abrirModalEditar('${id}')` };
+      if (estagio === 1) return c.agendamentoVistoria
+        ? { rotulo: '✏️ Abrir', acao: `abrirModalEditar('${id}')` }
+        : { rotulo: '📅 Agendar', acao: `abrirModalEditar('${id}')` };
+      if (estagio === 2) return { rotulo: '🔑 Recebi as chaves', acao: `marcarChavesRecebidas('${id}')` };
+      if (estagio === 3) return { rotulo: '🔧 Reparos', acao: `abrirModalReparos('${id}')` };
+      if (estagio === 4) return { rotulo: '✅ Finalizar', acao: `finalizarContrato('${id}')` };
+      return null;
+    }
+
+    function renderizarCartao(c, estagio) {
+      const etapas = calcularEtapas(c);
+      const atual = estagio < 5 ? etapas[Math.min(estagio, etapas.length - 1)] : null;
+      const proximo = estagio === 5
+        ? `Finalizado em ${dataFimContrato(c) ? dataFimContrato(c).toLocaleDateString('pt-BR') : '-'}`
+        : atual.rotulo;
+      const atrasada = atual && atual.estado === 'atrasada';
+
+      let dias = '';
+      if (estagio < 5 && c.comunicacaoInquilino) {
+        const d = calcularDiasDesde(c.comunicacaoInquilino);
+        if (d !== null) dias = `<span class="dias-badge ${d > 45 ? 'alto' : (d > 30 ? 'medio' : '')}" title="Dias desde a comunicação">${d}d</span>`;
+      }
+
+      const acao = acaoCartao(c, estagio);
+      return `
+        <div class="cartao prio-${escaparHTML(c.prioridade || 'media')}" draggable="true" data-id="${c._id}"
+             ondragstart="iniciarArraste(event, '${c._id}')" ondragend="terminarArraste(event)"
+             onclick="abrirModalEditar('${c._id}')" title="Clique para editar">
+          <div class="cartao-topo">
+            <span class="cartao-contrato">${escaparHTML(c.contrato)}</span>
+            <span>${c.tipoDesocupacao === 'despejo' ? '<span class="tag-despejo">DESPEJO</span>' : ''}${dias}</span>
+          </div>
+          <div class="cartao-locatario">${escaparHTML(c.locatario)}</div>
+          <div class="cartao-endereco" title="${escaparHTML(c.endereco || '')}">${escaparHTML(c.endereco || '-')}</div>
+          <div class="cartao-proximo ${atrasada ? 'atrasada' : ''}">➜ ${escaparHTML(proximo)}</div>
+          <div class="cartao-rodape">
+            <span class="cartao-resp">${escaparHTML(nomeResponsavel(c))}</span>
+            ${acao ? `<button class="cartao-acao" onclick="event.stopPropagation(); ${acao.acao}">${acao.rotulo}</button>` : ''}
+          </div>
+        </div>`;
+    }
+
+    function renderizarQuadro(dados) {
+      const quadro = document.getElementById('quadro');
+      if (!quadro) return;
+
+      const colunas = COLUNAS_QUADRO.map(() => []);
+      dados.forEach(c => colunas[estagioKanban(c)].push(c));
+
+      // Abertos: mais antigos primeiro. Finalizados: mais recentes primeiro.
+      for (let i = 0; i < 5; i++) {
+        colunas[i].sort((a, b) => (calcularDiasDesde(b.comunicacaoInquilino) ?? -1) - (calcularDiasDesde(a.comunicacaoInquilino) ?? -1));
+      }
+      colunas[5].sort((a, b) => (dataFimContrato(b) || 0) - (dataFimContrato(a) || 0));
+
+      quadro.innerHTML = COLUNAS_QUADRO.map((col, i) => {
+        let lista = colunas[i];
+        let mais = '';
+        if (i === 5 && lista.length > LIMITE_FINALIZADOS_QUADRO) {
+          mais = `<button class="quadro-mais" onclick="alternarFinalizadosQuadro()">${mostrarTodosFinalizadosQuadro ? 'Mostrar menos' : `Ver todos (${lista.length})`}</button>`;
+          if (!mostrarTodosFinalizadosQuadro) lista = lista.slice(0, LIMITE_FINALIZADOS_QUADRO);
+        }
+        return `
+          <div class="quadro-coluna" style="border-top-color: ${col.cor};"
+               ondragover="permitirSoltar(event)" ondragleave="sairDaColuna(event)" ondrop="soltarCartao(event, ${i})">
+            <div class="quadro-cabecalho"><span>${col.titulo}</span><span class="quadro-contagem">${colunas[i].length}</span></div>
+            <div class="quadro-cartoes">
+              ${lista.length ? lista.map(c => renderizarCartao(c, i)).join('') : '<div class="quadro-vazio">Nenhum contrato</div>'}
+              ${mais}
+            </div>
+          </div>`;
+      }).join('');
+    }
+
+    function alternarFinalizadosQuadro() {
+      mostrarTodosFinalizadosQuadro = !mostrarTodosFinalizadosQuadro;
+      renderizarQuadro(dadosAtivos);
+    }
+
+    function definirModoVisao(modo, salvar = true) {
+      const quadro = modo === 'quadro';
+      document.getElementById('contratos').classList.toggle('modo-quadro', quadro);
+      document.getElementById('btnModoQuadro').classList.toggle('ativo', quadro);
+      document.getElementById('btnModoTabela').classList.toggle('ativo', !quadro);
+      if (salvar) {
+        try { localStorage.setItem('modoVisaoContratos', modo); } catch (e) { /* sem armazenamento */ }
+      }
+    }
+
+    function iniciarArraste(event, id) {
+      cartaoArrastado = id;
+      event.dataTransfer.effectAllowed = 'move';
+      try { event.dataTransfer.setData('text/plain', id); } catch (e) { /* alguns navegadores */ }
+      event.currentTarget.classList.add('arrastando');
+    }
+
+    function terminarArraste(event) {
+      event.currentTarget.classList.remove('arrastando');
+      document.querySelectorAll('.quadro-coluna.arrastando-sobre').forEach(el => el.classList.remove('arrastando-sobre'));
+    }
+
+    function permitirSoltar(event) {
+      event.preventDefault();
+      event.dataTransfer.dropEffect = 'move';
+      event.currentTarget.classList.add('arrastando-sobre');
+    }
+
+    function sairDaColuna(event) {
+      if (!event.currentTarget.contains(event.relatedTarget)) {
+        event.currentTarget.classList.remove('arrastando-sobre');
+      }
+    }
+
+    function soltarCartao(event, destino) {
+      event.preventDefault();
+      event.currentTarget.classList.remove('arrastando-sobre');
+      const id = cartaoArrastado || event.dataTransfer.getData('text/plain');
+      cartaoArrastado = null;
+      if (id) moverCartao(id, destino);
+    }
+
+    // Regras ao mover um cartão: só grava o que for seguro; o que precisa de data abre o formulário.
+    function moverCartao(id, destino) {
+      const c = contratos.find(x => x._id === id);
+      if (!c) return;
+      const origem = estagioKanban(c);
+      if (origem === destino) return;
+      const nomeColuna = COLUNAS_QUADRO[destino].titulo.replace(/^\S+\s/, '');
+
+      // Finalizar
+      if (destino === 5) {
+        const aviso = origem < 4 ? '\n\nAtenção: ainda há etapas anteriores não concluídas.' : '';
+        if (!confirm(`Finalizar a desocupação do contrato ${c.contrato} (${c.locatario})?${aviso}`)) return;
+        atualizarCamposContrato(id, { finalizado: 'sim' })
+          .then(() => { mostrarToast(`✅ ${c.contrato} finalizado!`); carregarDados(); })
+          .catch(erroMover);
+        return;
+      }
+
+      // Reabrir um finalizado
+      if (origem === 5) {
+        if (!confirm(`Reabrir o contrato ${c.contrato} (${c.locatario})? Ele deixará de constar como finalizado.`)) return;
+        atualizarCamposContrato(id, { finalizado: 'nao' })
+          .then(() => { mostrarToast(`↩️ ${c.contrato} reaberto`); carregarDados(); })
+          .catch(erroMover);
+        return;
+      }
+
+      // Para "Reparos" ou "Pronto": marca as chaves como recebidas, se ainda não estiverem
+      if (destino >= 3 && c.statusChaves !== 'recebidas') {
+        atualizarCamposContrato(id, { statusChaves: 'recebidas' })
+          .then(() => {
+            mostrarAlertsChavesRecebidas(c.contrato, c.locatario);
+            if (origem < 2) setTimeout(() => mostrarToast('ℹ️ Chaves registradas. O cartão continua na etapa atual porque faltam datas anteriores.'), 4200);
+            carregarDados();
+          })
+          .catch(erroMover);
+        return;
+      }
+
+      // Voltar para "Aguardando chaves"
+      if (destino === 2 && origem >= 3) {
+        atualizarCamposContrato(id, { statusChaves: 'pendente' })
+          .then(() => { mostrarToast(`↩️ ${c.contrato}: chaves voltaram para pendente`); carregarDados(); })
+          .catch(erroMover);
+        return;
+      }
+
+      // De "Reparos" para "Pronto": é preciso concluir os reparos
+      if (origem === 3 && destino === 4) {
+        mostrarToast('🔧 Conclua os reparos em aberto para liberar o contrato.');
+        abrirModalReparos(id);
+        return;
+      }
+
+      // De "Pronto" para "Reparos": registrar um novo reparo
+      if (origem === 4 && destino === 3) {
+        mostrarToast('🔧 Registre o reparo necessário.');
+        abrirModalReparo(id);
+        return;
+      }
+
+      // Demais movimentos dependem de datas: abre o formulário
+      const mensagens = {
+        1: '📨 Informe a data de comunicação ao inquilino para avançar.',
+        2: '📅 Informe a data da vistoria (hoje ou anterior) para avançar.'
+      };
+      mostrarToast(destino > origem
+        ? (mensagens[destino] || `Atualize o contrato para mover para "${nomeColuna}".`)
+        : 'Para voltar etapas, ajuste as datas no formulário.');
+      abrirModalEditar(id);
+    }
+
+    function erroMover(erro) {
+      console.error('❌ Erro ao mover cartão:', erro);
+      mostrarToast('❌ Não foi possível atualizar o contrato!', true);
+      atualizarSyncStatus('error');
     }
 
     // ========= PRÓXIMAS AÇÕES (V29) =========
@@ -3606,6 +3918,10 @@ ${cfg.observacao ? `<div class="obs">${escaparHTML(cfg.observacao)}</div>` : ''}
     if (localStorage.getItem('darkMode') === 'true') {
       document.body.classList.add('dark-mode');
     }
+
+    try {
+      if (localStorage.getItem('modoVisaoContratos') === 'quadro') definirModoVisao('quadro', false);
+    } catch (e) { /* sem armazenamento */ }
 
     carregarDados();
     // ========= CARREGAR DADOS AUTOMATICAMENTE AO ABRIR A PÁGINA =========
