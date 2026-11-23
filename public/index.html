@@ -703,6 +703,19 @@
     .dias-badge.medio { background: #fff3cd; color: #856404; }
     .dias-badge.alto { background: #f8d7da; color: #721c24; }
     body.dark-mode .etapa { background: #333; }
+
+    /* ===== RELATÓRIOS ===== */
+    .relatorio-periodo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      font-size: 13px;
+      font-weight: bold;
+    }
+    .relatorio-periodo select { min-width: 180px; padding: 7px 10px; font-size: 13px; }
+    .relatorio-periodo-nota { font-weight: normal; font-size: 12px; color: #7f8c8d; }
     body.dark-mode .etapa-rotulo { color: #ccc; }
 
     @media (max-width: 768px) {
@@ -739,7 +752,7 @@
 <body>
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V29 📌 Próximas Ações + Etapas</div>
+    <div class="version-badge">V30 📄 Relatórios renovados</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" data-aba="dashboard" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -883,8 +896,29 @@
     <!-- ABA RELATÓRIOS -->
     <div id="relatorios" class="tab-content">
       <h2 class="section-title">📋 Relatórios</h2>
-      
+
+      <div class="relatorio-periodo">
+        <label for="periodoRelatorio">📆 Período:</label>
+        <select id="periodoRelatorio" onchange="atualizarResumoRelatorios()">
+          <option value="todos">Todo o histórico</option>
+          <option value="mes-atual">Este mês</option>
+          <option value="mes-anterior">Mês passado</option>
+          <option value="30d">Últimos 30 dias</option>
+          <option value="90d">Últimos 90 dias</option>
+          <option value="ano">Este ano</option>
+        </select>
+        <span class="relatorio-periodo-nota">Vale para Chaves Entregues e Imóveis Finalizados</span>
+      </div>
+
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 30px;">
+        <!-- Relatório 0: Em andamento -->
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+          <div style="font-size: 24px; margin-bottom: 10px;">🏠</div>
+          <div style="font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">Desocupações em Andamento</div>
+          <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Etapa atual e dias de cada contrato aberto</div>
+          <button onclick="gerarRelatorioEmAndamento()" style="width: 100%; background: #2c5aa0; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">📄 Gerar PDF</button>
+        </div>
+
         <!-- Relatório 1: Chaves Entregues -->
         <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
           <div style="font-size: 24px; margin-bottom: 10px;">🔑</div>
@@ -905,7 +939,7 @@
         <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
           <div style="font-size: 24px; margin-bottom: 10px;">🔧</div>
           <div style="font-size: 16px; font-weight: bold; color: #2c3e50; margin-bottom: 10px;">Imóveis em Manutenção</div>
-          <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Reparos em andamento</div>
+          <div style="font-size: 13px; color: #7f8c8d; margin-bottom: 15px;">Reparos em aberto, prestadores e valores</div>
           <button onclick="gerarRelatorioImovelManutencao()" style="width: 100%; background: #e74c3c; color: white; padding: 10px; border: none; border-radius: 5px; cursor: pointer;">📄 Gerar PDF</button>
         </div>
 
@@ -930,7 +964,7 @@
             <div style="font-size: 24px; font-weight: bold; color: #27ae60;" id="resumo-finalizados">0</div>
           </div>
           <div style="background: #fff5f0; padding: 15px; border-radius: 5px; border-left: 4px solid #e74c3c;">
-            <div style="font-size: 12px; color: #7f8c8d;">🔧 Em Reparo</div>
+            <div style="font-size: 12px; color: #7f8c8d;">🔧 Em Manutenção</div>
             <div style="font-size: 24px; font-weight: bold; color: #e74c3c;" id="resumo-reparo">0</div>
           </div>
           <div style="background: #fff9f0; padding: 15px; border-radius: 5px; border-left: 4px solid #f39c12;">
@@ -2751,327 +2785,397 @@ Protocolo: REC-DEV-${new Date().getTime()}
     }
 
     // ========= RELATÓRIOS (V25.10) =========
-    function atualizarResumoRelatorios() {
-      const chavasRecebidas = contratos.filter(c => c.statusChaves === 'recebidas').length;
-      const finalizados = contratos.filter(c => c.finalizado === 'sim').length;
-      const emReparo = contratos.filter(c => c.statusImovel === 'em-reparo').length;
-      
-      const agora = new Date();
-      const proximos30dias = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000);
-      const vistoriasProximas = contratos.filter(c => {
-        if (!c.agendamentoVistoria) return false;
-        const dataVistoria = new Date(c.agendamentoVistoria);
-        return dataVistoria >= agora && dataVistoria <= proximos30dias;
-      }).length;
+    // ========= RELATÓRIOS (V30) =========
+    const NOMES_RESPONSAVEL = {
+      'cassio': 'Cássio', 'yuri': 'Yuri', 'cristiane': 'Cristiane',
+      'vistoriador': 'Vistoriador', 'maria': 'Maria', 'outro': 'Outro'
+    };
+    const NOMES_PRIORIDADE = { 'baixa': 'Baixa', 'media': 'Média', 'alta': 'Alta', 'critica': 'Crítica' };
+    const CORES_PRIORIDADE = { 'baixa': '#27ae60', 'media': '#b7950b', 'alta': '#e67e22', 'critica': '#c0392b' };
+    const NOMES_URGENCIA = { 'URGENTE': 'Urgente', 'MEDIA': 'Média', 'PEQUENA': 'Pequena' };
+    const DIAS_SEMANA = ['dom', 'seg', 'ter', 'qua', 'qui', 'sex', 'sáb'];
 
-      document.getElementById('resumo-chaves').textContent = chavasRecebidas;
-      document.getElementById('resumo-finalizados').textContent = finalizados;
-      document.getElementById('resumo-reparo').textContent = emReparo;
-      document.getElementById('resumo-vistoria').textContent = vistoriasProximas;
+    function nomeResponsavel(c) { return NOMES_RESPONSAVEL[c.responsavel] || c.responsavel || '-'; }
+
+    function prioridadeHTML(c) {
+      const p = c.prioridade || 'media';
+      return `<span style="color: ${CORES_PRIORIDADE[p] || '#555'}; font-weight: bold;">● ${escaparHTML(NOMES_PRIORIDADE[p] || p)}</span>`;
+    }
+
+    // Converte a data salva (meia-noite UTC) para a data local correta, sem "voltar um dia"
+    function dataLocal(dataISO) {
+      if (!dataISO) return null;
+      const p = String(dataISO).split('T')[0].split('-');
+      if (p.length !== 3) return null;
+      return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10));
+    }
+
+    function diasEntre(inicioISO, fimISO) {
+      const a = dataLocal(inicioISO), b = dataLocal(fimISO);
+      if (!a || !b) return null;
+      return Math.round((b - a) / 86400000);
+    }
+
+    function media(valores) {
+      const v = valores.filter(x => x !== null && x !== undefined && !isNaN(x));
+      return v.length ? Math.round(v.reduce((s, x) => s + x, 0) / v.length) : null;
+    }
+
+    function formatarMoeda(valor) {
+      return (valor || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+    }
+
+    function getPeriodoRelatorio() {
+      const sel = document.getElementById('periodoRelatorio');
+      const valor = sel ? sel.value : 'todos';
+      const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+      const fimHoje = new Date(hoje); fimHoje.setHours(23, 59, 59, 999);
+      let inicio = null, fim = fimHoje, rotulo = 'Todo o histórico';
+
+      if (valor === 'mes-atual') {
+        inicio = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+        rotulo = 'Este mês';
+      } else if (valor === 'mes-anterior') {
+        inicio = new Date(hoje.getFullYear(), hoje.getMonth() - 1, 1);
+        fim = new Date(hoje.getFullYear(), hoje.getMonth(), 0, 23, 59, 59, 999);
+        rotulo = 'Mês passado';
+      } else if (valor === '30d') {
+        inicio = new Date(hoje); inicio.setDate(inicio.getDate() - 30);
+        rotulo = 'Últimos 30 dias';
+      } else if (valor === '90d') {
+        inicio = new Date(hoje); inicio.setDate(inicio.getDate() - 90);
+        rotulo = 'Últimos 90 dias';
+      } else if (valor === 'ano') {
+        inicio = new Date(hoje.getFullYear(), 0, 1);
+        rotulo = 'Este ano';
+      }
+
+      if (inicio) {
+        const f = d => d.toLocaleDateString('pt-BR');
+        rotulo += ` (${f(inicio)} a ${f(fim)})`;
+      }
+      return { valor, inicio, fim, rotulo };
+    }
+
+    function dentroDoPeriodo(dataISO, periodo) {
+      if (periodo.valor === 'todos') return true;
+      const d = dataLocal(dataISO);
+      return !!d && d >= periodo.inicio && d <= periodo.fim;
+    }
+
+    function contratosEmManutencao() {
+      return contratos.filter(c => reparosPendentes(c).length > 0);
+    }
+
+    function vistoriasProximos30Dias() {
+      return contratos.filter(c => {
+        if (!c.agendamentoVistoria) return false;
+        const d = calcularDiasAte(c.agendamentoVistoria);
+        return d !== null && d >= 0 && d <= 30;
+      }).sort((a, b) => calcularDiasAte(a.agendamentoVistoria) - calcularDiasAte(b.agendamentoVistoria));
+    }
+
+    // Texto da etapa atual (mesma lógica da coluna "Etapas" da tabela)
+    function etapaAtualTexto(c) {
+      if (c.finalizado === 'sim') return 'Finalizado';
+      const etapas = calcularEtapas(c);
+      const atual = etapas.find(e => e.estado !== 'feita') || etapas[etapas.length - 1];
+      return atual.rotulo;
+    }
+
+    function atualizarResumoRelatorios() {
+      const periodo = getPeriodoRelatorio();
+      document.getElementById('resumo-chaves').textContent =
+        contratos.filter(c => c.statusChaves === 'recebidas' && dentroDoPeriodo(c.entregaChaves, periodo)).length;
+      document.getElementById('resumo-finalizados').textContent =
+        contratos.filter(c => c.finalizado === 'sim' && dentroDoPeriodo(c.dataAtualizacao, periodo)).length;
+      document.getElementById('resumo-reparo').textContent = contratosEmManutencao().length;
+      document.getElementById('resumo-vistoria').textContent = vistoriasProximos30Dias().length;
+    }
+
+    // Monta e abre um relatório padronizado para imprimir / salvar em PDF.
+    // linhas: arrays de células já em HTML seguro (use escaparHTML nos textos).
+    function abrirRelatorio(cfg) {
+      const cor = cfg.cor || '#2c5aa0';
+      const geradoEm = new Date().toLocaleString('pt-BR');
+      const resumo = (cfg.resumo || []).map(([rotulo, valor]) => `
+        <div class="box"><div class="box-valor">${valor}</div><div class="box-rotulo">${escaparHTML(rotulo)}</div></div>`).join('');
+
+      const corpo = cfg.linhas.length === 0
+        ? `<tr><td colspan="${cfg.colunas.length}" class="vazio">${escaparHTML(cfg.vazio || 'Nenhum registro encontrado.')}</td></tr>`
+        : cfg.linhas.map(l => `<tr>${l.map(cel => `<td>${cel}</td>`).join('')}</tr>`).join('');
+
+      const html = `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>${escaparHTML(cfg.titulo)} - ${new Date().toLocaleDateString('pt-BR')}</title>
+<style>
+  @page { size: A4 ${cfg.paisagem ? 'landscape' : 'portrait'}; margin: 14mm 12mm; }
+  * { box-sizing: border-box; }
+  body { font-family: Arial, Helvetica, sans-serif; color: #2c3e50; margin: 0; padding: 24px; font-size: 12px; }
+  .barra { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 16px; }
+  .barra button { background: ${cor}; color: #fff; border: none; border-radius: 5px; padding: 9px 16px; font-size: 13px; font-weight: bold; cursor: pointer; }
+  .barra button.sec { background: #95a5a6; }
+  .topo { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 3px solid ${cor}; padding-bottom: 12px; margin-bottom: 16px; }
+  .topo img { max-height: 60px; max-width: 180px; }
+  .empresa { font-size: 11px; color: #7f8c8d; text-transform: uppercase; letter-spacing: 1px; }
+  h1 { font-size: 20px; margin: 4px 0 2px; color: ${cor}; }
+  .desc { font-size: 12px; color: #7f8c8d; }
+  .meta { text-align: right; font-size: 11px; color: #7f8c8d; line-height: 1.6; }
+  .resumo { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+  .box { flex: 1; min-width: 110px; border: 1px solid #e3e8ef; border-top: 3px solid ${cor}; border-radius: 6px; padding: 10px 12px; }
+  .box-valor { font-size: 20px; font-weight: bold; color: ${cor}; }
+  .box-rotulo { font-size: 11px; color: #7f8c8d; margin-top: 2px; }
+  table { width: 100%; border-collapse: collapse; }
+  thead { display: table-header-group; }
+  th { background: ${cor}; color: #fff; text-align: left; padding: 8px; font-size: 11px; }
+  td { padding: 7px 8px; border-bottom: 1px solid #e3e8ef; vertical-align: top; font-size: 11px; }
+  tr { page-break-inside: avoid; }
+  tbody tr:nth-child(even) td { background: #f7f9fb; }
+  .vazio { text-align: center; color: #7f8c8d; padding: 24px; }
+  .sub { color: #7f8c8d; font-size: 10px; }
+  .alerta { color: #c0392b; font-weight: bold; }
+  .obs { margin-top: 14px; font-size: 10px; color: #7f8c8d; }
+  .rodape { margin-top: 18px; padding-top: 8px; border-top: 1px solid #e3e8ef; font-size: 10px; color: #95a5a6; display: flex; justify-content: space-between; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @media print { body { padding: 0; } .barra { display: none; } }
+</style>
+</head>
+<body>
+<div class="barra">
+  <button onclick="window.print()">🖨️ Imprimir / Salvar PDF</button>
+  <button class="sec" onclick="window.close()">Fechar</button>
+</div>
+<div class="topo">
+  <div>
+    ${logoData ? `<img src="${logoData}" alt="Logo">` : '<div class="empresa">Integrativa Desocupação</div>'}
+    <h1>${escaparHTML(cfg.titulo)}</h1>
+    <div class="desc">${escaparHTML(cfg.descricao || '')}</div>
+  </div>
+  <div class="meta">
+    ${cfg.periodo ? `Período: <strong>${escaparHTML(cfg.periodo)}</strong><br>` : ''}
+    Gerado em ${geradoEm}
+  </div>
+</div>
+${resumo ? `<div class="resumo">${resumo}</div>` : ''}
+<table>
+  <thead><tr>${cfg.colunas.map(c => `<th>${escaparHTML(c)}</th>`).join('')}</tr></thead>
+  <tbody>${corpo}</tbody>
+</table>
+${cfg.observacao ? `<div class="obs">${escaparHTML(cfg.observacao)}</div>` : ''}
+<div class="rodape"><span>Integrativa Desocupação · Sistema de Gerenciamento</span><span>${cfg.linhas.length} registro(s)</span></div>
+<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });<\/script>
+</body>
+</html>`;
+
+      const janela = window.open('', '_blank', 'width=1000,height=750');
+      if (!janela) {
+        mostrarToast('❌ O navegador bloqueou a janela do relatório. Permita pop-ups para este site.', true);
+        return;
+      }
+      janela.document.open();
+      janela.document.write(html);
+      janela.document.close();
+    }
+
+    function gerarRelatorioEmAndamento() {
+      const abertos = contratos.filter(c => c.finalizado !== 'sim').map(c => ({
+        c, dias: c.comunicacaoInquilino ? calcularDiasDesde(c.comunicacaoInquilino) : null
+      })).sort((a, b) => (b.dias ?? -1) - (a.dias ?? -1));
+
+      const chavesAtrasadas = abertos.filter(({ c }) =>
+        c.statusChaves !== 'recebidas' && c.entregaChaves && calcularDiasAte(c.entregaChaves) < 0).length;
+
+      abrirRelatorio({
+        titulo: 'Desocupações em Andamento',
+        descricao: 'Contratos ainda não finalizados, do mais antigo para o mais recente',
+        cor: '#2c5aa0',
+        paisagem: true,
+        resumo: [
+          ['Em andamento', abertos.length],
+          ['Há mais de 45 dias', abertos.filter(a => a.dias !== null && a.dias > 45).length],
+          ['Chaves atrasadas', chavesAtrasadas],
+          ['Despejos', abertos.filter(a => a.c.tipoDesocupacao === 'despejo').length],
+          ['Média de dias', media(abertos.map(a => a.dias)) ?? '-']
+        ],
+        colunas: ['Contrato', 'Locatário / Endereço', 'Responsável', 'Prioridade', 'Tipo', 'Etapa atual', 'Dias'],
+        linhas: abertos.map(({ c, dias }) => [
+          `<strong>${escaparHTML(c.contrato)}</strong>`,
+          `${escaparHTML(c.locatario)}<br><span class="sub">${escaparHTML(c.endereco || '-')}</span>`,
+          escaparHTML(nomeResponsavel(c)),
+          prioridadeHTML(c),
+          c.tipoDesocupacao === 'despejo' ? 'Despejo' : 'Comum',
+          escaparHTML(etapaAtualTexto(c)),
+          dias === null ? '<span class="sub">sem comunicação</span>' : `<span class="${dias > 45 ? 'alerta' : ''}">${dias}</span>`
+        ]),
+        vazio: 'Nenhuma desocupação em andamento.',
+        observacao: 'Dias = dias desde a comunicação ao inquilino.'
+      });
     }
 
     function gerarRelatorioChavasEntregues() {
-      const chavasRecebidas = contratos.filter(c => c.statusChaves === 'recebidas');
-      
-      if (chavasRecebidas.length === 0) {
-        mostrarToast('❌ Nenhuma chave recebida ainda!', true);
+      const periodo = getPeriodoRelatorio();
+      const lista = contratos
+        .filter(c => c.statusChaves === 'recebidas' && dentroDoPeriodo(c.entregaChaves, periodo))
+        .sort((a, b) => (dataLocal(b.entregaChaves) || 0) - (dataLocal(a.entregaChaves) || 0));
+
+      if (lista.length === 0) {
+        mostrarToast(`❌ Nenhuma chave recebida no período: ${periodo.rotulo}`, true);
         return;
       }
 
-      const agora = new Date().toLocaleString('pt-BR');
-      const logoHTML = getLogoHTML();
-      const html = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-body { font-family: Arial, sans-serif; padding: 20px; }
-.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #3498db; padding-bottom: 15px; }
-.logo { text-align: center; margin-bottom: 20px; }
-.titulo { font-size: 24px; font-weight: bold; color: #3498db; }
-.subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-th { background: #3498db; color: white; padding: 12px; text-align: left; }
-td { padding: 10px; border-bottom: 1px solid #ecf0f1; }
-tr:nth-child(even) { background: #f9f9f9; }
-.total { font-weight: bold; background: #ecf0f1; }
-</style>
-</head>
-<body>
-<div class="logo">
-  ${logoHTML}
-</div>
-<div class="header">
-  <div class="titulo">🔑 RELATÓRIO DE CHAVES ENTREGUES</div>
-  <div class="subtitulo">Locatários que entregaram chaves</div>
-  <div class="subtitulo">${agora}</div>
-</div>
+      const tempos = lista.map(c => diasEntre(c.comunicacaoInquilino, c.entregaChaves));
 
-<table>
-  <thead>
-    <tr>
-      <th>Contrato</th>
-      <th>Locatário</th>
-      <th>Endereço</th>
-      <th>Data Entrega</th>
-      <th>Status</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${chavasRecebidas.map(c => `
-      <tr>
-        <td>${c.contrato}</td>
-        <td>${c.locatario}</td>
-        <td>${c.endereco}</td>
-        <td>${c.entregaChaves ? new Date(c.entregaChaves).toLocaleDateString('pt-BR') : 'Não informado'}</td>
-        <td>✅ Recebidas</td>
-      </tr>
-    `).join('')}
-  </tbody>
-</table>
-
-<div class="total" style="margin-top: 20px; padding: 12px; text-align: center;">
-  Total de Contratos com Chaves Entregues: <strong>${chavasRecebidas.length}</strong>
-</div>
-</body>
-</html>
-      `;
-
-      const janela = window.open('', '', 'width=900,height=700');
-      janela.document.write(html);
-      janela.document.close();
-      setTimeout(() => janela.print(), 250);
+      abrirRelatorio({
+        titulo: 'Chaves Entregues',
+        descricao: 'Locatários que já entregaram as chaves',
+        cor: '#2980b9',
+        periodo: periodo.rotulo,
+        resumo: [
+          ['Chaves recebidas', lista.length],
+          ['Tempo médio até a entrega', media(tempos) !== null ? `${media(tempos)} dias` : '-'],
+          ['Total de chaves', lista.reduce((s, c) => s + (c.quantidadeChaves || 0), 0)]
+        ],
+        colunas: ['Data entrega', 'Contrato', 'Locatário / Endereço', 'Responsável', 'Qtd. chaves', 'Dias desde a comunicação'],
+        linhas: lista.map((c, i) => [
+          `<strong>${formatarDataCompleta(c.entregaChaves) === '-' ? 'Não informada' : formatarDataCompleta(c.entregaChaves)}</strong>`,
+          escaparHTML(c.contrato),
+          `${escaparHTML(c.locatario)}<br><span class="sub">${escaparHTML(c.endereco || '-')}</span>`,
+          escaparHTML(nomeResponsavel(c)),
+          c.quantidadeChaves || '-',
+          tempos[i] !== null ? tempos[i] : '-'
+        ])
+      });
     }
 
     function gerarRelatorioImovelFinalizados() {
-      const finalizados = contratos.filter(c => c.finalizado === 'sim');
-      
-      if (finalizados.length === 0) {
-        mostrarToast('❌ Nenhum imóvel finalizado ainda!', true);
+      const periodo = getPeriodoRelatorio();
+      const lista = contratos
+        .filter(c => c.finalizado === 'sim' && dentroDoPeriodo(c.dataAtualizacao, periodo))
+        .sort((a, b) => new Date(b.dataAtualizacao || 0) - new Date(a.dataAtualizacao || 0));
+
+      if (lista.length === 0) {
+        mostrarToast(`❌ Nenhum imóvel finalizado no período: ${periodo.rotulo}`, true);
         return;
       }
 
-      const agora = new Date().toLocaleString('pt-BR');
-      const logoHTML = getLogoHTML();
-      const html = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-body { font-family: Arial, sans-serif; padding: 20px; }
-.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #27ae60; padding-bottom: 15px; }
-.logo { text-align: center; margin-bottom: 20px; }
-.titulo { font-size: 24px; font-weight: bold; color: #27ae60; }
-.subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-th { background: #27ae60; color: white; padding: 12px; text-align: left; }
-td { padding: 10px; border-bottom: 1px solid #ecf0f1; }
-tr:nth-child(even) { background: #f9f9f9; }
-.total { font-weight: bold; background: #ecf0f1; }
-</style>
-</head>
-<body>
-<div class="logo">
-  ${logoHTML}
-</div>
-<div class="header">
-  <div class="titulo">✅ RELATÓRIO DE IMÓVEIS FINALIZADOS</div>
-  <div class="subtitulo">Desocupações 100% concluídas</div>
-  <div class="subtitulo">${agora}</div>
-</div>
+      const duracoes = lista.map(c => diasEntre(c.comunicacaoInquilino, c.dataAtualizacao));
+      const statusMap = {
+        'em-desocupacao': 'Em desocupação', 'em-reparo': 'Em reparo', 'pronto-para-aluguel': 'Pronto para alugar',
+        'alugado': 'Alugado', 'bloqueado': 'Bloqueado'
+      };
 
-<table>
-  <thead>
-    <tr>
-      <th>Contrato</th>
-      <th>Locatário</th>
-      <th>Endereço</th>
-      <th>Data Finalização</th>
-      <th>Responsável</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${finalizados.map(c => `
-      <tr>
-        <td>${c.contrato}</td>
-        <td>${c.locatario}</td>
-        <td>${c.endereco}</td>
-        <td>${c.dataAtualizacao ? new Date(c.dataAtualizacao).toLocaleDateString('pt-BR') : 'Não informado'}</td>
-        <td>${c.responsavel || '-'}</td>
-      </tr>
-    `).join('')}
-  </tbody>
-</table>
-
-<div class="total" style="margin-top: 20px; padding: 12px; text-align: center;">
-  Total de Imóveis Finalizados: <strong>${finalizados.length}</strong>
-</div>
-</body>
-</html>
-      `;
-
-      const janela = window.open('', '', 'width=900,height=700');
-      janela.document.write(html);
-      janela.document.close();
-      setTimeout(() => janela.print(), 250);
+      abrirRelatorio({
+        titulo: 'Imóveis Finalizados',
+        descricao: 'Desocupações concluídas',
+        cor: '#27ae60',
+        periodo: periodo.rotulo,
+        resumo: [
+          ['Finalizados', lista.length],
+          ['Duração média', media(duracoes) !== null ? `${media(duracoes)} dias` : '-'],
+          ['Despejos', lista.filter(c => c.tipoDesocupacao === 'despejo').length],
+          ['Já alugados', lista.filter(c => c.statusImovel === 'alugado').length]
+        ],
+        colunas: ['Contrato', 'Locatário / Endereço', 'Tipo', 'Responsável', 'Situação do imóvel', 'Duração', 'Última atualização'],
+        linhas: lista.map((c, i) => [
+          `<strong>${escaparHTML(c.contrato)}</strong>`,
+          `${escaparHTML(c.locatario)}<br><span class="sub">${escaparHTML(c.endereco || '-')}</span>`,
+          c.tipoDesocupacao === 'despejo' ? 'Despejo' : 'Comum',
+          escaparHTML(nomeResponsavel(c)),
+          escaparHTML(statusMap[c.statusImovel] || '-'),
+          duracoes[i] !== null ? `${duracoes[i]} dias` : '-',
+          c.dataAtualizacao ? new Date(c.dataAtualizacao).toLocaleDateString('pt-BR') : '-'
+        ]),
+        observacao: 'Duração = da comunicação ao inquilino até a última atualização do contrato. O sistema ainda não grava a data exata da finalização, por isso é usada a data da última atualização.'
+      });
     }
 
     function gerarRelatorioImovelManutencao() {
-      const emReparo = contratos.filter(c => c.statusImovel === 'em-reparo');
-      
-      if (emReparo.length === 0) {
-        mostrarToast('❌ Nenhum imóvel em manutenção!', true);
+      const imoveis = contratosEmManutencao();
+
+      if (imoveis.length === 0) {
+        mostrarToast('❌ Nenhum imóvel com reparo em aberto!', true);
         return;
       }
 
-      const agora = new Date().toLocaleString('pt-BR');
-      const logoHTML = getLogoHTML();
-      const html = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-body { font-family: Arial, sans-serif; padding: 20px; }
-.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #e74c3c; padding-bottom: 15px; }
-.logo { text-align: center; margin-bottom: 20px; }
-.titulo { font-size: 24px; font-weight: bold; color: #e74c3c; }
-.subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-th { background: #e74c3c; color: white; padding: 12px; text-align: left; }
-td { padding: 10px; border-bottom: 1px solid #ecf0f1; }
-tr:nth-child(even) { background: #f9f9f9; }
-.total { font-weight: bold; background: #ecf0f1; }
-</style>
-</head>
-<body>
-<div class="logo">
-  ${logoHTML}
-</div>
-<div class="header">
-  <div class="titulo">🔧 RELATÓRIO DE IMÓVEIS EM MANUTENÇÃO</div>
-  <div class="subtitulo">Reparos em andamento</div>
-  <div class="subtitulo">${agora}</div>
-</div>
+      const ordemUrgencia = { 'URGENTE': 0, 'MEDIA': 1, 'PEQUENA': 2 };
+      const linhas = [];
+      let totalReparos = 0, urgentes = 0, valorTotal = 0;
 
-<table>
-  <thead>
-    <tr>
-      <th>Contrato</th>
-      <th>Locatário</th>
-      <th>Endereço</th>
-      <th>Prioridade</th>
-      <th>Reparos</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${emReparo.map(c => `
-      <tr>
-        <td>${c.contrato}</td>
-        <td>${c.locatario}</td>
-        <td>${c.endereco}</td>
-        <td>${c.prioridade || '-'}</td>
-        <td>${c.reparos ? c.reparos.length : 0} reparo(s)</td>
-      </tr>
-    `).join('')}
-  </tbody>
-</table>
+      imoveis.forEach(c => {
+        reparosPendentes(c)
+          .sort((a, b) => (ordemUrgencia[a.urgencia] ?? 9) - (ordemUrgencia[b.urgencia] ?? 9))
+          .forEach(r => {
+            totalReparos++;
+            if (r.urgencia === 'URGENTE') urgentes++;
+            valorTotal += Number(r.valorServico) || 0;
+            const prazo = r.dataLimite ? calcularDiasAte(r.dataLimite) : null;
+            const prestador = r.prestadorNome
+              ? `${escaparHTML(r.prestadorNome)}${r.prestadorTelefone ? `<br><span class="sub">${escaparHTML(r.prestadorTelefone)}</span>` : ''}`
+              : '<span class="sub">não definido</span>';
+            linhas.push([
+              `<strong>${escaparHTML(c.contrato)}</strong><br><span class="sub">${escaparHTML(c.endereco || '-')}</span>`,
+              escaparHTML(r.descricao || '-'),
+              `<span class="${r.urgencia === 'URGENTE' ? 'alerta' : ''}">${escaparHTML(NOMES_URGENCIA[r.urgencia] || r.urgencia || '-')}</span>`,
+              prestador,
+              r.dataLimite
+                ? `${formatarDataCompleta(r.dataLimite)}${prazo !== null && prazo < 0 ? `<br><span class="alerta">atrasado ${Math.abs(prazo)}d</span>` : ''}`
+                : '-',
+              r.valorServico ? formatarMoeda(Number(r.valorServico)) : '-'
+            ]);
+          });
+      });
 
-<div class="total" style="margin-top: 20px; padding: 12px; text-align: center;">
-  Total de Imóveis em Manutenção: <strong>${emReparo.length}</strong>
-</div>
-</body>
-</html>
-      `;
-
-      const janela = window.open('', '', 'width=900,height=700');
-      janela.document.write(html);
-      janela.document.close();
-      setTimeout(() => janela.print(), 250);
+      abrirRelatorio({
+        titulo: 'Imóveis em Manutenção',
+        descricao: 'Reparos em aberto, do mais urgente para o menos urgente',
+        cor: '#c0392b',
+        paisagem: true,
+        resumo: [
+          ['Imóveis', imoveis.length],
+          ['Reparos em aberto', totalReparos],
+          ['Urgentes', urgentes],
+          ['Valor previsto', formatarMoeda(valorTotal)]
+        ],
+        colunas: ['Imóvel', 'Reparo', 'Urgência', 'Prestador', 'Prazo', 'Valor'],
+        linhas
+      });
     }
 
     function gerarRelatorioVistoriaProximas() {
-      const agora = new Date();
-      const proximos30dias = new Date(agora.getTime() + 30 * 24 * 60 * 60 * 1000);
-      
-      const vistoriasProximas = contratos.filter(c => {
-        if (!c.agendamentoVistoria) return false;
-        const dataVistoria = new Date(c.agendamentoVistoria);
-        return dataVistoria >= agora && dataVistoria <= proximos30dias;
-      }).sort((a, b) => new Date(a.agendamentoVistoria) - new Date(b.agendamentoVistoria));
+      const lista = vistoriasProximos30Dias();
 
-      if (vistoriasProximas.length === 0) {
+      if (lista.length === 0) {
         mostrarToast('❌ Nenhuma vistoria agendada para os próximos 30 dias!', true);
         return;
       }
 
-      const agoraStr = new Date().toLocaleString('pt-BR');
-      const logoHTML = getLogoHTML();
-      const html = `
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<style>
-body { font-family: Arial, sans-serif; padding: 20px; }
-.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #f39c12; padding-bottom: 15px; }
-.logo { text-align: center; margin-bottom: 20px; }
-.titulo { font-size: 24px; font-weight: bold; color: #f39c12; }
-.subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
-table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-th { background: #f39c12; color: white; padding: 12px; text-align: left; }
-td { padding: 10px; border-bottom: 1px solid #ecf0f1; }
-tr:nth-child(even) { background: #f9f9f9; }
-.total { font-weight: bold; background: #ecf0f1; }
-.urgente { color: #e74c3c; font-weight: bold; }
-</style>
-</head>
-<body>
-<div class="logo">
-  ${logoHTML}
-</div>
-<div class="header">
-  <div class="titulo">📅 RELATÓRIO DE VISTORIAS PRÓXIMAS</div>
-  <div class="subtitulo">Agendadas para os próximos 30 dias</div>
-  <div class="subtitulo">${agoraStr}</div>
-</div>
-
-<table>
-  <thead>
-    <tr>
-      <th>Contrato</th>
-      <th>Locatário</th>
-      <th>Endereço</th>
-      <th>Data Vistoria</th>
-      <th>Prioridade</th>
-    </tr>
-  </thead>
-  <tbody>
-    ${vistoriasProximas.map(c => `
-      <tr>
-        <td>${c.contrato}</td>
-        <td>${c.locatario}</td>
-        <td>${c.endereco}</td>
-        <td><strong>${new Date(c.agendamentoVistoria).toLocaleDateString('pt-BR')}</strong></td>
-        <td>${c.prioridade ? '🔴 ' + c.prioridade.toUpperCase() : '-'}</td>
-      </tr>
-    `).join('')}
-  </tbody>
-</table>
-
-<div class="total" style="margin-top: 20px; padding: 12px; text-align: center;">
-  Total de Vistorias Agendadas (30 dias): <strong>${vistoriasProximas.length}</strong>
-</div>
-</body>
-</html>
-      `;
-
-      const janela = window.open('', '', 'width=900,height=700');
-      janela.document.write(html);
-      janela.document.close();
-      setTimeout(() => janela.print(), 250);
+      abrirRelatorio({
+        titulo: 'Vistorias Próximas',
+        descricao: 'Vistorias agendadas de hoje até os próximos 30 dias',
+        cor: '#d68910',
+        paisagem: true,
+        resumo: [
+          ['Vistorias (30 dias)', lista.length],
+          ['Hoje', lista.filter(c => calcularDiasAte(c.agendamentoVistoria) === 0).length],
+          ['Próximos 7 dias', lista.filter(c => calcularDiasAte(c.agendamentoVistoria) <= 7).length]
+        ],
+        colunas: ['Data', 'Quando', 'Contrato', 'Locatário / Endereço', 'Vistoriador', 'Responsável', 'Prioridade'],
+        linhas: lista.map(c => {
+          const d = calcularDiasAte(c.agendamentoVistoria);
+          const data = dataLocal(c.agendamentoVistoria);
+          return [
+            `<strong>${formatarDataCompleta(c.agendamentoVistoria)}</strong><br><span class="sub">${DIAS_SEMANA[data.getDay()]}</span>`,
+            `<span class="${d <= 1 ? 'alerta' : ''}">${escaparHTML(textoPrazo(d))}</span>`,
+            escaparHTML(c.contrato),
+            `${escaparHTML(c.locatario)}<br><span class="sub">${escaparHTML(c.endereco || '-')}</span>`,
+            escaparHTML(c.nomeVistoriador || '-'),
+            escaparHTML(nomeResponsavel(c)),
+            prioridadeHTML(c)
+          ];
+        })
+      });
     }
 
     function ordenarContratos(criterio) {
@@ -3374,7 +3478,7 @@ tr:nth-child(even) { background: #f9f9f9; }
               <th style="border: 1px solid #999; padding: 8px; text-align: left;">Comunicação</th>
               <th style="border: 1px solid #999; padding: 8px; text-align: left;">Vistoria</th>
               <th style="border: 1px solid #999; padding: 8px; text-align: left;">Ent.Chaves</th>
-              <th style="border: 1px solid #999; padding: 8px; text-align: left;">Status</th>
+              <th style="border: 1px solid #999; padding: 8px; text-align: left;">Etapa atual</th>
               <th style="border: 1px solid #999; padding: 8px; text-align: left;">Reparos</th>
             </tr>
           </thead>
@@ -3385,12 +3489,12 @@ tr:nth-child(even) { background: #f9f9f9; }
               const reparosTxt = totalReps > 0 ? totalReps + ' rep.' : 'Nenhum';
               return `
                 <tr style="background: ${contratos.indexOf(c) % 2 === 0 ? '#f9f9f9' : 'white'};">
-                  <td style="border: 1px solid #ddd; padding: 6px 8px;">${c.contrato}</td>
-                  <td style="border: 1px solid #ddd; padding: 6px 8px;">${c.locatario}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px 8px;">${escaparHTML(c.contrato)}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px 8px;">${escaparHTML(c.locatario)}</td>
                   <td style="border: 1px solid #ddd; padding: 6px 8px;">${formatarDataCompleta(c.comunicacaoInquilino)}</td>
                   <td style="border: 1px solid #ddd; padding: 6px 8px;">${formatarDataCompleta(c.agendamentoVistoria)}</td>
                   <td style="border: 1px solid #ddd; padding: 6px 8px;">${formatarDataCompleta(c.entregaChaves)}</td>
-                  <td style="border: 1px solid #ddd; padding: 6px 8px;">${c.statusChaves === 'recebidas' ? 'OK' : 'Pendente'}</td>
+                  <td style="border: 1px solid #ddd; padding: 6px 8px;">${escaparHTML(etapaAtualTexto(c))}</td>
                   <td style="border: 1px solid #ddd; padding: 6px 8px;">${reparosTxt}</td>
                 </tr>
               `;
@@ -3402,7 +3506,8 @@ tr:nth-child(even) { background: #f9f9f9; }
       const pdfHTML = `
         <div style="background: white; padding: 40px; font-family: Arial, sans-serif; font-size: 11pt; color: #333;">
           <div style="border-bottom: 3px solid #2c5aa0; padding-bottom: 15px; margin-bottom: 30px; text-align: center;">
-            <h1 style="font-size: 24pt; color: #2c5aa0; margin-bottom: 5px;">🏢 Integrativa Desocupação</h1>
+            ${logoData ? `<img src="${logoData}" style="max-height: 60px; max-width: 180px; margin-bottom: 8px;">` : ''}
+            <h1 style="font-size: 24pt; color: #2c5aa0; margin-bottom: 5px;">Integrativa Desocupação</h1>
             <p style="font-size: 9pt; color: #666; margin: 0;">Relatório de Desocupações e Manutenção</p>
             <p style="font-size: 9pt; color: #666; margin: 0;">Data: ${dataFormatada}</p>
           </div>
@@ -3431,7 +3536,7 @@ tr:nth-child(even) { background: #f9f9f9; }
           ${tabelaHTML}
 
           <p style="margin-top: 40px; font-size: 8pt; color: #999; text-align: center;">
-            Relatório gerado automaticamente pelo Sistema Integrativa Desocupação V25.5
+            Relatório gerado em ${new Date().toLocaleString('pt-BR')} · Sistema Integrativa Desocupação
           </p>
         </div>
       `;
