@@ -27,6 +27,7 @@ const contractSchema = new mongoose.Schema({
   dataDevolucaoChaves: Date,
   statusChaves: { type: String, enum: ['pendente', 'recebidas', 'nao-recebidas'], default: 'pendente' },
   finalizado: { type: String, enum: ['sim', 'nao'], default: 'nao' },
+  dataFinalizacao: Date, // gravada automaticamente quando o contrato é finalizado
   nomeVistoriador: String,
   quantidadeChaves: { type: Number, default: 2 },
   responsavel: String,
@@ -109,6 +110,7 @@ app.post('/api/contracts', async (req, res) => {
       dataDevolucaoChaves: req.body.dataDevolucaoChaves,
       statusChaves: req.body.statusChaves || 'pendente',
       finalizado: req.body.finalizado || 'nao',
+      dataFinalizacao: req.body.finalizado === 'sim' ? new Date() : undefined,
       responsavel: req.body.responsavel,
       prioridade: req.body.prioridade || 'media',
       statusImovel: req.body.statusImovel || 'em-desocupacao',
@@ -137,7 +139,14 @@ app.put('/api/contracts/:id', async (req, res) => {
     contrato.dataRetiradaChaves = req.body.dataRetiradaChaves || contrato.dataRetiradaChaves;
     contrato.dataDevolucaoChaves = req.body.dataDevolucaoChaves || contrato.dataDevolucaoChaves;
     contrato.statusChaves = req.body.statusChaves || contrato.statusChaves;
+    // Data de finalização: grava quando passa para "sim" e limpa se voltar para "nao"
+    const estavaFinalizado = contrato.finalizado === 'sim';
     contrato.finalizado = req.body.finalizado || contrato.finalizado;
+    if (contrato.finalizado === 'sim' && !estavaFinalizado) {
+      contrato.dataFinalizacao = new Date();
+    } else if (contrato.finalizado !== 'sim') {
+      contrato.dataFinalizacao = undefined;
+    }
     contrato.responsavel = req.body.responsavel || contrato.responsavel;
     contrato.prioridade = req.body.prioridade || contrato.prioridade;
     contrato.statusImovel = req.body.statusImovel || contrato.statusImovel;
