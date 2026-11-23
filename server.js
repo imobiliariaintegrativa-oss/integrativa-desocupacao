@@ -51,11 +51,32 @@ const contractSchema = new mongoose.Schema({
     dataDevolucaoChaves: Date,
     valorServico: Number
   }],
+  // Rescisão (V33): ao finalizar a desocupação, o contrato é encaminhado ao administrativo
+  rescisao: {
+    encaminhadoEm: Date,
+    responsavel: String,
+    transferenciaContas: { type: Boolean, default: false }, // Transferência de água e energia
+    calculoDebitos: { type: Boolean, default: false },
+    descontoReparos: { type: Boolean, default: false },
+    caucao: { type: Boolean, default: false },              // Caução / garantia
+    termoAssinado: { type: Boolean, default: false },       // Termo de rescisão assinado
+    observacoes: String,
+    concluidaEm: Date
+  },
   dataCriacao: { type: Date, default: Date.now },
   dataAtualizacao: { type: Date, default: Date.now }
 });
 
 const Contract = mongoose.model('Contract', contractSchema);
+
+const ETAPAS_RESCISAO = ['transferenciaContas', 'calculoDebitos', 'descontoReparos', 'caucao', 'termoAssinado'];
+
+// Grava/limpa a data de conclusão conforme todas as etapas estejam marcadas
+function atualizarConclusaoRescisao(contrato) {
+  const todas = ETAPAS_RESCISAO.every(k => contrato.get(`rescisao.${k}`) === true);
+  if (todas && !contrato.get('rescisao.concluidaEm')) contrato.set('rescisao.concluidaEm', new Date());
+  if (!todas) contrato.set('rescisao.concluidaEm', undefined);
+}
 
 // CONECTAR MONGODB
 mongoose.connect(process.env.MONGODB_URI)
@@ -111,6 +132,7 @@ app.post('/api/contracts', async (req, res) => {
       statusChaves: req.body.statusChaves || 'pendente',
       finalizado: req.body.finalizado || 'nao',
       dataFinalizacao: req.body.finalizado === 'sim' ? new Date() : undefined,
+      rescisao: req.body.finalizado === 'sim' ? { encaminhadoEm: new Date() } : undefined,
       responsavel: req.body.responsavel,
       prioridade: req.body.prioridade || 'media',
       statusImovel: req.body.statusImovel || 'em-desocupacao',
@@ -144,6 +166,10 @@ app.put('/api/contracts/:id', async (req, res) => {
     contrato.finalizado = req.body.finalizado || contrato.finalizado;
     if (contrato.finalizado === 'sim' && !estavaFinalizado) {
       contrato.dataFinalizacao = new Date();
+      // Encaminha ao administrativo para a rescisão (mantém a data se já tinha sido encaminhado)
+      if (!contrato.get('rescisao.encaminhadoEm')) {
+        contrato.set('rescisao.encaminhadoEm', new Date());
+      }
     } else if (contrato.finalizado !== 'sim') {
       contrato.dataFinalizacao = undefined;
     }
@@ -151,6 +177,35 @@ app.put('/api/contracts/:id', async (req, res) => {
     contrato.prioridade = req.body.prioridade || contrato.prioridade;
     contrato.statusImovel = req.body.statusImovel || contrato.statusImovel;
     contrato.dataDisponivelAluguel = req.body.dataDisponivelAluguel || contrato.dataDisponivelAluguel;
+    contrato.dataAtualizacao = new Date();
+
+    await contrato.save();
+    res.json({ sucesso: true, contrato });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// RESCISÃO (V33) - encaminhar ao administrativo e atualizar o checklist
+// Corpo aceito: { encaminhar: true, responsavel, observacoes, transferenciaContas, calculoDebitos,
+//                 descontoReparos, caucao, termoAssinado }
+app.put('/api/contracts/:id/rescisao', async (req, res) => {
+  try {
+    const contrato = await Contract.findById(req.params.id);
+    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
+    if (contrato.finalizado !== 'sim') {
+      return res.status(400).json({ sucesso: false, erro: 'Finalize a desocupação antes de encaminhar a rescisão' });
+    }
+
+    if (!contrato.get('rescisao.encaminhadoEm')) {
+      contrato.set('rescisao.encaminhadoEm', new Date());
+    }
+    if (req.body.responsavel !== undefined) contrato.set('rescisao.responsavel', String(req.body.responsavel).trim());
+    if (req.body.observacoes !== undefined) contrato.set('rescisao.observacoes', String(req.body.observacoes));
+    ETAPAS_RESCISAO.forEach(k => {
+      if (typeof req.body[k] === 'boolean') contrato.set(`rescisao.${k}`, req.body[k]);
+    });
+    atualizarConclusaoRescisao(contrato);
     contrato.dataAtualizacao = new Date();
 
     await contrato.save();
