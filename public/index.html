@@ -716,7 +716,7 @@
 
     .quadro {
       display: grid;
-      grid-template-columns: repeat(7, minmax(210px, 1fr));
+      grid-template-columns: repeat(8, minmax(205px, 1fr));
       gap: 12px;
       overflow-x: auto;
       padding-bottom: 8px;
@@ -837,6 +837,45 @@
     .tag-inativo { color: #c0392b; font-weight: bold; }
     body.dark-mode .usuarios-painel { background: #2f2f2f; }
     body.dark-mode .usuarios-painel h3 { color: #ecf0f1; }
+
+    /* ===== ORÇAMENTOS (V36) ===== */
+    .modal-content.modal-largo { max-width: 820px; max-height: 92vh; overflow-y: auto; }
+    .orc-secao { border: 1px solid #e3e8ef; border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; }
+    .orc-secao-titulo { font-weight: bold; font-size: 14px; margin-bottom: 8px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .orc-linha { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+    .orc-linha input, .orc-linha select { flex: 1; min-width: 130px; padding: 8px 10px; font-size: 13px; }
+    .orc-secao textarea, .orc-form > input { width: 100%; min-width: 0; margin-bottom: 8px; padding: 8px 10px; font-size: 13px; }
+    .orc-secao button { font-size: 13px; padding: 8px 12px; }
+    .orc-rotulo { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #555; }
+    .orc-dica { font-size: 12px; color: #7f8c8d; margin-top: 6px; }
+    .orc-alerta { color: #c0392b; font-size: 12px; }
+    .orc-ok { color: #27ae60; font-size: 12px; }
+    .orc-vazio { font-size: 13px; color: #95a5a6; padding: 6px 0 10px; }
+    .orc-item { border: 1px solid #e3e8ef; border-left: 4px solid #bdc3c7; border-radius: 6px; padding: 8px 10px; margin-bottom: 8px; font-size: 13px; }
+    .orc-item.escolhido { border-left-color: #f1c40f; background: #fffbea; }
+    .orc-item-topo { display: flex; justify-content: space-between; gap: 8px; }
+    .orc-valor { font-weight: bold; color: var(--primary); white-space: nowrap; }
+    .orc-item-detalhe { font-size: 12px; color: #666; margin-top: 2px; }
+    .orc-item-acoes { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px; font-size: 12px; }
+    .orc-item-acoes button, .orc-botao-arquivo { font-size: 11px; padding: 4px 8px; }
+    .orc-botao-arquivo { background: var(--primary); color: #fff; border-radius: 5px; cursor: pointer; font-weight: bold; }
+    .orc-botao-arquivo input { display: none; }
+    .orc-sem-arquivo { color: #c0392b; }
+    .orc-excluir { background: #e74c3c; }
+    .orc-form { border-top: 1px dashed #d5dbe3; padding-top: 10px; margin-top: 4px; }
+    .orc-form #orc-novo-arquivo-campo, .orc-form #orc-novo-link-campo { margin-bottom: 8px; }
+    .orc-form #orc-novo-link-campo input { width: 100%; min-width: 0; }
+    .cartao-info { font-size: 11px; color: #555; margin-top: 3px; }
+    .cartao-info.alerta { color: #c0392b; font-weight: bold; }
+    .cartao-info.ok { color: #27ae60; }
+    .rescisao-orcamentos { margin-bottom: 12px; font-size: 12px; }
+    .rescisao-orc-titulo { font-weight: bold; margin-bottom: 4px; }
+    .rescisao-orc { padding: 3px 0; }
+    .rescisao-orc.escolhido { font-weight: bold; }
+    body.dark-mode .orc-secao, body.dark-mode .orc-item { border-color: #4a4a4a; }
+    body.dark-mode .orc-item.escolhido { background: #3a3520; }
+    body.dark-mode .cartao-info { color: #ccc; }
+    body.dark-mode .orc-rotulo, body.dark-mode .orc-item-detalhe { color: #bbb; }
 
     /* ===== RESCISÃO (V33) ===== */
     .rescisao-cabecalho {
@@ -965,7 +1004,7 @@
 
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V35 🔧 Reparos no quadro</div>
+    <div class="version-badge">V36 💰 Orçamentos</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" data-aba="dashboard" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -1663,11 +1702,108 @@
     </div>
   </div>
 
+  <!-- MODAL: ORÇAMENTOS E ENCAMINHAMENTO (V36) -->
+  <div id="modalOrcamentos" class="modal">
+    <div class="modal-content modal-largo">
+      <div class="modal-header">💰 Orçamentos e encaminhamento</div>
+      <div id="orcCabecalho" class="rescisao-cabecalho"></div>
+
+      <!-- Garantia -->
+      <div class="orc-secao">
+        <div class="orc-secao-titulo">🛡️ Garantia da locação</div>
+        <div class="orc-linha">
+          <select id="orc-garantia-tipo" onchange="preencherSugestoesEmpresa('listaEmpresasGarantia', this.value)">
+            <option value="">Não informada</option>
+            <option value="seguro-fianca">Seguro-fiança</option>
+            <option value="garantidora">Garantidora</option>
+            <option value="caucao">Caução</option>
+            <option value="fiador">Fiador</option>
+            <option value="titulo">Título de capitalização</option>
+            <option value="sem-garantia">Sem garantia</option>
+          </select>
+          <input type="text" id="orc-garantia-empresa" list="listaEmpresasGarantia" placeholder="Empresa (ex.: Porto Seguro, Loft)">
+          <datalist id="listaEmpresasGarantia"></datalist>
+          <button type="button" onclick="salvarGarantia()">💾 Salvar</button>
+        </div>
+      </div>
+
+      <!-- Modelo -->
+      <div class="orc-secao">
+        <div class="orc-secao-titulo">📝 Modelo para o prestador</div>
+        <label for="orc-servicos" class="orc-rotulo">Serviços a orçar (um por linha)</label>
+        <textarea id="orc-servicos" rows="3" placeholder="Ex.: Pintura completa da sala e dos quartos&#10;Troca da torneira da cozinha"></textarea>
+        <button type="button" onclick="gerarModeloOrcamento()">📝 Gerar modelo de orçamento (Word)</button>
+        <div class="orc-dica">O prestador passa o modelo para o papel timbrado dele, preenche os valores e assina.</div>
+      </div>
+
+      <!-- Orçamentos -->
+      <div class="orc-secao">
+        <div class="orc-secao-titulo">💰 Orçamentos recebidos <span id="orcResumo"></span></div>
+        <div id="orcLista"></div>
+        <form class="orc-form" onsubmit="adicionarOrcamento(event)">
+          <div class="orc-linha">
+            <input type="text" id="orc-prestador" placeholder="Prestador *" required>
+            <input type="text" id="orc-telefone" placeholder="Telefone">
+            <input type="number" id="orc-valor" placeholder="Valor (R$)" min="0" step="0.01">
+            <input type="date" id="orc-validade" title="Validade do orçamento">
+          </div>
+          <input type="text" id="orc-descricao" placeholder="O que o orçamento inclui">
+          <div id="orc-novo-arquivo-campo"><label class="orc-rotulo">Arquivo assinado (PDF ou foto) — vai para o Google Drive</label><input type="file" id="orc-arquivo" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx"></div>
+          <div id="orc-novo-link-campo"><input type="url" id="orc-link" placeholder="Link do arquivo (ex.: compartilhamento do Google Drive)"></div>
+          <button type="submit" class="btn-success">➕ Adicionar orçamento</button>
+          <div class="orc-dica" id="orcDicaDrive"></div>
+        </form>
+      </div>
+
+      <!-- Encaminhamento -->
+      <div class="orc-secao">
+        <div class="orc-secao-titulo">📨 Encaminhamento dos orçamentos</div>
+        <div class="orc-linha">
+          <select id="enc-destino" onchange="preencherSugestoesEmpresa('listaEmpresasEncaminhamento', this.value)">
+            <option value="">Para quem?</option>
+            <option value="seguradora">Seguradora</option>
+            <option value="garantidora">Garantidora</option>
+            <option value="juridico">Jurídico</option>
+            <option value="proprietario">Proprietário</option>
+          </select>
+          <input type="text" id="enc-empresa" list="listaEmpresasEncaminhamento" placeholder="Empresa / nome">
+          <datalist id="listaEmpresasEncaminhamento"></datalist>
+          <input type="date" id="enc-enviado" title="Data de envio">
+        </div>
+        <div class="orc-linha">
+          <select id="enc-situacao">
+            <option value="">Situação</option>
+            <option value="aguardando">⏳ Aguardando resposta</option>
+            <option value="aprovado">✔ Aprovado</option>
+            <option value="negado">✘ Negado</option>
+            <option value="pago">✔ Pago</option>
+          </select>
+          <input type="number" id="enc-valor" placeholder="Valor aprovado (R$)" min="0" step="0.01">
+          <input type="text" id="enc-obs" placeholder="Observações (protocolo, contato...)">
+          <button type="button" onclick="salvarEncaminhamento()">💾 Salvar</button>
+        </div>
+      </div>
+
+      <!-- Administrativo -->
+      <div class="orc-secao">
+        <div class="orc-secao-titulo">📤 Administrativo (rescisão)</div>
+        <div id="admStatus" class="orc-dica"></div>
+        <button type="button" id="btnEnviarAdm" onclick="enviarAoAdministrativo()">📤 Enviar orçamentos ao administrativo</button>
+      </div>
+
+      <div class="modal-buttons">
+        <button type="button" class="btn-primary" id="btnFaseReparo">🛠️ Iniciar reparo</button>
+        <button type="button" class="btn-secondary" onclick="fecharModalOrcamentos()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- MODAL: RESCISÃO (V33) -->
   <div id="modalRescisao" class="modal">
     <div class="modal-content">
       <div class="modal-header">📤 Rescisão — Administrativo</div>
       <div id="rescisaoCabecalho" class="rescisao-cabecalho"></div>
+      <div id="rescisaoOrcamentos" class="rescisao-orcamentos"></div>
 
       <div class="modal-form-group">
         <label for="rescisao-responsavel">👤 Responsável no administrativo</label>
@@ -1763,6 +1899,7 @@
       document.getElementById('telaLogin').style.display = 'none';
       aplicarUsuario(u);
       if (u.trocarSenha) abrirModalSenha(true);
+      verificarDrive();
       carregarDados();
     }
 
@@ -2593,10 +2730,10 @@
       return Math.max(0, Math.round((hoje - d) / 86400000));
     }
 
-    // Situação da rescisão de um contrato finalizado
+    // Situação da rescisão. V36: pode estar aberta antes de finalizar (orçamentos enviados ao administrativo)
     function infoRescisao(c) {
       const r = c.rescisao || {};
-      const encaminhada = c.finalizado === 'sim' && !!r.encaminhadoEm;
+      const encaminhada = !!r.encaminhadoEm;
       const feitas = ETAPAS_RESCISAO.filter(e => r[e.chave] === true).length;
       return {
         encaminhada,
@@ -2616,19 +2753,35 @@
     function abrirModalRescisao(id) {
       const c = contratos.find(x => x._id === id);
       if (!c) return;
-      if (c.finalizado !== 'sim') {
-        mostrarToast('Finalize a desocupação antes de encaminhar a rescisão.', true);
+      if (c.finalizado !== 'sim' && !infoRescisao(c).encaminhada) {
+        mostrarToast('Finalize a desocupação ou envie os orçamentos ao administrativo para abrir a rescisão.', true);
         return;
       }
       contratoEmRescisao = id;
       const r = c.rescisao || {};
       const info = infoRescisao(c);
-      const valorReparos = (c.reparos || []).reduce((s, rep) => s + (Number(rep.valorServico) || 0), 0);
+      const orcs = c.orcamentos || [];
+      const escolhido = orcs.find(o => o.escolhido);
+      const enc = c.encaminhamento || {};
+      const valorReparos = enc.valorAprovado || (escolhido && escolhido.valor) ||
+        (c.reparos || []).reduce((s, rep) => s + (Number(rep.valorServico) || 0), 0);
+
+      // V36: orçamentos e encaminhamento, para o administrativo adiantar a rescisão
+      document.getElementById('rescisaoOrcamentos').innerHTML = orcs.length ? `
+        <div class="rescisao-orc-titulo">💰 Orçamentos dos reparos</div>
+        ${orcs.map(o => `<div class="rescisao-orc ${o.escolhido ? 'escolhido' : ''}">
+          ${o.escolhido ? '⭐ ' : ''}<strong>${escaparHTML(o.prestador)}</strong> · ${o.valor ? formatarMoeda(o.valor) : 'sem valor'}
+          ${o.arquivoUrl ? ` · <a href="${escaparHTML(o.arquivoUrl)}" target="_blank" rel="noopener">📄 arquivo</a>` : ''}
+        </div>`).join('')}
+        ${enc.destino ? `<div class="rescisao-orc">📨 ${escaparHTML(NOMES_DESTINO[enc.destino] || '')}${enc.empresa ? ` ${escaparHTML(enc.empresa)}` : ''}${enc.enviadoEm ? ` · enviado ${formatarDataCompleta(enc.enviadoEm)}` : ''}${enc.situacao ? ` · ${escaparHTML(enc.situacao)}` : ''}${enc.valorAprovado ? ` · aprovado ${formatarMoeda(enc.valorAprovado)}` : ''}</div>` : ''}
+        ${c.pastaDrive && c.pastaDrive.url ? `<div class="rescisao-orc"><a href="${escaparHTML(c.pastaDrive.url)}" target="_blank" rel="noopener">📁 Pasta do imóvel no Google Drive</a></div>` : ''}` : '';
 
       document.getElementById('rescisaoCabecalho').innerHTML = `
         <strong>${escaparHTML(c.contrato)} · ${escaparHTML(c.locatario)}</strong><br>
         ${escaparHTML(c.endereco || '-')}<br>
-        Desocupação finalizada em ${dataFimContrato(c) ? dataFimContrato(c).toLocaleDateString('pt-BR') : '-'}
+        ${c.finalizado === 'sim'
+          ? `Desocupação finalizada em ${dataFimContrato(c) ? dataFimContrato(c).toLocaleDateString('pt-BR') : '-'}`
+          : '<strong>Imóvel ainda em desocupação/reparo</strong> — rescisão aberta para adiantar os documentos'}
         · ${info.encaminhada
           ? `Encaminhado ao administrativo em ${new Date(r.encaminhadoEm).toLocaleDateString('pt-BR')}${info.dias ? ` (há ${info.dias} dias)` : ''}`
           : '<em>Ainda não encaminhado (será encaminhado ao salvar)</em>'}
@@ -2642,7 +2795,7 @@
 
       document.getElementById('rescisaoEtapas').innerHTML = ETAPAS_RESCISAO.map(e => {
         const extra = e.chave === 'descontoReparos' && valorReparos > 0
-          ? ` — reparos registrados: ${formatarMoeda(valorReparos)}` : '';
+          ? ` — valor dos reparos: ${formatarMoeda(valorReparos)}` : '';
         return `
           <label class="rescisao-etapa ${r[e.chave] ? 'feita' : ''}">
             <input type="checkbox" data-etapa="${e.chave}" ${r[e.chave] ? 'checked' : ''} onchange="atualizarProgressoRescisao()">
@@ -2725,56 +2878,73 @@
         });
     }
 
-    // ========= QUADRO KANBAN (V32) =========
+    // ========= QUADRO KANBAN (V32 → V36) =========
+    // V36: a antiga coluna "Reparos" virou duas: "Orçamentos" e "Em reparo"
+    const COL = { COMUNICAR: 0, VISTORIA: 1, CHAVES: 2, ORCAMENTOS: 3, REPARO: 4, PRONTO: 5, RESCISAO: 6, ENCERRADO: 7 };
     const COLUNAS_QUADRO = [
       { titulo: '📨 Comunicar inquilino', cor: '#95a5a6' },
       { titulo: '📅 Vistoria', cor: '#3498db' },
       { titulo: '🔑 Aguardando chaves', cor: '#f39c12' },
-      { titulo: '🔧 Reparos', cor: '#e74c3c' },
+      { titulo: '💰 Orçamentos', cor: '#d35400' },
+      { titulo: '🛠️ Em reparo', cor: '#e74c3c' },
       { titulo: '✅ Pronto para finalizar', cor: '#27ae60' },
       { titulo: '📤 Rescisão (Administrativo)', cor: '#8e44ad' },
       { titulo: '🏁 Encerrados', cor: '#2c5aa0' }
     ];
+    const MINIMO_ORCAMENTOS = 2;
     const LIMITE_FINALIZADOS_QUADRO = 8;
     let mostrarTodosFinalizadosQuadro = false;
     let cartaoArrastado = null;
 
-    // Em qual coluna o contrato está (0 a 6), pela primeira etapa ainda não concluída.
-    // Finalizados: 5 = rescisão em andamento no administrativo; 6 = encerrado
-    // (rescisão concluída, ou finalizado antes da V33 sem encaminhamento).
-    function estagioKanban(c) {
-      if (c.finalizado === 'sim') return infoRescisao(c).pendente ? 5 : 6;
-      // V35: imóvel em reparos vai para a coluna Reparos, mesmo que etapas anteriores não estejam completas
-      if (emReparos(c)) return 3;
-      const idx = calcularEtapas(c).findIndex(e => e.estado !== 'feita');
-      return idx === -1 ? 4 : idx;
+    // Fase dos reparos: 'orcamentos', 'execucao' ou null (fora de reparos)
+    function faseReparoAtual(c) {
+      if (c.finalizado === 'sim') return null;
+      const f = c.faseReparo;
+      if (f === 'orcamentos' || f === 'execucao') return f;
+      if (reparosPendentes(c).length > 0) return 'execucao'; // reparos registrados antes da V36
+      if (f !== 'concluido' && c.statusImovel === 'em-reparo') return 'orcamentos';
+      return null;
     }
 
-    // Em reparos = tem reparo em aberto, ou foi marcado como "Em reparo" e ainda não tem reparo registrado
     function emReparos(c) {
-      if (c.finalizado === 'sim') return false;
-      if (reparosPendentes(c).length > 0) return true;
-      return c.statusImovel === 'em-reparo' && (c.reparos || []).length === 0;
+      return faseReparoAtual(c) !== null;
     }
 
     function rotuloReparos(c) {
+      if (faseReparoAtual(c) === 'orcamentos') {
+        const n = (c.orcamentos || []).length;
+        const enc = c.encaminhamento || {};
+        if (n < MINIMO_ORCAMENTOS) return `Orçamentos ${n}/${MINIMO_ORCAMENTOS}`;
+        if (enc.situacao === 'aguardando') return `Aguardando resposta${enc.empresa ? ` da ${enc.empresa}` : ''}`;
+        if (enc.situacao === 'negado') return 'Encaminhamento negado · rever';
+        return 'Encaminhar orçamentos';
+      }
       const n = reparosPendentes(c).length;
-      return n > 0 ? `${n} reparo(s) em aberto` : 'Registrar o reparo';
+      return n > 0 ? `${n} reparo(s) em execução` : 'Reparo em execução';
+    }
+
+    // Em qual coluna o contrato está (0 a 7)
+    function estagioKanban(c) {
+      if (c.finalizado === 'sim') return infoRescisao(c).pendente ? COL.RESCISAO : COL.ENCERRADO;
+      const fase = faseReparoAtual(c);
+      if (fase === 'orcamentos') return COL.ORCAMENTOS;
+      if (fase === 'execucao') return COL.REPARO;
+      const idx = calcularEtapas(c).findIndex(e => e.estado !== 'feita');
+      return idx >= 0 && idx <= 2 ? idx : COL.PRONTO;
     }
 
     function acaoCartao(c, estagio) {
       const id = c._id;
-      if (estagio === 0) return { rotulo: '📨 Comunicar', acao: `abrirModalEditar('${id}')` };
-      if (estagio === 1) return c.agendamentoVistoria
+      if (estagio === COL.COMUNICAR) return { rotulo: '📨 Comunicar', acao: `abrirModalEditar('${id}')` };
+      if (estagio === COL.VISTORIA) return c.agendamentoVistoria
         ? { rotulo: '✏️ Abrir', acao: `abrirModalEditar('${id}')` }
         : { rotulo: '📅 Agendar', acao: `abrirModalEditar('${id}')` };
-      if (estagio === 2) return { rotulo: '🔑 Recebi as chaves', acao: `marcarChavesRecebidas('${id}')` };
-      if (estagio === 3) return reparosPendentes(c).length > 0
-        ? { rotulo: '🔧 Ver reparos', acao: `abrirModalReparos('${id}')` }
-        : { rotulo: '➕ Registrar reparo', acao: `abrirModalReparo('${id}')` };
-      if (estagio === 4) return { rotulo: '✅ Finalizar', acao: `finalizarContrato('${id}')` };
-      if (estagio === 5) return { rotulo: '📋 Rescisão', acao: `abrirModalRescisao('${id}')` };
-      if (estagio === 6) return infoRescisao(c).encaminhada
+      if (estagio === COL.CHAVES) return { rotulo: '🔑 Recebi as chaves', acao: `marcarChavesRecebidas('${id}')` };
+      if (estagio === COL.ORCAMENTOS) return { rotulo: '💰 Orçamentos', acao: `abrirModalOrcamentos('${id}')` };
+      if (estagio === COL.REPARO) return { rotulo: '✅ Reparo concluído', acao: `concluirReparo('${id}')` };
+      if (estagio === COL.PRONTO) return { rotulo: '✅ Finalizar', acao: `finalizarContrato('${id}')` };
+      if (estagio === COL.RESCISAO) return { rotulo: '📋 Rescisão', acao: `abrirModalRescisao('${id}')` };
+      if (estagio === COL.ENCERRADO) return infoRescisao(c).encaminhada
         ? { rotulo: '📋 Ver', acao: `abrirModalRescisao('${id}')` }
         : { rotulo: '📤 Encaminhar', acao: `encaminharRescisao('${id}')` };
       return null;
@@ -2787,29 +2957,48 @@
       return 'Finalizado · sem rescisão registrada';
     }
 
+    // Linhas extras do cartão nas colunas de reparo: orçamentos, encaminhamento e administrativo
+    function detalhesReparoCartao(c) {
+      const orcs = c.orcamentos || [];
+      const escolhido = orcs.find(o => o.escolhido);
+      const enc = c.encaminhamento || {};
+      const linhas = [];
+      const faltam = faseReparoAtual(c) === 'orcamentos' && orcs.length < MINIMO_ORCAMENTOS;
+      linhas.push(`<div class="cartao-info ${faltam ? 'alerta' : ''}">💰 ${orcs.length} orçamento(s)${faltam ? ` · faltam ${MINIMO_ORCAMENTOS - orcs.length}` : ''}${escolhido && escolhido.valor ? ` · ${formatarMoeda(escolhido.valor)}` : ''}</div>`);
+      if (enc.destino) {
+        const situacao = { aguardando: '⏳ aguardando', aprovado: '✔ aprovado', negado: '✘ negado', pago: '✔ pago' }[enc.situacao] || '';
+        linhas.push(`<div class="cartao-info">📨 ${escaparHTML(enc.empresa || NOMES_DESTINO[enc.destino] || '')}${enc.enviadoEm ? ` · ${formatarData(enc.enviadoEm)}` : ''} ${situacao}</div>`);
+      }
+      const r = c.rescisao || {};
+      if (r.orcamentosEnviadosEm) {
+        linhas.push(`<div class="cartao-info ok">📤 Administrativo ✔ ${new Date(r.orcamentosEnviadosEm).toLocaleDateString('pt-BR').slice(0, 5)}</div>`);
+      }
+      return linhas.join('');
+    }
+
     function renderizarCartao(c, estagio) {
       const etapas = calcularEtapas(c);
-      const atual = estagio < 5 ? etapas[Math.min(estagio, etapas.length - 1)] : null;
-      const proximo = estagio >= 5 ? textoRescisao(c) : (estagio === 3 ? rotuloReparos(c) : atual.rotulo);
-      const atrasada = estagio !== 3 && atual && atual.estado === 'atrasada';
+      const ehReparo = estagio === COL.ORCAMENTOS || estagio === COL.REPARO;
+      const finalizado = estagio >= COL.RESCISAO;
+      const atual = !finalizado && !ehReparo ? etapas[Math.min(estagio, etapas.length - 1)] : null;
+      const proximo = finalizado ? textoRescisao(c) : (ehReparo ? rotuloReparos(c) : (estagio === COL.PRONTO ? 'Pronto para finalizar' : atual.rotulo));
+      const atrasada = atual && atual.estado === 'atrasada';
 
       let dias = '';
-      if (estagio < 5 && c.comunicacaoInquilino) {
+      if (!finalizado && c.comunicacaoInquilino) {
         const d = calcularDiasDesde(c.comunicacaoInquilino);
         if (d !== null) dias = `<span class="dias-badge ${d > 45 ? 'alto' : (d > 30 ? 'medio' : '')}" title="Dias desde a comunicação">${d}d</span>`;
       }
-
-      if (estagio === 5) {
+      if (estagio === COL.RESCISAO) {
         const info = infoRescisao(c);
         if (info.dias !== null) dias = `<span class="dias-badge ${info.dias > 30 ? 'alto' : (info.dias > 15 ? 'medio' : '')}" title="Dias desde o encaminhamento ao administrativo">${info.dias}d</span>`;
       }
 
       const acao = acaoCartao(c, estagio);
-      // Cartões finalizados abrem a rescisão; os demais abrem a edição do contrato
-      const aoClicar = estagio >= 5 && infoRescisao(c).encaminhada
-        ? `abrirModalRescisao('${c._id}')` : `abrirModalEditar('${c._id}')`;
-      const resp = estagio >= 5 && infoRescisao(c).responsavel
-        ? `Adm.: ${infoRescisao(c).responsavel}` : nomeResponsavel(c);
+      // Ao clicar: reparos abrem os orçamentos; finalizados abrem a rescisão; os demais, a edição
+      const aoClicar = ehReparo ? `abrirModalOrcamentos('${c._id}')`
+        : (finalizado && infoRescisao(c).encaminhada ? `abrirModalRescisao('${c._id}')` : `abrirModalEditar('${c._id}')`);
+      const resp = finalizado && infoRescisao(c).responsavel ? `Adm.: ${infoRescisao(c).responsavel}` : nomeResponsavel(c);
       return `
         <div class="cartao prio-${escaparHTML(c.prioridade || 'media')}" draggable="true" data-id="${c._id}"
              ondragstart="iniciarArraste(event, '${c._id}')" ondragend="terminarArraste(event)"
@@ -2821,10 +3010,11 @@
           <div class="cartao-locatario">${escaparHTML(c.locatario)}</div>
           <div class="cartao-endereco" title="${escaparHTML(c.endereco || '')}">${escaparHTML(c.endereco || '-')}</div>
           <div class="cartao-proximo ${atrasada ? 'atrasada' : ''}">➜ ${escaparHTML(proximo)}</div>
+          ${ehReparo ? detalhesReparoCartao(c) : ''}
           <div class="cartao-rodape">
             <span class="cartao-resp">${escaparHTML(resp)}</span>
             <span class="cartao-botoes">
-              ${estagio < 5 && !acao.acao.startsWith('abrirModalReparo(') ? `<button class="cartao-acao cartao-acao-leve" title="Registrar reparo" onclick="event.stopPropagation(); abrirModalReparo('${c._id}')">➕🔧</button>` : ''}
+              ${!finalizado ? `<button class="cartao-acao cartao-acao-leve" title="Registrar reparo" onclick="event.stopPropagation(); abrirModalReparo('${c._id}')">➕🔧</button>` : ''}
               ${acao ? `<button class="cartao-acao" onclick="event.stopPropagation(); ${acao.acao}">${acao.rotulo}</button>` : ''}
             </span>
           </div>
@@ -2840,16 +3030,16 @@
 
       // Abertos: mais antigos primeiro. Rescisão: há mais tempo no administrativo primeiro.
       // Encerrados: mais recentes primeiro.
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < COL.RESCISAO; i++) {
         colunas[i].sort((a, b) => (calcularDiasDesde(b.comunicacaoInquilino) ?? -1) - (calcularDiasDesde(a.comunicacaoInquilino) ?? -1));
       }
-      colunas[5].sort((a, b) => (infoRescisao(b).dias ?? -1) - (infoRescisao(a).dias ?? -1));
-      colunas[6].sort((a, b) => (dataFimContrato(b) || 0) - (dataFimContrato(a) || 0));
+      colunas[COL.RESCISAO].sort((a, b) => (infoRescisao(b).dias ?? -1) - (infoRescisao(a).dias ?? -1));
+      colunas[COL.ENCERRADO].sort((a, b) => (dataFimContrato(b) || 0) - (dataFimContrato(a) || 0));
 
       quadro.innerHTML = COLUNAS_QUADRO.map((col, i) => {
         let lista = colunas[i];
         let mais = '';
-        if (i === 6 && lista.length > LIMITE_FINALIZADOS_QUADRO) {
+        if (i === COL.ENCERRADO && lista.length > LIMITE_FINALIZADOS_QUADRO) {
           mais = `<button class="quadro-mais" onclick="alternarFinalizadosQuadro()">${mostrarTodosFinalizadosQuadro ? 'Mostrar menos' : `Ver todos (${lista.length})`}</button>`;
           if (!mostrarTodosFinalizadosQuadro) lista = lista.slice(0, LIMITE_FINALIZADOS_QUADRO);
         }
@@ -2912,6 +3102,12 @@
       if (id) moverCartao(id, destino);
     }
 
+    function aplicarMovimento(id, campos, mensagem) {
+      return atualizarCamposContrato(id, campos)
+        .then(() => { if (mensagem) mostrarToast(mensagem); carregarDados(); })
+        .catch(erroMover);
+    }
+
     // Regras ao mover um cartão: só grava o que for seguro; o que precisa de data abre o formulário.
     function moverCartao(id, destino) {
       const c = contratos.find(x => x._id === id);
@@ -2919,21 +3115,21 @@
       const origem = estagioKanban(c);
       if (origem === destino) return;
       const nomeColuna = COLUNAS_QUADRO[destino].titulo.replace(/^\S+\s/, '');
+      const pendentes = reparosPendentes(c).length;
+      const nOrc = (c.orcamentos || []).length;
 
       // Finalizar (de qualquer etapa aberta para Rescisão/Encerrados): o servidor encaminha ao administrativo
-      if (destino >= 5 && origem < 5) {
-        const aviso = origem < 4 ? '\n\nAtenção: ainda há etapas anteriores não concluídas.' : '';
+      if (destino >= COL.RESCISAO && origem < COL.RESCISAO) {
+        const aviso = origem < COL.PRONTO ? '\n\nAtenção: ainda há etapas anteriores não concluídas.' : '';
         if (!confirm(`Finalizar a desocupação do contrato ${c.contrato} (${c.locatario}) e encaminhar ao administrativo para a rescisão?${aviso}`)) return;
-        atualizarCamposContrato(id, { finalizado: 'sim' })
-          .then(() => { mostrarToast(`✅ ${c.contrato} finalizado e encaminhado ao administrativo`); carregarDados(); })
-          .catch(erroMover);
+        aplicarMovimento(id, { finalizado: 'sim' }, `✅ ${c.contrato} finalizado e encaminhado ao administrativo`);
         return;
       }
 
       // Entre Rescisão e Encerrados: depende do checklist da rescisão
-      if (origem >= 5 && destino >= 5) {
+      if (origem >= COL.RESCISAO && destino >= COL.RESCISAO) {
         if (!infoRescisao(c).encaminhada) { encaminharRescisao(id); return; }
-        mostrarToast(destino === 6
+        mostrarToast(destino === COL.ENCERRADO
           ? '📋 Marque todas as etapas da rescisão para encerrar.'
           : '📋 Desmarque uma etapa para reabrir a rescisão.');
         abrirModalRescisao(id);
@@ -2941,38 +3137,46 @@
       }
 
       // Reabrir um finalizado
-      if (origem >= 5) {
+      if (origem >= COL.RESCISAO) {
         if (!confirm(`Reabrir o contrato ${c.contrato} (${c.locatario})? Ele deixará de constar como finalizado.`)) return;
-        atualizarCamposContrato(id, { finalizado: 'nao' })
-          .then(() => { mostrarToast(`↩️ ${c.contrato} reaberto`); carregarDados(); })
+        aplicarMovimento(id, { finalizado: 'nao' }, `↩️ ${c.contrato} reaberto`);
+        return;
+      }
+
+      // Para "Orçamentos": abre a fase de orçamentos e a janela para cadastrá-los
+      if (destino === COL.ORCAMENTOS) {
+        atualizarCamposContrato(id, { faseReparo: 'orcamentos' })
+          .then(() => { carregarDados(); setTimeout(() => abrirModalOrcamentos(id), 600); })
           .catch(erroMover);
         return;
       }
 
-      // Para "Reparos": registrar o reparo (ao salvar, o cartão passa para a coluna Reparos)
-      if (destino === 3) {
-        mostrarToast('🔧 Registre o reparo: ao salvar, o cartão vai para Reparos.');
-        abrirModalReparo(id);
+      // Para "Em reparo": inicia a execução (avisa se não houver o mínimo de orçamentos)
+      if (destino === COL.REPARO) {
+        if (nOrc < MINIMO_ORCAMENTOS &&
+            !confirm(`${c.contrato} tem ${nOrc} orçamento(s) — o mínimo é ${MINIMO_ORCAMENTOS}. Iniciar o reparo mesmo assim?`)) return;
+        aplicarMovimento(id, { faseReparo: 'execucao' }, `🛠️ ${c.contrato}: reparo iniciado`);
         return;
       }
 
-      // Saindo de "Reparos" com reparo em aberto: é preciso concluir os reparos
-      if (origem === 3 && reparosPendentes(c).length > 0) {
-        mostrarToast('🔧 Conclua os reparos em aberto para tirar o imóvel de Reparos.');
+      // Saindo dos reparos com reparo em aberto: é preciso concluí-los
+      if ((origem === COL.ORCAMENTOS || origem === COL.REPARO) && pendentes > 0) {
+        mostrarToast('🔧 Conclua os reparos em aberto para tirar o imóvel dos reparos.');
         abrirModalReparos(id);
         return;
       }
 
-      // Saindo de "Reparos" quando só estava marcado como "Em reparo" (sem reparo registrado)
-      const camposSaida = origem === 3 && c.statusImovel === 'em-reparo'
-        ? { statusImovel: destino === 4 ? 'pronto-para-aluguel' : 'em-desocupacao' } : {};
+      // Saindo dos reparos sem reparo em aberto: encerra a fase
+      const camposSaida = (origem === COL.ORCAMENTOS || origem === COL.REPARO)
+        ? { faseReparo: 'concluido', ...(c.statusImovel === 'em-reparo' ? { statusImovel: destino === COL.PRONTO ? 'pronto-para-aluguel' : 'em-desocupacao' } : {}) }
+        : {};
 
       // Para "Pronto": marca as chaves como recebidas, se ainda não estiverem
-      if (destino === 4 && c.statusChaves !== 'recebidas') {
+      if (destino === COL.PRONTO && c.statusChaves !== 'recebidas') {
         atualizarCamposContrato(id, { ...camposSaida, statusChaves: 'recebidas' })
           .then(() => {
             mostrarAlertsChavesRecebidas(c.contrato, c.locatario);
-            if (origem < 2) setTimeout(() => mostrarToast('ℹ️ Chaves registradas. O cartão continua na etapa atual porque faltam datas anteriores.'), 4200);
+            if (origem < COL.CHAVES) setTimeout(() => mostrarToast('ℹ️ Chaves registradas. O cartão continua na etapa atual porque faltam datas anteriores.'), 4200);
             carregarDados();
           })
           .catch(erroMover);
@@ -2980,18 +3184,14 @@
       }
 
       // Voltar para "Aguardando chaves"
-      if (destino === 2 && origem >= 3) {
-        atualizarCamposContrato(id, { ...camposSaida, statusChaves: 'pendente' })
-          .then(() => { mostrarToast(`↩️ ${c.contrato}: chaves voltaram para pendente`); carregarDados(); })
-          .catch(erroMover);
+      if (destino === COL.CHAVES && origem > COL.CHAVES) {
+        aplicarMovimento(id, { ...camposSaida, statusChaves: 'pendente' }, `↩️ ${c.contrato}: chaves voltaram para pendente`);
         return;
       }
 
-      // De "Reparos" (só marcado como "Em reparo") para "Pronto", com as chaves já recebidas
-      if (origem === 3 && destino === 4) {
-        atualizarCamposContrato(id, camposSaida)
-          .then(() => { mostrarToast(`✅ ${c.contrato}: saiu de Reparos`); carregarDados(); })
-          .catch(erroMover);
+      // Dos reparos para "Pronto", com as chaves já recebidas
+      if (Object.keys(camposSaida).length && destino === COL.PRONTO) {
+        aplicarMovimento(id, camposSaida, `✅ ${c.contrato}: reparos encerrados`);
         return;
       }
 
@@ -3000,6 +3200,7 @@
         1: '📨 Informe a data de comunicação ao inquilino para avançar.',
         2: '📅 Informe a data da vistoria (hoje ou anterior) para avançar.'
       };
+      if (Object.keys(camposSaida).length) atualizarCamposContrato(id, camposSaida).then(carregarDados).catch(erroMover);
       mostrarToast(destino > origem
         ? (mensagens[destino] || `Atualize o contrato para mover para "${nomeColuna}".`)
         : 'Para voltar etapas, ajuste as datas no formulário.');
@@ -3010,6 +3211,415 @@
       console.error('❌ Erro ao mover cartão:', erro);
       mostrarToast('❌ Não foi possível atualizar o contrato!', true);
       atualizarSyncStatus('error');
+    }
+
+    // "Reparo concluído": conclui os reparos em aberto (com confirmação) e encerra a fase
+    async function concluirReparo(id) {
+      const c = contratos.find(x => x._id === id);
+      if (!c) return;
+      const pendentes = reparosPendentes(c);
+      const msg = pendentes.length
+        ? `Marcar ${pendentes.length} reparo(s) de ${c.contrato} como concluído(s) e liberar o imóvel?`
+        : `Encerrar os reparos de ${c.contrato} e liberar o imóvel?`;
+      if (!confirm(msg)) return;
+      try {
+        atualizarSyncStatus('syncing');
+        for (const r of pendentes) {
+          const resp = await fetch(`${API_URL}/repairs/${id}/${r._id}`, {
+            method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'CONCLUIDO' })
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (!data.sucesso) throw new Error(data.erro || 'Erro ao concluir reparo');
+        }
+        await atualizarCamposContrato(id, {
+          faseReparo: 'concluido',
+          ...(c.statusImovel === 'em-reparo' ? { statusImovel: 'pronto-para-aluguel' } : {})
+        });
+        mostrarToast(`✅ ${c.contrato}: reparos concluídos`);
+        carregarDados();
+      } catch (erro) {
+        erroMover(erro);
+      }
+    }
+
+    // ========= ORÇAMENTOS, ENCAMINHAMENTO E ADMINISTRATIVO (V36) =========
+    const NOMES_DESTINO = { seguradora: 'Seguradora', garantidora: 'Garantidora', juridico: 'Jurídico', proprietario: 'Proprietário' };
+    const NOMES_GARANTIA = {
+      'seguro-fianca': 'Seguro-fiança', garantidora: 'Garantidora', caucao: 'Caução', fiador: 'Fiador',
+      titulo: 'Título de capitalização', 'sem-garantia': 'Sem garantia'
+    };
+    const EMPRESAS_SUGERIDAS = {
+      seguradora: ['Porto Seguro', 'Pottencial'],
+      garantidora: ['Loft', 'Garantix'],
+      'seguro-fianca': ['Porto Seguro', 'Pottencial']
+    };
+    const TAMANHO_MAXIMO_ARQUIVO = 10 * 1024 * 1024;
+    let contratoEmOrcamento = null;
+    let driveAtivo = false;
+
+    async function verificarDrive() {
+      try {
+        const resp = await fetch(`${API_URL}/drive/status`);
+        const data = await resp.json().catch(() => ({}));
+        driveAtivo = !!data.configurado;
+      } catch (e) { driveAtivo = false; }
+    }
+
+    // Destino sugerido a partir da garantia do contrato
+    function destinoSugerido(c) {
+      if (c.tipoDesocupacao === 'despejo') return 'juridico';
+      if (c.garantiaTipo === 'seguro-fianca') return 'seguradora';
+      if (c.garantiaTipo === 'garantidora') return 'garantidora';
+      if (c.garantiaTipo === 'sem-garantia') return 'juridico';
+      return c.garantiaTipo ? 'proprietario' : '';
+    }
+
+    function preencherSugestoesEmpresa(listaId, tipo) {
+      const nomes = EMPRESAS_SUGERIDAS[tipo] || [...EMPRESAS_SUGERIDAS.seguradora, ...EMPRESAS_SUGERIDAS.garantidora];
+      document.getElementById(listaId).innerHTML = nomes.map(n => `<option value="${escaparHTML(n)}">`).join('');
+    }
+
+    function abrirModalOrcamentos(id) {
+      const c = contratos.find(x => x._id === id);
+      if (!c) return;
+      contratoEmOrcamento = id;
+      renderizarModalOrcamentos();
+      document.getElementById('modalOrcamentos').classList.add('show');
+    }
+
+    function fecharModalOrcamentos() {
+      document.getElementById('modalOrcamentos').classList.remove('show');
+      contratoEmOrcamento = null;
+    }
+
+    function renderizarModalOrcamentos() {
+      const c = contratos.find(x => x._id === contratoEmOrcamento);
+      if (!c) return;
+      const orcs = c.orcamentos || [];
+      const enc = c.encaminhamento || {};
+      const r = c.rescisao || {};
+      const fase = faseReparoAtual(c);
+
+      document.getElementById('orcCabecalho').innerHTML = `
+        <strong>${escaparHTML(c.contrato)} · ${escaparHTML(c.locatario)}</strong><br>
+        ${escaparHTML(c.endereco || '-')}
+        ${c.pastaDrive && c.pastaDrive.url ? `<br><a href="${escaparHTML(c.pastaDrive.url)}" target="_blank" rel="noopener">📁 Abrir pasta do imóvel no Google Drive</a>` : ''}`;
+
+      // Garantia
+      document.getElementById('orc-garantia-tipo').value = c.garantiaTipo || '';
+      document.getElementById('orc-garantia-empresa').value = c.garantiaEmpresa || '';
+      preencherSugestoesEmpresa('listaEmpresasGarantia', c.garantiaTipo);
+
+      // Serviços a orçar (para o modelo): reparos registrados, um por linha
+      const servicos = document.getElementById('orc-servicos');
+      if (!servicos.dataset.contrato || servicos.dataset.contrato !== c._id) {
+        servicos.value = (c.reparos || []).filter(x => x.status !== 'CONCLUIDO').map(x => x.descricao).filter(Boolean).join('\n');
+        servicos.dataset.contrato = c._id;
+      }
+
+      // Lista de orçamentos
+      const faltam = Math.max(0, MINIMO_ORCAMENTOS - orcs.length);
+      document.getElementById('orcResumo').innerHTML = faltam
+        ? `<span class="orc-alerta">⚠️ ${orcs.length} de ${MINIMO_ORCAMENTOS} orçamentos — falta(m) ${faltam}</span>`
+        : `<span class="orc-ok">✔ ${orcs.length} orçamentos (mínimo ${MINIMO_ORCAMENTOS})</span>`;
+      document.getElementById('orcLista').innerHTML = orcs.length === 0
+        ? '<div class="orc-vazio">Nenhum orçamento cadastrado ainda.</div>'
+        : orcs.map(o => `
+          <div class="orc-item ${o.escolhido ? 'escolhido' : ''}">
+            <div class="orc-item-topo">
+              <strong>${escaparHTML(o.prestador)}</strong>
+              <span class="orc-valor">${o.valor ? formatarMoeda(o.valor) : 'sem valor'}</span>
+            </div>
+            <div class="orc-item-detalhe">
+              ${o.telefone ? `📞 ${escaparHTML(o.telefone)} · ` : ''}${o.validade ? `válido até ${formatarDataCompleta(o.validade)} · ` : ''}${o.escolhido ? '<strong>⭐ Escolhido</strong>' : ''}
+            </div>
+            ${o.descricao ? `<div class="orc-item-detalhe">${escaparHTML(o.descricao)}</div>` : ''}
+            <div class="orc-item-acoes">
+              ${o.arquivoUrl
+                ? `<a href="${escaparHTML(o.arquivoUrl)}" target="_blank" rel="noopener">📄 ${escaparHTML(o.arquivoNome || 'Abrir arquivo')}</a>`
+                : '<span class="orc-sem-arquivo">sem arquivo</span>'}
+              ${driveAtivo
+                ? `<label class="orc-botao-arquivo">⬆️ ${o.arquivoUrl ? 'Trocar' : 'Enviar'} arquivo ao Drive<input type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx" onchange="enviarArquivoOrcamento('${o._id}', this)"></label>`
+                : `<button type="button" onclick="colarLinkOrcamento('${o._id}')">🔗 ${o.arquivoUrl ? 'Trocar' : 'Colar'} link</button>`}
+              ${o.escolhido ? '' : `<button type="button" onclick="atualizarOrcamento('${o._id}', { escolhido: true })">⭐ Escolher</button>`}
+              <button type="button" class="orc-excluir" onclick="excluirOrcamento('${o._id}')">🗑️</button>
+            </div>
+          </div>`).join('');
+      document.getElementById('orcDicaDrive').textContent = driveAtivo
+        ? 'Os arquivos vão para a pasta deste imóvel no Google Drive.'
+        : 'Google Drive ainda não configurado: cole o link do arquivo (ex.: link de compartilhamento do Drive).';
+      document.getElementById('orc-novo-arquivo-campo').style.display = driveAtivo ? 'block' : 'none';
+      document.getElementById('orc-novo-link-campo').style.display = driveAtivo ? 'none' : 'block';
+
+      // Encaminhamento
+      document.getElementById('enc-destino').value = enc.destino || destinoSugerido(c);
+      document.getElementById('enc-empresa').value = enc.empresa || (enc.destino ? '' : (c.garantiaEmpresa || ''));
+      document.getElementById('enc-enviado').value = enc.enviadoEm ? String(enc.enviadoEm).split('T')[0] : '';
+      document.getElementById('enc-situacao').value = enc.situacao || '';
+      document.getElementById('enc-valor').value = enc.valorAprovado || '';
+      document.getElementById('enc-obs').value = enc.observacoes || '';
+      preencherSugestoesEmpresa('listaEmpresasEncaminhamento', document.getElementById('enc-destino').value);
+
+      // Administrativo
+      document.getElementById('admStatus').innerHTML = r.orcamentosEnviadosEm
+        ? `✔ Orçamentos enviados ao administrativo em ${new Date(r.orcamentosEnviadosEm).toLocaleDateString('pt-BR')}. A rescisão já está aberta.`
+        : 'Ainda não enviado. Ao enviar, o administrativo já pode adiantar os documentos da rescisão.';
+      document.getElementById('btnEnviarAdm').textContent = r.orcamentosEnviadosEm ? '📤 Reenviar ao administrativo' : '📤 Enviar orçamentos ao administrativo';
+
+      // Rodapé: próxima ação da fase
+      const btnFase = document.getElementById('btnFaseReparo');
+      if (fase === 'execucao') {
+        btnFase.textContent = '✅ Reparos concluídos';
+        btnFase.onclick = () => { fecharModalOrcamentos(); concluirReparo(c._id); };
+      } else {
+        btnFase.textContent = '🛠️ Iniciar reparo';
+        btnFase.onclick = () => iniciarReparo(c._id);
+      }
+    }
+
+    // Chamadas à API dos orçamentos: atualizam o contrato na memória e redesenham a janela
+    async function chamarApiOrcamento(metodo, url, corpo) {
+      atualizarSyncStatus('syncing');
+      const resp = await fetch(`${API_URL}${url}`, {
+        method: metodo,
+        headers: { 'Content-Type': 'application/json' },
+        body: corpo ? JSON.stringify(corpo) : undefined
+      });
+      const data = await resp.json().catch(() => ({}));
+      if (!data.sucesso) throw new Error(data.erro || 'Erro ao salvar');
+      const i = contratos.findIndex(x => x._id === data.contrato._id);
+      if (i >= 0) contratos[i] = data.contrato;
+      atualizarSyncStatus('synced');
+      return data;
+    }
+
+    function depoisDeSalvar(mensagem) {
+      mostrarToast(mensagem);
+      if (contratoEmOrcamento) renderizarModalOrcamentos();
+      atualizarDashboard();
+      atualizarProximasAcoes();
+      filtrarDados();
+    }
+
+    function falhaOrcamento(erro) {
+      console.error('❌ Orçamento:', erro);
+      mostrarToast(`❌ ${erro.message}`, true);
+      atualizarSyncStatus('error');
+    }
+
+    function lerArquivoBase64(arquivo) {
+      return new Promise((resolve, reject) => {
+        const leitor = new FileReader();
+        leitor.onload = () => resolve(String(leitor.result).split(',')[1] || '');
+        leitor.onerror = () => reject(new Error('Não foi possível ler o arquivo'));
+        leitor.readAsDataURL(arquivo);
+      });
+    }
+
+    async function enviarArquivoParaOrcamento(orcId, arquivo) {
+      if (arquivo.size > TAMANHO_MAXIMO_ARQUIVO) throw new Error('Arquivo maior que 10 MB');
+      mostrarToast('⬆️ Enviando arquivo ao Google Drive...');
+      const base64 = await lerArquivoBase64(arquivo);
+      return chamarApiOrcamento('POST', `/contracts/${contratoEmOrcamento}/orcamentos/${orcId}/arquivo`, {
+        nome: arquivo.name, tipo: arquivo.type || 'application/pdf', base64
+      });
+    }
+
+    async function adicionarOrcamento(event) {
+      event.preventDefault();
+      const id = contratoEmOrcamento;
+      if (!id) return;
+      const dados = {
+        prestador: document.getElementById('orc-prestador').value,
+        telefone: document.getElementById('orc-telefone').value,
+        valor: document.getElementById('orc-valor').value,
+        validade: document.getElementById('orc-validade').value,
+        descricao: document.getElementById('orc-descricao').value,
+        arquivoUrl: driveAtivo ? '' : document.getElementById('orc-link').value
+      };
+      const arquivo = driveAtivo ? document.getElementById('orc-arquivo').files[0] : null;
+      try {
+        const data = await chamarApiOrcamento('POST', `/contracts/${id}/orcamentos`, dados);
+        if (arquivo) {
+          const novo = data.contrato.orcamentos[data.contrato.orcamentos.length - 1];
+          await enviarArquivoParaOrcamento(novo._id, arquivo);
+        }
+        event.target.reset();
+        depoisDeSalvar('💰 Orçamento adicionado');
+      } catch (erro) {
+        falhaOrcamento(erro);
+        renderizarModalOrcamentos();
+      }
+    }
+
+    async function enviarArquivoOrcamento(orcId, input) {
+      const arquivo = input.files[0];
+      if (!arquivo) return;
+      try {
+        await enviarArquivoParaOrcamento(orcId, arquivo);
+        depoisDeSalvar('📄 Arquivo salvo no Google Drive');
+      } catch (erro) {
+        falhaOrcamento(erro);
+      }
+    }
+
+    function colarLinkOrcamento(orcId) {
+      const link = prompt('Cole o link do arquivo do orçamento (ex.: link de compartilhamento do Google Drive):');
+      if (link === null) return;
+      if (link && !/^https?:\/\//i.test(link.trim())) { mostrarToast('❌ O link precisa começar com http:// ou https://', true); return; }
+      atualizarOrcamento(orcId, { arquivoUrl: link.trim(), arquivoNome: link.trim() ? 'Abrir arquivo' : '' });
+    }
+
+    async function atualizarOrcamento(orcId, dados) {
+      try {
+        await chamarApiOrcamento('PUT', `/contracts/${contratoEmOrcamento}/orcamentos/${orcId}`, dados);
+        depoisDeSalvar(dados.escolhido ? '⭐ Orçamento escolhido' : '💾 Orçamento atualizado');
+      } catch (erro) { falhaOrcamento(erro); }
+    }
+
+    async function excluirOrcamento(orcId) {
+      if (!confirm('Excluir este orçamento? (o arquivo no Google Drive não é apagado)')) return;
+      try {
+        await chamarApiOrcamento('DELETE', `/contracts/${contratoEmOrcamento}/orcamentos/${orcId}`);
+        depoisDeSalvar('🗑️ Orçamento excluído');
+      } catch (erro) { falhaOrcamento(erro); }
+    }
+
+    async function salvarGarantia() {
+      try {
+        await chamarApiOrcamento('PUT', `/contracts/${contratoEmOrcamento}`, {
+          garantiaTipo: document.getElementById('orc-garantia-tipo').value,
+          garantiaEmpresa: document.getElementById('orc-garantia-empresa').value
+        });
+        depoisDeSalvar('💾 Garantia salva');
+      } catch (erro) { falhaOrcamento(erro); }
+    }
+
+    async function salvarEncaminhamento() {
+      const c = contratos.find(x => x._id === contratoEmOrcamento);
+      const dados = {
+        destino: document.getElementById('enc-destino').value,
+        empresa: document.getElementById('enc-empresa').value,
+        enviadoEm: document.getElementById('enc-enviado').value ? new Date(document.getElementById('enc-enviado').value + 'T00:00:00Z').toISOString() : '',
+        situacao: document.getElementById('enc-situacao').value,
+        valorAprovado: document.getElementById('enc-valor').value,
+        observacoes: document.getElementById('enc-obs').value
+      };
+      if (dados.enviadoEm && c && (c.orcamentos || []).length < MINIMO_ORCAMENTOS &&
+          !confirm(`Este imóvel tem ${(c.orcamentos || []).length} orçamento(s) — o mínimo é ${MINIMO_ORCAMENTOS}. Registrar o envio mesmo assim?`)) return;
+      try {
+        const data = await chamarApiOrcamento('PUT', `/contracts/${contratoEmOrcamento}/encaminhamento`, dados);
+        depoisDeSalvar(data.contrato.faseReparo === 'execucao' && ['aprovado', 'pago'].includes(dados.situacao)
+          ? '✔ Aprovado: o imóvel passou para "Em reparo"' : '📨 Encaminhamento salvo');
+      } catch (erro) { falhaOrcamento(erro); }
+    }
+
+    async function enviarAoAdministrativo() {
+      const c = contratos.find(x => x._id === contratoEmOrcamento);
+      if (!c) return;
+      const n = (c.orcamentos || []).length;
+      if (n === 0) { mostrarToast('❌ Cadastre os orçamentos antes de enviar ao administrativo', true); return; }
+      const aviso = n < MINIMO_ORCAMENTOS ? `\n\nAtenção: só ${n} orçamento(s); o mínimo é ${MINIMO_ORCAMENTOS}.` : '';
+      if (!confirm(`Enviar os orçamentos de ${c.contrato} ao administrativo? A rescisão será aberta para eles adiantarem os documentos.${aviso}`)) return;
+      try {
+        await chamarApiOrcamento('POST', `/contracts/${c._id}/enviar-administrativo`);
+        depoisDeSalvar('📤 Orçamentos enviados ao administrativo');
+      } catch (erro) { falhaOrcamento(erro); }
+    }
+
+    async function iniciarReparo(id) {
+      const c = contratos.find(x => x._id === id);
+      if (!c) return;
+      const n = (c.orcamentos || []).length;
+      if (n < MINIMO_ORCAMENTOS && !confirm(`${c.contrato} tem ${n} orçamento(s) — o mínimo é ${MINIMO_ORCAMENTOS}. Iniciar o reparo mesmo assim?`)) return;
+      try {
+        await chamarApiOrcamento('PUT', `/contracts/${id}`, { faseReparo: 'execucao' });
+        fecharModalOrcamentos();
+        mostrarToast(`🛠️ ${c.contrato}: reparo iniciado`);
+        carregarDados();
+      } catch (erro) { falhaOrcamento(erro); }
+    }
+
+    // ----- Modelo de orçamento em Word (o prestador passa para o papel timbrado e assina) -----
+    function gerarModeloOrcamento() {
+      const c = contratos.find(x => x._id === contratoEmOrcamento);
+      if (!c) return;
+      const servicos = document.getElementById('orc-servicos').value.split('\n').map(s => s.trim()).filter(Boolean);
+      if (servicos.length === 0) {
+        mostrarToast('❌ Descreva pelo menos um serviço a orçar', true);
+        document.getElementById('orc-servicos').focus();
+        return;
+      }
+      const e = escaparHTML;
+      const hoje = new Date().toLocaleDateString('pt-BR');
+      const linhas = [...servicos, '', '', ''].map((s, i) => `
+        <tr><td style="text-align:center;">${s ? i + 1 : ''}</td><td>${e(s)}</td><td></td><td></td><td></td></tr>`).join('');
+      const celula = 'border:1px solid #444; padding:6px; font-size:10pt;';
+      const html = `
+<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>Solicitação de orçamento ${e(c.contrato)}</title>
+<style>
+  @page { size: A4; margin: 2cm; }
+  body { font-family: Arial, sans-serif; font-size: 11pt; color: #222; }
+  h1 { font-size: 16pt; text-align: center; margin: 0 0 4pt; }
+  h2 { font-size: 11pt; background: #eee; padding: 4pt 6pt; margin: 14pt 0 6pt; }
+  table { border-collapse: collapse; width: 100%; }
+  td, th { ${celula} }
+  th { background: #f2f2f2; }
+  .linha { border-bottom: 1px solid #444; height: 18pt; }
+  .nota { border: 1px dashed #888; padding: 6pt; font-size: 9.5pt; background: #fafafa; }
+</style></head>
+<body>
+  <p class="nota"><b>Instruções ao prestador:</b> transcreva este orçamento para o <b>papel timbrado da sua empresa</b>,
+  preencha os valores, o prazo e as condições, <b>assine</b> e devolva à imobiliária.</p>
+  <h1>ORÇAMENTO DE SERVIÇOS</h1>
+  <p style="text-align:center; margin:0;">Solicitado por: Imobiliária Integrativa · Data da solicitação: ${hoje}</p>
+
+  <h2>1. Imóvel</h2>
+  <table>
+    <tr><td style="width:30%;"><b>Endereço</b></td><td>${e(c.endereco || '')}</td></tr>
+    <tr><td><b>Referência (contrato)</b></td><td>${e(c.contrato)}</td></tr>
+    <tr><td><b>Data da vistoria</b></td><td>${c.agendamentoVistoria ? formatarDataCompleta(c.agendamentoVistoria) : ''}</td></tr>
+  </table>
+
+  <h2>2. Serviços a orçar</h2>
+  <table>
+    <tr><th style="width:6%;">Item</th><th>Descrição do serviço</th><th style="width:12%;">Qtd / Unid.</th><th style="width:15%;">Valor unit. (R$)</th><th style="width:15%;">Total (R$)</th></tr>
+    ${linhas}
+    <tr><td colspan="4" style="text-align:right;"><b>VALOR TOTAL (R$)</b></td><td></td></tr>
+  </table>
+
+  <h2>3. Condições</h2>
+  <table>
+    <tr><td style="width:40%;"><b>Prazo de execução</b></td><td>_____ dias a partir da aprovação</td></tr>
+    <tr><td><b>Validade da proposta</b></td><td>_____ dias</td></tr>
+    <tr><td><b>Forma de pagamento</b></td><td></td></tr>
+    <tr><td><b>Garantia do serviço</b></td><td></td></tr>
+    <tr><td><b>Materiais inclusos?</b></td><td>( ) Sim &nbsp;&nbsp; ( ) Não &nbsp;&nbsp; ( ) Parcialmente</td></tr>
+  </table>
+
+  <h2>4. Dados do prestador</h2>
+  <table>
+    <tr><td style="width:30%;"><b>Nome / Razão social</b></td><td></td></tr>
+    <tr><td><b>CPF / CNPJ</b></td><td></td></tr>
+    <tr><td><b>Telefone</b></td><td></td></tr>
+    <tr><td><b>E-mail</b></td><td></td></tr>
+    <tr><td><b>Endereço</b></td><td></td></tr>
+  </table>
+
+  <p style="margin-top:28pt;">Local e data: ______________________________________</p>
+  <p style="margin-top:36pt; text-align:center;">__________________________________________<br>Assinatura do prestador</p>
+</body></html>`;
+      const blob = new Blob(['﻿', html], { type: 'application/msword' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Orcamento-${String(c.contrato).replace(/[\\/:*?"<>|]/g, '-')}.doc`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      mostrarToast('📝 Modelo gerado — abra no Word ou no Google Docs');
     }
 
     // ========= PRÓXIMAS AÇÕES (V29) =========
@@ -3039,6 +3649,34 @@
         const pendentes = reparosPendentes(c);
         const urgentes = pendentes.filter(r => r.urgencia === 'URGENTE');
         const base = { id, contrato: c.contrato, locatario: c.locatario };
+
+        // V36: orçamentos faltando e encaminhamento parado
+        if (faseReparoAtual(c) === 'orcamentos') {
+          const n = (c.orcamentos || []).length;
+          if (n < MINIMO_ORCAMENTOS) {
+            acoes.push({ ...base, nivel: 'pendencia', ordem: 2, dias: 0,
+              quando: 'Orçamentos',
+              texto: `Faltam ${MINIMO_ORCAMENTOS - n} orçamento(s) (${n} de ${MINIMO_ORCAMENTOS})`,
+              botao: { rotulo: '💰 Orçamentos', acao: `abrirModalOrcamentos('${id}')` } });
+          }
+          const enc = c.encaminhamento || {};
+          const diasEnvio = enc.enviadoEm ? calcularDiasDesde(enc.enviadoEm) : null;
+          if (enc.situacao === 'aguardando' && diasEnvio !== null && diasEnvio >= 7) {
+            acoes.push({ ...base, nivel: 'atrasado', ordem: 0, dias: -diasEnvio,
+              quando: 'Cobrar',
+              texto: `Aguardando resposta de ${enc.empresa || NOMES_DESTINO[enc.destino] || 'encaminhamento'} há ${diasEnvio} dias`,
+              botao: { rotulo: '💰 Orçamentos', acao: `abrirModalOrcamentos('${id}')` } });
+          }
+        }
+
+        // V36: rescisão aberta antes de finalizar (orçamentos já com o administrativo)
+        const infoResc = infoRescisao(c);
+        if (infoResc.pendente) {
+          acoes.push({ ...base, nivel: 'pendencia', ordem: 2, dias: -(infoResc.dias || 0),
+            quando: 'Rescisão',
+            texto: `Administrativo adiantando a rescisão — ${infoResc.feitas} de ${infoResc.total} etapas (imóvel ainda em reparo)`,
+            botao: { rotulo: '📋 Rescisão', acao: `abrirModalRescisao('${id}')` } });
+        }
 
         // 1. Reparo urgente em aberto
         if (urgentes.length > 0) {
