@@ -13,7 +13,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 app.set('trust proxy', 1); // Render fica atrás de um proxy: req.ip passa a ser o IP real
 app.use(cors());
-app.use(express.json({ limit: '1mb' }));
+// Envio de arquivos (orçamentos em PDF/imagem) aceita até 15 MB; o resto, até 1 MB
+const jsonPadrao = express.json({ limit: '1mb' });
+const jsonArquivos = express.json({ limit: '15mb' });
+app.use((req, res, next) => (req.path.endsWith('/arquivo') ? jsonArquivos : jsonPadrao)(req, res, next));
 
 // ===== LOGIN (V34) =====
 // JWT_SECRET deve ser configurado no Render. Sem ele, gera um segredo temporário:
@@ -76,13 +79,133 @@ const contractSchema = new mongoose.Schema({
     caucao: { type: Boolean, default: false },              // Caução / garantia
     termoAssinado: { type: Boolean, default: false },       // Termo de rescisão assinado
     observacoes: String,
-    concluidaEm: Date
+    concluidaEm: Date,
+    orcamentosEnviadosEm: Date // V36: orçamentos repassados ao administrativo (antes mesmo de finalizar)
   },
+  // Garantia da locação (V36): define para quem vão os orçamentos
+  garantiaTipo: { type: String, enum: ['seguro-fianca', 'garantidora', 'caucao', 'fiador', 'titulo', 'sem-garantia', null], default: null },
+  garantiaEmpresa: String,
+  // Fase dos reparos no quadro (V36): orçamentos → execução → concluído
+  faseReparo: { type: String, enum: ['orcamentos', 'execucao', 'concluido', null], default: null },
+  orcamentos: [{
+    prestador: String,
+    telefone: String,
+    descricao: String,
+    valor: Number,
+    validade: Date,
+    arquivoUrl: String,      // link do arquivo (Google Drive ou outro)
+    arquivoNome: String,
+    arquivoDriveId: String,
+    escolhido: { type: Boolean, default: false },
+    dataCriacao: { type: Date, default: Date.now }
+  }],
+  // Encaminhamento dos orçamentos à seguradora / garantidora / jurídico / proprietário
+  encaminhamento: {
+    destino: { type: String, enum: ['seguradora', 'garantidora', 'juridico', 'proprietario', null], default: null },
+    empresa: String,
+    enviadoEm: Date,
+    situacao: { type: String, enum: ['aguardando', 'aprovado', 'negado', 'pago', null], default: null },
+    valorAprovado: Number,
+    observacoes: String
+  },
+  pastaDrive: { id: String, url: String },
   dataCriacao: { type: Date, default: Date.now },
   dataAtualizacao: { type: Date, default: Date.now }
 });
 
 const Contract = mongoose.model('Contract', contractSchema);
+
+// Configurações gerais guardadas no banco (ex.: pasta raiz do Google Drive)
+const configSchema = new mongoose.Schema({ chave: { type: String, unique: true }, valor: String });
+const Config = mongoose.model('Config', configSchema);
+
+// ===== GOOGLE DRIVE (V36) =====
+// Usa OAuth com a conta Google da imobiliária. Variáveis no Render:
+//   GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN
+// Escopo "drive.file": o sistema só enxerga as pastas e arquivos que ele mesmo criou.
+// A pasta raiz "Integrativa Desocupação - Orçamentos" é criada na primeira vez (ou use GOOGLE_DRIVE_PASTA_RAIZ_ID).
+const GOOGLE_TOKEN_URL = process.env.GOOGLE_TOKEN_URL || 'https://oauth2.googleapis.com/token';
+const GOOGLE_DRIVE_API = process.env.GOOGLE_DRIVE_API || 'https://www.googleapis.com/drive/v3';
+const GOOGLE_UPLOAD_API = process.env.GOOGLE_UPLOAD_API || 'https://www.googleapis.com/upload/drive/v3';
+const NOME_PASTA_RAIZ = 'Integrativa Desocupação - Orçamentos';
+const TIPOS_ARQUIVO_PERMITIDOS = [
+  'application/pdf', 'image/jpeg', 'image/png', 'image/webp',
+  'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+];
+
+function driveConfigurado() {
+  return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN);
+}
+
+let tokenDrive = { valor: null, expiraEm: 0 };
+
+async function driveToken() {
+  if (tokenDrive.valor && Date.now() < tokenDrive.expiraEm - 60000) return tokenDrive.valor;
+  const resp = await fetch(GOOGLE_TOKEN_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: new URLSearchParams({
+      client_id: process.env.GOOGLE_CLIENT_ID,
+      client_secret: process.env.GOOGLE_CLIENT_SECRET,
+      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+      grant_type: 'refresh_token'
+    })
+  });
+  const dados = await resp.json().catch(() => ({}));
+  if (!resp.ok || !dados.access_token) {
+    throw new Error(`autorização do Google recusada (${dados.error || resp.status})`);
+  }
+  tokenDrive = { valor: dados.access_token, expiraEm: Date.now() + (dados.expires_in || 3600) * 1000 };
+  return tokenDrive.valor;
+}
+
+async function driveCriarPasta(nome, paiId) {
+  const resp = await fetch(`${GOOGLE_DRIVE_API}/files?fields=id,webViewLink&supportsAllDrives=true`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${await driveToken()}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: nome, mimeType: 'application/vnd.google-apps.folder', ...(paiId ? { parents: [paiId] } : {}) })
+  });
+  const dados = await resp.json().catch(() => ({}));
+  if (!resp.ok || !dados.id) throw new Error(`falha ao criar pasta (${dados.error?.message || resp.status})`);
+  return dados;
+}
+
+async function drivePastaRaiz() {
+  if (process.env.GOOGLE_DRIVE_PASTA_RAIZ_ID) return process.env.GOOGLE_DRIVE_PASTA_RAIZ_ID;
+  const salva = await Config.findOne({ chave: 'drivePastaRaizId' });
+  if (salva && salva.valor) return salva.valor;
+  const pasta = await driveCriarPasta(NOME_PASTA_RAIZ, null);
+  await new Config({ chave: 'drivePastaRaizId', valor: pasta.id }).save();
+  return pasta.id;
+}
+
+// Uma pasta por imóvel: "CA1814-2 - Rua Ilda Carrara Canevarollo 205"
+async function garantirPastaDoContrato(contrato) {
+  if (contrato.pastaDrive && contrato.pastaDrive.id) return contrato.pastaDrive.id;
+  const nome = `${contrato.contrato || 'Contrato'} - ${contrato.endereco || contrato.locatario || ''}`
+    .replace(/[\\/:*?"<>|]/g, '-').slice(0, 150);
+  const pasta = await driveCriarPasta(nome, await drivePastaRaiz());
+  contrato.pastaDrive = { id: pasta.id, url: pasta.webViewLink };
+  return pasta.id;
+}
+
+async function driveEnviarArquivo(nome, tipo, conteudo, pastaId) {
+  const limite = `limite_${crypto.randomBytes(12).toString('hex')}`;
+  const corpo = Buffer.concat([
+    Buffer.from(`--${limite}\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n${JSON.stringify({ name: nome, parents: [pastaId] })}\r\n`),
+    Buffer.from(`--${limite}\r\nContent-Type: ${tipo}\r\n\r\n`),
+    conteudo,
+    Buffer.from(`\r\n--${limite}--`)
+  ]);
+  const resp = await fetch(`${GOOGLE_UPLOAD_API}/files?uploadType=multipart&fields=id,name,webViewLink&supportsAllDrives=true`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${await driveToken()}`, 'Content-Type': `multipart/related; boundary=${limite}` },
+    body: corpo
+  });
+  const dados = await resp.json().catch(() => ({}));
+  if (!resp.ok || !dados.id) throw new Error(`falha no envio (${dados.error?.message || resp.status})`);
+  return dados;
+}
 
 const ETAPAS_RESCISAO = ['transferenciaContas', 'calculoDebitos', 'descontoReparos', 'caucao', 'termoAssinado'];
 
@@ -431,6 +554,11 @@ app.put('/api/contracts/:id', async (req, res) => {
     contrato.prioridade = req.body.prioridade || contrato.prioridade;
     contrato.statusImovel = req.body.statusImovel || contrato.statusImovel;
     contrato.dataDisponivelAluguel = req.body.dataDisponivelAluguel || contrato.dataDisponivelAluguel;
+    // V36: garantia e fase dos reparos ('' limpa o campo)
+    if (req.body.garantiaTipo !== undefined) contrato.garantiaTipo = req.body.garantiaTipo || null;
+    if (req.body.garantiaEmpresa !== undefined) contrato.garantiaEmpresa = String(req.body.garantiaEmpresa || '').trim();
+    if (req.body.faseReparo !== undefined) contrato.faseReparo = req.body.faseReparo || null;
+    else if (req.body.statusImovel === 'em-reparo') entrarEmOrcamentos(contrato);
     contrato.dataAtualizacao = new Date();
 
     await contrato.save();
@@ -440,6 +568,155 @@ app.put('/api/contracts/:id', async (req, res) => {
   }
 });
 
+// ===== ORÇAMENTOS (V36) =====
+function dadosOrcamento(body) {
+  const d = {};
+  ['prestador', 'telefone', 'descricao', 'arquivoUrl', 'arquivoNome'].forEach(k => {
+    if (body[k] !== undefined) d[k] = String(body[k] || '').trim();
+  });
+  if (body.valor !== undefined) d.valor = Number(body.valor) > 0 ? Number(body.valor) : undefined;
+  if (body.validade !== undefined) d.validade = body.validade || undefined;
+  if (typeof body.escolhido === 'boolean') d.escolhido = body.escolhido;
+  return d;
+}
+
+function entrarEmOrcamentos(contrato) {
+  if (contrato.finalizado !== 'sim' && (!contrato.faseReparo || contrato.faseReparo === 'concluido')) {
+    contrato.faseReparo = 'orcamentos';
+  }
+}
+
+app.post('/api/contracts/:id/orcamentos', async (req, res) => {
+  try {
+    const contrato = await Contract.findById(req.params.id);
+    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
+    const d = dadosOrcamento(req.body);
+    if (!d.prestador) return res.status(400).json({ sucesso: false, erro: 'Informe o prestador' });
+    contrato.orcamentos.push(d);
+    entrarEmOrcamentos(contrato);
+    contrato.dataAtualizacao = new Date();
+    await contrato.save();
+    res.status(201).json({ sucesso: true, contrato });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+app.put('/api/contracts/:id/orcamentos/:oid', async (req, res) => {
+  try {
+    const contrato = await Contract.findById(req.params.id);
+    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
+    const orc = contrato.orcamentos.id(req.params.oid);
+    if (!orc) return res.status(404).json({ sucesso: false, erro: 'Orçamento não encontrado' });
+    const d = dadosOrcamento(req.body);
+    if (d.prestador === '') return res.status(400).json({ sucesso: false, erro: 'Informe o prestador' });
+    // Só um orçamento pode ser o escolhido
+    if (d.escolhido === true) contrato.orcamentos.forEach(o => { o.escolhido = false; });
+    orc.set(d);
+    contrato.dataAtualizacao = new Date();
+    await contrato.save();
+    res.json({ sucesso: true, contrato });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+app.delete('/api/contracts/:id/orcamentos/:oid', async (req, res) => {
+  try {
+    const contrato = await Contract.findById(req.params.id);
+    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
+    const orc = contrato.orcamentos.id(req.params.oid);
+    if (!orc) return res.status(404).json({ sucesso: false, erro: 'Orçamento não encontrado' });
+    orc.deleteOne();
+    contrato.dataAtualizacao = new Date();
+    await contrato.save();
+    res.json({ sucesso: true, contrato });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// Envia o arquivo do orçamento (PDF/imagem em base64) para a pasta do imóvel no Google Drive
+app.post('/api/contracts/:id/orcamentos/:oid/arquivo', async (req, res) => {
+  try {
+    if (!driveConfigurado()) {
+      return res.status(400).json({ sucesso: false, erro: 'Google Drive não configurado. Cole o link do arquivo no orçamento.' });
+    }
+    const contrato = await Contract.findById(req.params.id);
+    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
+    const orc = contrato.orcamentos.id(req.params.oid);
+    if (!orc) return res.status(404).json({ sucesso: false, erro: 'Orçamento não encontrado' });
+
+    const nome = String(req.body.nome || 'orcamento').replace(/[\\/:*?"<>|]/g, '_').slice(0, 120);
+    const tipo = String(req.body.tipo || 'application/octet-stream');
+    const conteudo = Buffer.from(String(req.body.base64 || ''), 'base64');
+    if (!conteudo.length) return res.status(400).json({ sucesso: false, erro: 'Arquivo vazio' });
+    if (!TIPOS_ARQUIVO_PERMITIDOS.includes(tipo)) {
+      return res.status(400).json({ sucesso: false, erro: 'Envie PDF, imagem (JPG/PNG) ou documento do Word' });
+    }
+
+    const pastaId = await garantirPastaDoContrato(contrato);
+    const prefixo = (orc.prestador || 'orcamento').replace(/[\\/:*?"<>|]/g, '_').slice(0, 60);
+    const arquivo = await driveEnviarArquivo(`${prefixo} - ${nome}`, tipo, conteudo, pastaId);
+
+    orc.arquivoDriveId = arquivo.id;
+    orc.arquivoUrl = arquivo.webViewLink;
+    orc.arquivoNome = nome;
+    contrato.dataAtualizacao = new Date();
+    await contrato.save();
+    res.json({ sucesso: true, contrato });
+  } catch (erro) {
+    console.error('❌ Google Drive:', erro.message);
+    res.status(502).json({ sucesso: false, erro: `Não foi possível enviar ao Google Drive: ${erro.message}` });
+  }
+});
+
+// Encaminhamento dos orçamentos (seguradora / garantidora / jurídico / proprietário)
+app.put('/api/contracts/:id/encaminhamento', async (req, res) => {
+  try {
+    const contrato = await Contract.findById(req.params.id);
+    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
+    const b = req.body;
+    if (b.destino !== undefined) contrato.set('encaminhamento.destino', b.destino || null);
+    if (b.empresa !== undefined) contrato.set('encaminhamento.empresa', String(b.empresa || '').trim());
+    if (b.enviadoEm !== undefined) contrato.set('encaminhamento.enviadoEm', b.enviadoEm || undefined);
+    if (b.situacao !== undefined) contrato.set('encaminhamento.situacao', b.situacao || null);
+    if (b.valorAprovado !== undefined) contrato.set('encaminhamento.valorAprovado', Number(b.valorAprovado) > 0 ? Number(b.valorAprovado) : undefined);
+    if (b.observacoes !== undefined) contrato.set('encaminhamento.observacoes', String(b.observacoes || ''));
+    // Aprovado ou pago: o reparo pode começar
+    if (['aprovado', 'pago'].includes(contrato.get('encaminhamento.situacao')) && contrato.faseReparo === 'orcamentos') {
+      contrato.faseReparo = 'execucao';
+    }
+    contrato.dataAtualizacao = new Date();
+    await contrato.save();
+    res.json({ sucesso: true, contrato });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+// Repassa os orçamentos ao administrativo: já abre a rescisão, mesmo antes de finalizar a desocupação
+app.post('/api/contracts/:id/enviar-administrativo', async (req, res) => {
+  try {
+    const contrato = await Contract.findById(req.params.id);
+    if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
+    if (!contrato.orcamentos.length) {
+      return res.status(400).json({ sucesso: false, erro: 'Cadastre os orçamentos antes de enviar ao administrativo' });
+    }
+    if (!contrato.get('rescisao.encaminhadoEm')) contrato.set('rescisao.encaminhadoEm', new Date());
+    contrato.set('rescisao.orcamentosEnviadosEm', new Date());
+    contrato.dataAtualizacao = new Date();
+    await contrato.save();
+    res.json({ sucesso: true, contrato });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
+app.get('/api/drive/status', (req, res) => {
+  res.json({ sucesso: true, configurado: driveConfigurado() });
+});
+
 // RESCISÃO (V33) - encaminhar ao administrativo e atualizar o checklist
 // Corpo aceito: { encaminhar: true, responsavel, observacoes, transferenciaContas, calculoDebitos,
 //                 descontoReparos, caucao, termoAssinado }
@@ -447,7 +724,8 @@ app.put('/api/contracts/:id/rescisao', async (req, res) => {
   try {
     const contrato = await Contract.findById(req.params.id);
     if (!contrato) return res.status(404).json({ sucesso: false, erro: 'Não encontrado' });
-    if (contrato.finalizado !== 'sim') {
+    // V36: a rescisão também pode ter sido aberta antes, quando os orçamentos foram enviados ao administrativo
+    if (contrato.finalizado !== 'sim' && !contrato.get('rescisao.encaminhadoEm')) {
       return res.status(400).json({ sucesso: false, erro: 'Finalize a desocupação antes de encaminhar a rescisão' });
     }
 
@@ -501,6 +779,7 @@ app.post('/api/repairs/:contractId', async (req, res) => {
       dataDevolucaoChaves: req.body.dataDevolucaoChaves || undefined,
       valorServico: Number(req.body.valorServico) > 0 ? Number(req.body.valorServico) : undefined
     });
+    entrarEmOrcamentos(contrato); // V36: reparo novo começa pelos orçamentos
     contrato.dataAtualizacao = new Date();
     await contrato.save();
 
@@ -530,6 +809,13 @@ app.put('/api/repairs/:contractId/:reparoId', async (req, res) => {
 
     reparo.status = req.body.status || reparo.status;
     reparo.dataConclusao = req.body.status === 'CONCLUIDO' ? new Date() : null;
+    // V36: todos os reparos concluídos durante a execução → fase concluída
+    if (contrato.faseReparo === 'execucao' && contrato.reparos.every(r => r.status === 'CONCLUIDO')) {
+      contrato.faseReparo = 'concluido';
+    }
+    if (req.body.status && req.body.status !== 'CONCLUIDO' && contrato.faseReparo === 'concluido') {
+      contrato.faseReparo = 'execucao';
+    }
 
     contrato.dataAtualizacao = new Date();
     await contrato.save();
