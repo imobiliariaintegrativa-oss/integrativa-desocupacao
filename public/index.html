@@ -768,6 +768,10 @@
     .cartao-rodape { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 6px; }
     .cartao-resp { font-size: 11px; color: #7f8c8d; }
     .cartao-acao { font-size: 11px; padding: 4px 8px; }
+    .cartao-botoes { display: inline-flex; gap: 4px; flex-shrink: 0; }
+    .cartao-acao-leve { background: #ecf0f1; color: var(--dark); }
+    .cartao-acao-leve:hover { background: #dfe6e9; }
+    body.dark-mode .cartao-acao-leve { background: #4a4a4a; color: #ecf0f1; }
     .tag-despejo { background: #c0392b; color: #fff; border-radius: 8px; padding: 0 6px; font-size: 10px; font-weight: bold; }
     .quadro-mais { font-size: 12px; background: none; color: var(--primary); padding: 4px; }
     .quadro-mais:hover { background: none; text-decoration: underline; }
@@ -961,7 +965,7 @@
 
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V34 🔒 Login</div>
+    <div class="version-badge">V35 🔧 Reparos no quadro</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" data-aba="dashboard" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -1552,6 +1556,7 @@
 
         <div class="modal-buttons">
           <button type="button" class="btn-primary" onclick="salvarEdicao()">💾 Salvar</button>
+          <button type="button" class="btn-primary" style="background-color: #e67e22;" onclick="registrarReparoDaEdicao()">🔧 Registrar reparo</button>
           <button type="button" class="btn-secondary" onclick="fecharModalEditar()">❌ Cancelar</button>
         </div>
       </form>
@@ -2547,7 +2552,9 @@
 
       let rotulo = finalizado ? (infoRescisao(c).pendente ? '📤 ' : '✅ ') + textoRescisao(c) : '';
       let rotuloClasse = '';
-      if (!finalizado) {
+      if (!finalizado && emReparos(c)) {
+        rotulo = '🔧 ' + rotuloReparos(c);
+      } else if (!finalizado) {
         const atual = etapas[idxAtual === -1 ? etapas.length - 1 : idxAtual];
         rotulo = atual.rotulo;
         if (atual.estado === 'atrasada') rotuloClasse = 'atrasada';
@@ -2737,8 +2744,22 @@
     // (rescisão concluída, ou finalizado antes da V33 sem encaminhamento).
     function estagioKanban(c) {
       if (c.finalizado === 'sim') return infoRescisao(c).pendente ? 5 : 6;
+      // V35: imóvel em reparos vai para a coluna Reparos, mesmo que etapas anteriores não estejam completas
+      if (emReparos(c)) return 3;
       const idx = calcularEtapas(c).findIndex(e => e.estado !== 'feita');
       return idx === -1 ? 4 : idx;
+    }
+
+    // Em reparos = tem reparo em aberto, ou foi marcado como "Em reparo" e ainda não tem reparo registrado
+    function emReparos(c) {
+      if (c.finalizado === 'sim') return false;
+      if (reparosPendentes(c).length > 0) return true;
+      return c.statusImovel === 'em-reparo' && (c.reparos || []).length === 0;
+    }
+
+    function rotuloReparos(c) {
+      const n = reparosPendentes(c).length;
+      return n > 0 ? `${n} reparo(s) em aberto` : 'Registrar o reparo';
     }
 
     function acaoCartao(c, estagio) {
@@ -2748,7 +2769,9 @@
         ? { rotulo: '✏️ Abrir', acao: `abrirModalEditar('${id}')` }
         : { rotulo: '📅 Agendar', acao: `abrirModalEditar('${id}')` };
       if (estagio === 2) return { rotulo: '🔑 Recebi as chaves', acao: `marcarChavesRecebidas('${id}')` };
-      if (estagio === 3) return { rotulo: '🔧 Reparos', acao: `abrirModalReparos('${id}')` };
+      if (estagio === 3) return reparosPendentes(c).length > 0
+        ? { rotulo: '🔧 Ver reparos', acao: `abrirModalReparos('${id}')` }
+        : { rotulo: '➕ Registrar reparo', acao: `abrirModalReparo('${id}')` };
       if (estagio === 4) return { rotulo: '✅ Finalizar', acao: `finalizarContrato('${id}')` };
       if (estagio === 5) return { rotulo: '📋 Rescisão', acao: `abrirModalRescisao('${id}')` };
       if (estagio === 6) return infoRescisao(c).encaminhada
@@ -2767,8 +2790,8 @@
     function renderizarCartao(c, estagio) {
       const etapas = calcularEtapas(c);
       const atual = estagio < 5 ? etapas[Math.min(estagio, etapas.length - 1)] : null;
-      const proximo = estagio >= 5 ? textoRescisao(c) : atual.rotulo;
-      const atrasada = atual && atual.estado === 'atrasada';
+      const proximo = estagio >= 5 ? textoRescisao(c) : (estagio === 3 ? rotuloReparos(c) : atual.rotulo);
+      const atrasada = estagio !== 3 && atual && atual.estado === 'atrasada';
 
       let dias = '';
       if (estagio < 5 && c.comunicacaoInquilino) {
@@ -2800,7 +2823,10 @@
           <div class="cartao-proximo ${atrasada ? 'atrasada' : ''}">➜ ${escaparHTML(proximo)}</div>
           <div class="cartao-rodape">
             <span class="cartao-resp">${escaparHTML(resp)}</span>
-            ${acao ? `<button class="cartao-acao" onclick="event.stopPropagation(); ${acao.acao}">${acao.rotulo}</button>` : ''}
+            <span class="cartao-botoes">
+              ${estagio < 5 && !acao.acao.startsWith('abrirModalReparo(') ? `<button class="cartao-acao cartao-acao-leve" title="Registrar reparo" onclick="event.stopPropagation(); abrirModalReparo('${c._id}')">➕🔧</button>` : ''}
+              ${acao ? `<button class="cartao-acao" onclick="event.stopPropagation(); ${acao.acao}">${acao.rotulo}</button>` : ''}
+            </span>
           </div>
         </div>`;
     }
@@ -2923,9 +2949,27 @@
         return;
       }
 
-      // Para "Reparos" ou "Pronto": marca as chaves como recebidas, se ainda não estiverem
-      if (destino >= 3 && c.statusChaves !== 'recebidas') {
-        atualizarCamposContrato(id, { statusChaves: 'recebidas' })
+      // Para "Reparos": registrar o reparo (ao salvar, o cartão passa para a coluna Reparos)
+      if (destino === 3) {
+        mostrarToast('🔧 Registre o reparo: ao salvar, o cartão vai para Reparos.');
+        abrirModalReparo(id);
+        return;
+      }
+
+      // Saindo de "Reparos" com reparo em aberto: é preciso concluir os reparos
+      if (origem === 3 && reparosPendentes(c).length > 0) {
+        mostrarToast('🔧 Conclua os reparos em aberto para tirar o imóvel de Reparos.');
+        abrirModalReparos(id);
+        return;
+      }
+
+      // Saindo de "Reparos" quando só estava marcado como "Em reparo" (sem reparo registrado)
+      const camposSaida = origem === 3 && c.statusImovel === 'em-reparo'
+        ? { statusImovel: destino === 4 ? 'pronto-para-aluguel' : 'em-desocupacao' } : {};
+
+      // Para "Pronto": marca as chaves como recebidas, se ainda não estiverem
+      if (destino === 4 && c.statusChaves !== 'recebidas') {
+        atualizarCamposContrato(id, { ...camposSaida, statusChaves: 'recebidas' })
           .then(() => {
             mostrarAlertsChavesRecebidas(c.contrato, c.locatario);
             if (origem < 2) setTimeout(() => mostrarToast('ℹ️ Chaves registradas. O cartão continua na etapa atual porque faltam datas anteriores.'), 4200);
@@ -2937,23 +2981,17 @@
 
       // Voltar para "Aguardando chaves"
       if (destino === 2 && origem >= 3) {
-        atualizarCamposContrato(id, { statusChaves: 'pendente' })
+        atualizarCamposContrato(id, { ...camposSaida, statusChaves: 'pendente' })
           .then(() => { mostrarToast(`↩️ ${c.contrato}: chaves voltaram para pendente`); carregarDados(); })
           .catch(erroMover);
         return;
       }
 
-      // De "Reparos" para "Pronto": é preciso concluir os reparos
+      // De "Reparos" (só marcado como "Em reparo") para "Pronto", com as chaves já recebidas
       if (origem === 3 && destino === 4) {
-        mostrarToast('🔧 Conclua os reparos em aberto para liberar o contrato.');
-        abrirModalReparos(id);
-        return;
-      }
-
-      // De "Pronto" para "Reparos": registrar um novo reparo
-      if (origem === 4 && destino === 3) {
-        mostrarToast('🔧 Registre o reparo necessário.');
-        abrirModalReparo(id);
+        atualizarCamposContrato(id, camposSaida)
+          .then(() => { mostrarToast(`✅ ${c.contrato}: saiu de Reparos`); carregarDados(); })
+          .catch(erroMover);
         return;
       }
 
@@ -3414,7 +3452,22 @@
       proposta.setDate(proposta.getDate() + 7);
       document.getElementById('rep-data').value = proposta.toISOString().split('T')[0];
 
+      // Limpa os campos do prestador que poderiam ter ficado do reparo anterior
+      ['rep-prestador-nome', 'rep-prestador-telefone', 'rep-prestador-email', 'rep-prestador-especialidade',
+       'rep-data-retirada', 'rep-data-devolucao', 'rep-valor-servico'].forEach(campo => {
+        const el = document.getElementById(campo);
+        if (el) el.value = '';
+      });
+
       document.getElementById('modalReparo').classList.add('show');
+    }
+
+    // Botão "Registrar reparo" dentro da edição do contrato (V35)
+    function registrarReparoDaEdicao() {
+      const id = contratoEmEdicao;
+      if (!id) return;
+      fecharModalEditar();
+      abrirModalReparo(id);
     }
 
     // ========= GERAR RECIBO DE CHAVES (V25.8) =========
@@ -3849,6 +3902,7 @@ Protocolo: REC-DEV-${new Date().getTime()}
     // Texto da etapa atual (mesma lógica da coluna "Etapas" da tabela)
     function etapaAtualTexto(c) {
       if (c.finalizado === 'sim') return 'Finalizado';
+      if (emReparos(c)) return rotuloReparos(c);
       const etapas = calcularEtapas(c);
       const atual = etapas.find(e => e.estado !== 'feita') || etapas[etapas.length - 1];
       return atual.rotulo;
