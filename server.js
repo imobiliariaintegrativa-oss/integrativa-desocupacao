@@ -491,7 +491,15 @@ app.post('/api/repairs/:contractId', async (req, res) => {
       responsavel: req.body.responsavel,
       dataLimite: req.body.dataLimite,
       status: 'PENDENTE',
-      dataCriacao: new Date()
+      dataCriacao: new Date(),
+      // V35: o formulário já enviava estes campos, mas o servidor não salvava
+      prestadorNome: req.body.prestadorNome || undefined,
+      prestadorTelefone: req.body.prestadorTelefone || undefined,
+      prestadorEmail: req.body.prestadorEmail || undefined,
+      prestadorEspecialidade: req.body.prestadorEspecialidade || undefined,
+      dataRetiradaChaves: req.body.dataRetiradaChaves || undefined,
+      dataDevolucaoChaves: req.body.dataDevolucaoChaves || undefined,
+      valorServico: Number(req.body.valorServico) > 0 ? Number(req.body.valorServico) : undefined
     });
     contrato.dataAtualizacao = new Date();
     await contrato.save();
