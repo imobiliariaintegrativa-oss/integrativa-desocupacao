@@ -899,6 +899,15 @@
     body.dark-mode .cartao-info { color: #ccc; }
     body.dark-mode .orc-rotulo, body.dark-mode .orc-item-detalhe { color: #bbb; }
 
+    /* ===== IMPORTAÇÃO (V37) ===== */
+    .imp-tabela { max-height: 48vh; overflow-y: auto; margin-bottom: 8px; }
+    .imp-tabela td, .imp-tabela th { font-size: 12px; }
+    .imp-tabela input[type=checkbox] { width: auto; min-width: 0; transform: scale(1.15); }
+    .imp-tabela input[type=text] { min-width: 140px; padding: 5px 7px; font-size: 12px; }
+    .imp-novo { color: #27ae60; font-weight: bold; }
+    .imp-atualiza { color: #d35400; font-weight: bold; }
+    .imp-igual { color: #95a5a6; }
+
     /* ===== RESCISÃO (V33) ===== */
     .rescisao-cabecalho {
       background: #f4f7fb;
@@ -1026,7 +1035,7 @@
 
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V36.2 💰 Orçamentos</div>
+    <div class="version-badge">V37 📥 Importar planilha</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" data-aba="dashboard" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -1346,6 +1355,8 @@
           </span>
         </div>
         <button onclick="abrirModalNovoContrato()" class="btn-success" style="background-color: #27ae60;">➕ Novo Contrato</button>
+        <button onclick="document.getElementById('arquivoImportacao').click()" style="background-color: #8e44ad;" title="Planilha de contratos exportada da Superlógica (.xlsx ou .csv)">📥 Importar planilha</button>
+        <input type="file" id="arquivoImportacao" accept=".xlsx,.csv" style="display: none;" onchange="lerPlanilhaImportacao(this)">
         <button onclick="recarregarDados()" style="background-color: #95a5a6;">🔄 Atualizar</button>
 
         <div class="modo-visao" role="group" aria-label="Modo de visualização">
@@ -1816,6 +1827,37 @@
       <div class="modal-buttons">
         <button type="button" class="btn-primary" id="btnFaseReparo">🛠️ Iniciar reparo</button>
         <button type="button" class="btn-secondary" onclick="fecharModalOrcamentos()">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL: IMPORTAR PLANILHA (V37) -->
+  <div id="modalImportacao" class="modal">
+    <div class="modal-content modal-largo" style="max-width: 1000px;">
+      <div class="modal-header">📥 Importar contratos da planilha</div>
+      <div id="impResumo" class="rescisao-cabecalho"></div>
+      <div class="orc-linha" style="align-items: center;">
+        <label for="impFiltro" style="font-weight: bold; font-size: 13px; flex: 0 0 auto;">Mostrar:</label>
+        <select id="impFiltro" onchange="renderizarImportacao()"></select>
+        <input type="text" id="impBusca" placeholder="🔍 Buscar contrato ou endereço" oninput="renderizarImportacao()">
+      </div>
+      <div class="orc-linha" style="align-items: center; font-size: 13px;">
+        <label style="display: flex; gap: 6px; align-items: center; font-weight: normal;">
+          <input type="checkbox" id="impTodos" onchange="marcarTodosImportacao(this.checked)" style="width: auto; min-width: 0;"> Marcar todos os visíveis
+        </label>
+        <span id="impContagem" class="orc-dica" style="margin: 0;"></span>
+      </div>
+      <div class="table-wrapper imp-tabela">
+        <table>
+          <thead><tr><th></th><th>Contrato</th><th>Imóvel</th><th>Status jurídico</th><th>Garantia</th><th>Situação no painel</th><th>Locatário</th></tr></thead>
+          <tbody id="impLinhas"></tbody>
+        </table>
+      </div>
+      <div class="orc-dica">O locatário vem da planilha quando ela traz essa informação; senão, preencha na coluna "Locatário" ou deixe em branco ("A preencher"). Em contratos já cadastrados, só são completados o locatário (quando está "A preencher") e a garantia — nada é apagado. CPF, telefone e e-mail da planilha não são guardados.</div>
+      <div id="impProgresso" class="orc-dica" style="font-weight: bold;"></div>
+      <div class="modal-buttons">
+        <button type="button" class="btn-primary" id="btnImportar" onclick="importarSelecionados()">📥 Importar selecionados</button>
+        <button type="button" class="btn-secondary" onclick="fecharModalImportacao()">Cancelar</button>
       </div>
     </div>
   </div>
@@ -2900,6 +2942,288 @@
         });
     }
 
+    // ========= IMPORTAR PLANILHA DA SUPERLÓGICA (V37) =========
+    // Lê .xlsx direto no navegador (sem biblioteca externa) ou .csv, e mostra uma prévia antes de gravar.
+    let linhasImportacao = [];
+
+    async function lerZip(buffer) {
+      const dv = new DataView(buffer);
+      let fim = -1;
+      for (let i = buffer.byteLength - 22; i >= Math.max(0, buffer.byteLength - 65557); i--) {
+        if (dv.getUint32(i, true) === 0x06054b50) { fim = i; break; }
+      }
+      if (fim < 0) throw new Error('Arquivo .xlsx inválido');
+      const total = dv.getUint16(fim + 10, true);
+      let p = dv.getUint32(fim + 16, true);
+      const arquivos = {};
+      const dec = new TextDecoder();
+      for (let n = 0; n < total; n++) {
+        const metodo = dv.getUint16(p + 10, true);
+        const tamComp = dv.getUint32(p + 20, true);
+        const lenNome = dv.getUint16(p + 28, true), lenExtra = dv.getUint16(p + 30, true), lenCom = dv.getUint16(p + 32, true);
+        const local = dv.getUint32(p + 42, true);
+        const nome = dec.decode(new Uint8Array(buffer, p + 46, lenNome));
+        arquivos[nome] = { metodo, tamComp, local };
+        p += 46 + lenNome + lenExtra + lenCom;
+      }
+      return async (nome) => {
+        const a = arquivos[nome];
+        if (!a) return null;
+        const ini = a.local + 30 + dv.getUint16(a.local + 26, true) + dv.getUint16(a.local + 28, true);
+        const dados = new Uint8Array(buffer, ini, a.tamComp);
+        if (a.metodo === 0) return dec.decode(dados);
+        const fluxo = new Blob([dados]).stream().pipeThrough(new DecompressionStream('deflate-raw'));
+        return await new Response(fluxo).text();
+      };
+    }
+
+    function colunaParaIndice(ref) {
+      const letras = ref.replace(/\d+/g, '');
+      let n = 0;
+      for (const ch of letras) n = n * 26 + (ch.charCodeAt(0) - 64);
+      return n - 1;
+    }
+
+    async function lerXlsx(buffer) {
+      const ler = await lerZip(buffer);
+      const xml = (t) => new DOMParser().parseFromString(t, 'application/xml');
+      const textoSi = (si) => [...si.getElementsByTagName('t')].map(t => t.textContent).join('');
+      const ss = await ler('xl/sharedStrings.xml');
+      const textos = ss ? [...xml(ss).getElementsByTagName('si')].map(textoSi) : [];
+      const planilha = await ler('xl/worksheets/sheet1.xml');
+      if (!planilha) throw new Error('Não encontrei a planilha dentro do arquivo');
+      return [...xml(planilha).getElementsByTagName('row')].map(row => {
+        const linha = [];
+        for (const c of row.getElementsByTagName('c')) {
+          const tipo = c.getAttribute('t');
+          const v = c.getElementsByTagName('v')[0];
+          let valor = v ? v.textContent : '';
+          if (tipo === 's') valor = textos[Number(valor)] || '';
+          else if (tipo === 'inlineStr') valor = textoSi(c);
+          linha[colunaParaIndice(c.getAttribute('r'))] = valor;
+        }
+        return Array.from(linha, x => (x == null ? '' : String(x)));
+      });
+    }
+
+    function lerCsv(texto) {
+      const sep = (texto.split('\n')[0].match(/;/g) || []).length >= (texto.split('\n')[0].match(/,/g) || []).length ? ';' : ',';
+      const linhas = [];
+      let campo = '', linha = [], aspas = false;
+      for (let i = 0; i < texto.length; i++) {
+        const ch = texto[i];
+        if (aspas) {
+          if (ch === '"' && texto[i + 1] === '"') { campo += '"'; i++; }
+          else if (ch === '"') aspas = false;
+          else campo += ch;
+        } else if (ch === '"') aspas = true;
+        else if (ch === sep) { linha.push(campo); campo = ''; }
+        else if (ch === '\n') { linha.push(campo.replace(/\r$/, '')); linhas.push(linha); linha = []; campo = ''; }
+        else campo += ch;
+      }
+      if (campo || linha.length) { linha.push(campo); linhas.push(linha); }
+      return linhas;
+    }
+
+    const normalizarTexto = s => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+    const normalizarNumeroContrato = s => String(s || '').toUpperCase().replace(/\s+/g, '').replace(/-/g, '/');
+
+    // Converte a garantia/seguradora da Superlógica para os campos do painel
+    function converterGarantia(garantia, seguradora) {
+      const g = normalizarTexto(garantia), s = normalizarTexto(seguradora);
+      let empresa = String(seguradora || '').trim();
+      if (/cred ?pago/.test(s)) empresa = 'CredPago';
+      else if (/garantix/.test(s)) empresa = 'Garantix';
+      else if (/pottencial/.test(s)) empresa = 'Pottencial';
+      else if (/porto/.test(s)) empresa = 'Porto Seguro';
+      else if (/loft/.test(s)) empresa = 'Loft';
+      let tipo = '';
+      if (/cred ?pago|garantix|loft/.test(s)) tipo = 'garantidora';
+      else if (/seguro/.test(g)) tipo = 'seguro-fianca';
+      else if (/fiador/.test(g)) tipo = 'fiador';
+      else if (/titulo/.test(g)) tipo = 'titulo';
+      else if (/cauc/.test(g)) tipo = 'caucao';
+      else if (/sem garantia/.test(g)) tipo = 'sem-garantia';
+      return { tipo, empresa: tipo === 'fiador' || tipo === 'titulo' || tipo === 'caucao' ? '' : empresa };
+    }
+
+    function interpretarLinhas(linhas) {
+      const iCab = linhas.findIndex(l => l.some(c => normalizarTexto(c) === 'contrato'));
+      if (iCab < 0) throw new Error('Não encontrei a coluna "Contrato" na planilha');
+      const cab = linhas[iCab].map(normalizarTexto);
+      const achar = (...nomes) => cab.findIndex(c => nomes.some(n => c.startsWith(n)));
+      const iContrato = achar('contrato'), iStatus = achar('status'), iGarantia = achar('garantia');
+      const iSeguradora = achar('seguradora', 'garantidora'), iLocatario = achar('locatario', 'inquilino');
+      const iEndereco = achar('endereco', 'imovel');
+
+      const resultado = [];
+      for (const l of linhas.slice(iCab + 1)) {
+        // A célula "Contrato" pode ter várias linhas: "CA0958/1 - Casa..., Rua...", "Locatário Nome - CPF...", "Proprietário ..."
+        const partes = String(l[iContrato] || '').split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+        const bruto = partes[0] || '';
+        const m = bruto.match(/^([A-Za-z]{0,4}\s*\d+\s*[\/-]\s*\d+)\s*-\s*(.*)$/);
+        if (!m) continue; // ignora linhas em branco e o rodapé ("Listando N contratos...")
+        // Só o nome do locatário é aproveitado (CPF, telefone e e-mail não são guardados)
+        const linhaLocatario = partes.find(p => /^locat[aá]rio\b/i.test(p)) || '';
+        const locatarioDaCelula = linhaLocatario
+          .replace(/^locat[aá]rio\s*:?\s*/i, '')
+          .replace(/\s+-\s+(CPF|CNPJ|E-?mail|Telefone)\b.*$/i, '')
+          .replace(/\s+(CPF|CNPJ)\s*:.*$/i, '')
+          .trim();
+        const numero = m[1].replace(/\s+/g, '').toUpperCase();
+        const descricao = m[2].trim();
+        const virgula = descricao.indexOf(', ');
+        const endereco = iEndereco >= 0 && l[iEndereco]
+          ? String(l[iEndereco]).trim()
+          : (virgula > 0 ? `${descricao.slice(virgula + 2)} (${descricao.slice(0, virgula)})` : descricao);
+        const garantia = converterGarantia(iGarantia >= 0 ? l[iGarantia] : '', iSeguradora >= 0 ? l[iSeguradora] : '');
+        const existente = contratos.find(c => normalizarNumeroContrato(c.contrato) === normalizarNumeroContrato(numero));
+        const locatario = (iLocatario >= 0 ? String(l[iLocatario] || '').trim() : '') || locatarioDaCelula;
+        const mudaGarantia = !!(existente && garantia.tipo &&
+          (existente.garantiaTipo !== garantia.tipo || (existente.garantiaEmpresa || '') !== garantia.empresa));
+        // Completa o locatário só quando no painel ele está vazio ou "A preencher"
+        const preencheLocatario = !!(existente && locatario &&
+          (!existente.locatario || normalizarTexto(existente.locatario) === 'a preencher'));
+        resultado.push({
+          numero, descricao, endereco,
+          status: iStatus >= 0 ? String(l[iStatus] || '').trim() || '-' : '-',
+          garantiaTexto: [iGarantia >= 0 ? l[iGarantia] : '', iSeguradora >= 0 ? l[iSeguradora] : ''].map(x => String(x || '').trim()).filter(x => x && x !== '-').join(' · ') || '-',
+          garantia,
+          locatario,
+          mudaGarantia,
+          preencheLocatario,
+          existente: existente ? existente._id : null,
+          acao: !existente ? 'novo' : (mudaGarantia || preencheLocatario ? 'atualiza' : 'igual'),
+          marcado: false
+        });
+      }
+      return resultado;
+    }
+
+    async function lerPlanilhaImportacao(input) {
+      const arquivo = input.files[0];
+      input.value = '';
+      if (!arquivo) return;
+      try {
+        const linhas = /\.csv$/i.test(arquivo.name)
+          ? lerCsv(await arquivo.text())
+          : await lerXlsx(await arquivo.arrayBuffer());
+        linhasImportacao = interpretarLinhas(linhas);
+        if (!linhasImportacao.length) throw new Error('Nenhum contrato encontrado na planilha');
+        abrirModalImportacao(arquivo.name);
+      } catch (erro) {
+        console.error('❌ Importação:', erro);
+        mostrarToast(`❌ ${erro.message}`, true);
+      }
+    }
+
+    function abrirModalImportacao(nomeArquivo) {
+      const porStatus = {};
+      linhasImportacao.forEach(l => { porStatus[l.status] = (porStatus[l.status] || 0) + 1; });
+      const novos = linhasImportacao.filter(l => l.acao === 'novo').length;
+      document.getElementById('impResumo').innerHTML = `
+        <strong>${escaparHTML(nomeArquivo)}</strong> · ${linhasImportacao.length} contratos na planilha<br>
+        ${novos} ainda não estão no painel · ${linhasImportacao.length - novos} já cadastrados`;
+      const filtro = document.getElementById('impFiltro');
+      const temDesocupacao = Object.keys(porStatus).some(s => normalizarTexto(s) === 'em desocupacao');
+      filtro.innerHTML = `
+        <option value="todos">Todos os status (${linhasImportacao.length})</option>
+        ${Object.entries(porStatus).sort((a, b) => b[1] - a[1]).map(([s, n]) => `<option value="${escaparHTML(s)}">${escaparHTML(s)} (${n})</option>`).join('')}`;
+      // Começa mostrando os contratos "Em desocupação", que são os que interessam ao painel
+      filtro.value = temDesocupacao ? Object.keys(porStatus).find(s => normalizarTexto(s) === 'em desocupacao') : 'todos';
+      if (temDesocupacao) linhasImportacao.forEach(l => { if (normalizarTexto(l.status) === 'em desocupacao' && l.acao !== 'igual') l.marcado = true; });
+      document.getElementById('impBusca').value = '';
+      document.getElementById('impProgresso').textContent = '';
+      document.getElementById('btnImportar').disabled = false;
+      renderizarImportacao();
+      document.getElementById('modalImportacao').classList.add('show');
+    }
+
+    function linhasVisiveisImportacao() {
+      const filtro = document.getElementById('impFiltro').value;
+      const busca = normalizarTexto(document.getElementById('impBusca').value);
+      return linhasImportacao.filter(l =>
+        (filtro === 'todos' || l.status === filtro) &&
+        (!busca || normalizarTexto(l.numero + ' ' + l.descricao).includes(busca)));
+    }
+
+    function renderizarImportacao() {
+      const visiveis = linhasVisiveisImportacao();
+      const rotuloAtualiza = l => `<span class="imp-atualiza">Já cadastrado · completa ${[l.preencheLocatario ? 'locatário' : '', l.mudaGarantia ? 'garantia' : ''].filter(Boolean).join(' e ')}</span>`;
+      document.getElementById('impLinhas').innerHTML = visiveis.map(l => {
+        const i = linhasImportacao.indexOf(l);
+        const situacao = l.acao === 'novo' ? '<span class="imp-novo">Novo</span>'
+          : (l.acao === 'atualiza' ? rotuloAtualiza(l) : '<span class="imp-igual">Já cadastrado · sem mudanças</span>');
+        const colunaLocatario = l.acao === 'novo'
+          ? `<input type="text" value="${escaparHTML(l.locatario)}" placeholder="A preencher" oninput="linhasImportacao[${i}].locatario = this.value">`
+          : (l.preencheLocatario ? escaparHTML(l.locatario) : '<span class="imp-igual">—</span>');
+        return `<tr>
+          <td><input type="checkbox" ${l.marcado ? 'checked' : ''} ${l.acao === 'igual' ? 'disabled' : ''} onchange="linhasImportacao[${i}].marcado = this.checked; contarImportacao()"></td>
+          <td><strong>${escaparHTML(l.numero)}</strong></td>
+          <td>${escaparHTML(l.endereco)}</td>
+          <td>${escaparHTML(l.status)}</td>
+          <td>${escaparHTML(l.garantiaTexto)}</td>
+          <td>${situacao}</td>
+          <td>${colunaLocatario}</td>
+        </tr>`;
+      }).join('') || '<tr><td colspan="7" style="text-align:center; padding: 20px;">Nenhum contrato neste filtro</td></tr>';
+      contarImportacao();
+    }
+
+    function contarImportacao() {
+      const sel = linhasImportacao.filter(l => l.marcado);
+      const visiveis = linhasVisiveisImportacao().filter(l => l.acao !== 'igual');
+      document.getElementById('impTodos').checked = visiveis.length > 0 && visiveis.every(l => l.marcado);
+      document.getElementById('impContagem').textContent =
+        `${sel.length} selecionado(s): ${sel.filter(l => l.acao === 'novo').length} novo(s), ${sel.filter(l => l.acao === 'atualiza').length} já cadastrado(s) a completar`;
+    }
+
+    function marcarTodosImportacao(marcar) {
+      linhasVisiveisImportacao().forEach(l => { if (l.acao !== 'igual') l.marcado = marcar; });
+      renderizarImportacao();
+    }
+
+    function fecharModalImportacao() {
+      document.getElementById('modalImportacao').classList.remove('show');
+    }
+
+    async function importarSelecionados() {
+      const sel = linhasImportacao.filter(l => l.marcado && l.acao !== 'igual');
+      if (!sel.length) { mostrarToast('Selecione ao menos um contrato', true); return; }
+      const novos = sel.filter(l => l.acao === 'novo').length;
+      if (!confirm(`Importar ${sel.length} contrato(s)?\n\n${novos} serão cadastrados e ${sel.length - novos} já cadastrado(s) serão completados (locatário e/ou garantia).`)) return;
+
+      const botao = document.getElementById('btnImportar');
+      const progresso = document.getElementById('impProgresso');
+      botao.disabled = true;
+      let ok = 0; const falhas = [];
+      for (const [n, l] of sel.entries()) {
+        progresso.textContent = `Importando ${n + 1} de ${sel.length}...`;
+        try {
+          const corpo = l.acao === 'novo'
+            ? { contrato: l.numero, locatario: l.locatario.trim() || 'A preencher', endereco: l.endereco,
+                tipoDesocupacao: 'comum', statusChaves: 'pendente', garantiaTipo: l.garantia.tipo || null, garantiaEmpresa: l.garantia.empresa }
+            : {
+                ...(l.mudaGarantia ? { garantiaTipo: l.garantia.tipo, garantiaEmpresa: l.garantia.empresa } : {}),
+                ...(l.preencheLocatario ? { locatario: l.locatario } : {})
+              };
+          const resp = await fetch(l.acao === 'novo' ? `${API_URL}/contracts` : `${API_URL}/contracts/${l.existente}`, {
+            method: l.acao === 'novo' ? 'POST' : 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corpo)
+          });
+          const data = await resp.json().catch(() => ({}));
+          if (!data.sucesso) throw new Error(data.erro || `HTTP ${resp.status}`);
+          ok++;
+        } catch (erro) {
+          falhas.push(`${l.numero}: ${erro.message}`);
+        }
+      }
+      botao.disabled = false;
+      progresso.textContent = falhas.length ? `Concluído com ${falhas.length} falha(s): ${falhas.slice(0, 3).join(' · ')}` : '';
+      mostrarToast(`📥 ${ok} contrato(s) importado(s)${falhas.length ? ` · ${falhas.length} com erro` : ''}`, falhas.length > 0);
+      if (!falhas.length) fecharModalImportacao();
+      carregarDados();
+    }
+
     // ========= QUADRO KANBAN (V32 → V36) =========
     // V36: a antiga coluna "Reparos" virou duas: "Orçamentos" e "Em reparo"
     const COL = { COMUNICAR: 0, VISTORIA: 1, CHAVES: 2, ORCAMENTOS: 3, REPARO: 4, PRONTO: 5, RESCISAO: 6, ENCERRADO: 7 };
@@ -3328,9 +3652,9 @@
       titulo: 'Título de capitalização', 'sem-garantia': 'Sem garantia'
     };
     const EMPRESAS_SUGERIDAS = {
-      seguradora: ['Porto Seguro', 'Pottencial'],
-      garantidora: ['Loft', 'Garantix'],
-      'seguro-fianca': ['Porto Seguro', 'Pottencial']
+      seguradora: ['Porto Seguro', 'Pottencial', 'Tokio Marine', 'Too Seguros'],
+      garantidora: ['Loft', 'Garantix', 'CredPago'],
+      'seguro-fianca': ['Porto Seguro', 'Pottencial', 'Tokio Marine', 'Too Seguros']
     };
     const TAMANHO_MAXIMO_ARQUIVO = 10 * 1024 * 1024;
     let contratoEmOrcamento = null;
