@@ -134,7 +134,13 @@ const TIPOS_ARQUIVO_PERMITIDOS = [
 ];
 
 function driveConfigurado() {
-  return !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET && process.env.GOOGLE_REFRESH_TOKEN);
+  return !!(credencialGoogle('GOOGLE_CLIENT_ID') && credencialGoogle('GOOGLE_CLIENT_SECRET') && credencialGoogle('GOOGLE_REFRESH_TOKEN'));
+}
+
+// Lê uma credencial do Google ignorando espaços, quebras de linha e aspas coladas por engano
+// (esses valores nunca têm espaços de verdade)
+function credencialGoogle(nome) {
+  return String(process.env[nome] || '').replace(/\s+/g, '').replace(/^["']+|["']+$/g, '');
 }
 
 let tokenDrive = { valor: null, expiraEm: 0 };
@@ -145,15 +151,21 @@ async function driveToken() {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: new URLSearchParams({
-      client_id: process.env.GOOGLE_CLIENT_ID,
-      client_secret: process.env.GOOGLE_CLIENT_SECRET,
-      refresh_token: process.env.GOOGLE_REFRESH_TOKEN,
+      client_id: credencialGoogle('GOOGLE_CLIENT_ID'),
+      client_secret: credencialGoogle('GOOGLE_CLIENT_SECRET'),
+      refresh_token: credencialGoogle('GOOGLE_REFRESH_TOKEN'),
       grant_type: 'refresh_token'
     })
   });
   const dados = await resp.json().catch(() => ({}));
   if (!resp.ok || !dados.access_token) {
-    throw new Error(`autorização do Google recusada (${dados.error || resp.status})`);
+    const dicas = {
+      invalid_client: 'confira GOOGLE_CLIENT_ID e GOOGLE_CLIENT_SECRET no Render',
+      invalid_grant: 'o GOOGLE_REFRESH_TOKEN expirou ou foi revogado; gere outro no OAuth Playground',
+      unauthorized_client: 'o refresh token foi gerado com outro ID do cliente'
+    };
+    const dica = dicas[dados.error] ? ` — ${dicas[dados.error]}` : '';
+    throw new Error(`autorização do Google recusada (${dados.error || resp.status})${dica}`);
   }
   tokenDrive = { valor: dados.access_token, expiraEm: Date.now() + (dados.expires_in || 3600) * 1000 };
   return tokenDrive.valor;
