@@ -526,6 +526,9 @@ app.post('/api/contracts', async (req, res) => {
       prioridade: req.body.prioridade || 'media',
       statusImovel: req.body.statusImovel || 'em-desocupacao',
       dataDisponivelAluguel: req.body.dataDisponivelAluguel,
+      // V37: garantia vinda da importação da planilha da Superlógica
+      garantiaTipo: req.body.garantiaTipo || null,
+      garantiaEmpresa: req.body.garantiaEmpresa ? String(req.body.garantiaEmpresa).trim() : undefined,
       reparos: req.body.reparos || []
     });
     await novoContrato.save();
