@@ -768,7 +768,29 @@
     .cartao-rodape { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; gap: 6px; }
     .cartao-resp { font-size: 11px; color: #7f8c8d; }
     .cartao-acao { font-size: 11px; padding: 4px 8px; }
-    .cartao-botoes { display: inline-flex; gap: 4px; flex-shrink: 0; }
+    .cartao-botoes { display: inline-flex; gap: 4px; flex-shrink: 0; align-items: center; }
+    .cartao { user-select: none; -webkit-user-select: none; }
+    .cartao-fantasma {
+      position: fixed;
+      z-index: 6000;
+      pointer-events: none;
+      opacity: 0.9;
+      transform: rotate(2deg);
+      box-shadow: 0 10px 24px rgba(0,0,0,0.25);
+      cursor: grabbing;
+    }
+    body.arrastando-cartao, body.arrastando-cartao * { cursor: grabbing !important; }
+    .cartao-mover {
+      min-width: 0;
+      width: 34px;
+      padding: 3px 2px;
+      font-size: 12px;
+      border-radius: 4px;
+      background: #ecf0f1;
+      border: 1px solid #d5dbe3;
+      cursor: pointer;
+    }
+    body.dark-mode .cartao-mover { background: #4a4a4a; color: #ecf0f1; border-color: #555; }
     .cartao-acao-leve { background: #ecf0f1; color: var(--dark); }
     .cartao-acao-leve:hover { background: #dfe6e9; }
     body.dark-mode .cartao-acao-leve { background: #4a4a4a; color: #ecf0f1; }
@@ -1004,7 +1026,7 @@
 
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V36 💰 Orçamentos</div>
+    <div class="version-badge">V36.2 💰 Orçamentos</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" data-aba="dashboard" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -1367,7 +1389,7 @@
 
       <!-- QUADRO KANBAN (V32) -->
       <div id="quadro" class="quadro"></div>
-      <div class="quadro-dica">Arraste os cartões entre as colunas ou use o botão de cada cartão. Clique no cartão para editar.</div>
+      <div class="quadro-dica">Arraste os cartões entre as colunas com o mouse, ou use o menu ⇄ de cada cartão (também no celular). Clique no cartão para abrir.</div>
     </div>
   </div>
 
@@ -3000,9 +3022,8 @@
         : (finalizado && infoRescisao(c).encaminhada ? `abrirModalRescisao('${c._id}')` : `abrirModalEditar('${c._id}')`);
       const resp = finalizado && infoRescisao(c).responsavel ? `Adm.: ${infoRescisao(c).responsavel}` : nomeResponsavel(c);
       return `
-        <div class="cartao prio-${escaparHTML(c.prioridade || 'media')}" draggable="true" data-id="${c._id}"
-             ondragstart="iniciarArraste(event, '${c._id}')" ondragend="terminarArraste(event)"
-             onclick="${aoClicar}" title="Clique para abrir">
+        <div class="cartao prio-${escaparHTML(c.prioridade || 'media')}" data-id="${c._id}"
+             onclick="${aoClicar}" title="Clique para abrir · arraste para outra coluna">
           <div class="cartao-topo">
             <span class="cartao-contrato">${escaparHTML(c.contrato)}</span>
             <span>${c.tipoDesocupacao === 'despejo' ? '<span class="tag-despejo">DESPEJO</span>' : ''}${dias}</span>
@@ -3014,6 +3035,11 @@
           <div class="cartao-rodape">
             <span class="cartao-resp">${escaparHTML(resp)}</span>
             <span class="cartao-botoes">
+              <select class="cartao-mover" title="Mover para outra coluna" aria-label="Mover para outra coluna"
+                      onclick="event.stopPropagation()" onchange="moverPeloMenu(this, '${c._id}')">
+                <option value="">⇄</option>
+                ${COLUNAS_QUADRO.map((col, i) => i === estagio ? '' : `<option value="${i}">${col.titulo}</option>`).join('')}
+              </select>
               ${!finalizado ? `<button class="cartao-acao cartao-acao-leve" title="Registrar reparo" onclick="event.stopPropagation(); abrirModalReparo('${c._id}')">➕🔧</button>` : ''}
               ${acao ? `<button class="cartao-acao" onclick="event.stopPropagation(); ${acao.acao}">${acao.rotulo}</button>` : ''}
             </span>
@@ -3044,8 +3070,7 @@
           if (!mostrarTodosFinalizadosQuadro) lista = lista.slice(0, LIMITE_FINALIZADOS_QUADRO);
         }
         return `
-          <div class="quadro-coluna" style="border-top-color: ${col.cor};"
-               ondragover="permitirSoltar(event)" ondragleave="sairDaColuna(event)" ondrop="soltarCartao(event, ${i})">
+          <div class="quadro-coluna" data-coluna="${i}" style="border-top-color: ${col.cor};">
             <div class="quadro-cabecalho"><span>${col.titulo}</span><span class="quadro-contagem">${colunas[i].length}</span></div>
             <div class="quadro-cartoes">
               ${lista.length ? lista.map(c => renderizarCartao(c, i)).join('') : '<div class="quadro-vazio">Nenhum contrato</div>'}
@@ -3070,36 +3095,90 @@
       }
     }
 
-    function iniciarArraste(event, id) {
-      cartaoArrastado = id;
-      event.dataTransfer.effectAllowed = 'move';
-      try { event.dataTransfer.setData('text/plain', id); } catch (e) { /* alguns navegadores */ }
-      event.currentTarget.classList.add('arrastando');
+    // ----- Arrastar cartões (V36.2) -----
+    // Arraste próprio com o mouse (pointer events), no lugar do "arrastar e soltar" nativo do navegador,
+    // que em alguns casos devolvia o cartão para a coluna de origem.
+    let arraste = null;          // { id, origemX, origemY, cartao, fantasma, ativo, colunaAlvo }
+    let arrastouAgora = false;   // evita que o clique ao soltar abra o cartão
+
+    function colunaSobPonteiro(x, y) {
+      const el = document.elementFromPoint(x, y);
+      return el ? el.closest('.quadro-coluna') : null;
     }
 
-    function terminarArraste(event) {
-      event.currentTarget.classList.remove('arrastando');
-      document.querySelectorAll('.quadro-coluna.arrastando-sobre').forEach(el => el.classList.remove('arrastando-sobre'));
+    function marcarColunaAlvo(coluna) {
+      document.querySelectorAll('.quadro-coluna.arrastando-sobre').forEach(el => { if (el !== coluna) el.classList.remove('arrastando-sobre'); });
+      if (coluna) coluna.classList.add('arrastando-sobre');
     }
 
-    function permitirSoltar(event) {
-      event.preventDefault();
-      event.dataTransfer.dropEffect = 'move';
-      event.currentTarget.classList.add('arrastando-sobre');
+    function encerrarArraste() {
+      if (!arraste) return;
+      if (arraste.fantasma) arraste.fantasma.remove();
+      if (arraste.cartao) arraste.cartao.classList.remove('arrastando');
+      marcarColunaAlvo(null);
+      document.body.classList.remove('arrastando-cartao');
+      arraste = null;
     }
 
-    function sairDaColuna(event) {
-      if (!event.currentTarget.contains(event.relatedTarget)) {
-        event.currentTarget.classList.remove('arrastando-sobre');
+    document.addEventListener('pointerdown', (e) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return; // no toque, use o menu ⇄ do cartão
+      const cartao = e.target.closest('#quadro .cartao');
+      if (!cartao || e.target.closest('button, select, a, input')) return;
+      arraste = { id: cartao.dataset.id, origemX: e.clientX, origemY: e.clientY, cartao, fantasma: null, ativo: false, colunaAlvo: null };
+    });
+
+    document.addEventListener('pointermove', (e) => {
+      if (!arraste) return;
+      if (!arraste.ativo) {
+        if (Math.hypot(e.clientX - arraste.origemX, e.clientY - arraste.origemY) < 6) return;
+        // Começa o arraste: cria a "sombra" do cartão que acompanha o mouse
+        const r = arraste.cartao.getBoundingClientRect();
+        const fantasma = arraste.cartao.cloneNode(true);
+        fantasma.classList.add('cartao-fantasma');
+        fantasma.style.width = `${r.width}px`;
+        arraste.deslocX = arraste.origemX - r.left;
+        arraste.deslocY = arraste.origemY - r.top;
+        document.body.appendChild(fantasma);
+        arraste.fantasma = fantasma;
+        arraste.cartao.classList.add('arrastando');
+        document.body.classList.add('arrastando-cartao');
+        arraste.ativo = true;
       }
-    }
+      e.preventDefault();
+      arraste.fantasma.style.left = `${e.clientX - arraste.deslocX}px`;
+      arraste.fantasma.style.top = `${e.clientY - arraste.deslocY}px`;
+      arraste.colunaAlvo = colunaSobPonteiro(e.clientX, e.clientY);
+      marcarColunaAlvo(arraste.colunaAlvo);
+    });
 
-    function soltarCartao(event, destino) {
-      event.preventDefault();
-      event.currentTarget.classList.remove('arrastando-sobre');
-      const id = cartaoArrastado || event.dataTransfer.getData('text/plain');
-      cartaoArrastado = null;
-      if (id) moverCartao(id, destino);
+    document.addEventListener('pointerup', (e) => {
+      if (!arraste) return;
+      const { ativo, id } = arraste;
+      const coluna = ativo ? colunaSobPonteiro(e.clientX, e.clientY) : null;
+      encerrarArraste();
+      if (!ativo) return; // foi só um clique
+      arrastouAgora = true;
+      setTimeout(() => { arrastouAgora = false; }, 50);
+      if (coluna) moverCartao(id, Number(coluna.dataset.coluna));
+    });
+
+    document.addEventListener('pointercancel', encerrarArraste);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') encerrarArraste(); });
+
+    // O clique que termina um arraste não deve abrir o cartão
+    document.addEventListener('click', (e) => {
+      if (arrastouAgora && e.target.closest('#quadro')) {
+        e.stopPropagation();
+        e.preventDefault();
+        arrastouAgora = false;
+      }
+    }, true);
+
+    // Menu "⇄ Mover para…" do cartão (funciona também no celular)
+    function moverPeloMenu(select, id) {
+      const destino = select.value;
+      select.value = '';
+      if (destino !== '') moverCartao(id, Number(destino));
     }
 
     function aplicarMovimento(id, campos, mensagem) {
