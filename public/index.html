@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Integrativa Desocupação - Painel de Gerenciamento</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   <style>
     * {
       margin: 0;
@@ -1035,7 +1034,7 @@
 
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V38 📄 Termo de desocupação</div>
+    <div class="version-badge">V39 🖋️ Papel timbrado</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" data-aba="dashboard" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -2939,6 +2938,88 @@
         });
     }
 
+    // ========= PAPEL TIMBRADO (V39) =========
+    // Cabeçalho e rodapé repetidos em todas as páginas impressas, com a marca d'água no centro.
+    // As imagens ficam em /public (timbrado-cabecalho.png, timbrado-rodape.png, timbrado-marca.png).
+    function urlTimbrado(nome) {
+      return `${window.location.origin}/timbrado-${nome}.png`;
+    }
+
+    function aplicarTimbrado(html, opcoes = {}) {
+      const paisagem = !!opcoes.paisagem;
+      const css = `
+<style id="papel-timbrado">
+  @page { size: A4 ${paisagem ? 'landscape' : 'portrait'}; margin: 0; }
+  html, body { margin: 0 !important; padding: 0 !important; max-width: none !important; background: #fff; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .tb-cabecalho, .tb-rodape { position: fixed; left: 0; width: 100%; z-index: 1; pointer-events: none; }
+  .tb-cabecalho { top: 0; }
+  .tb-rodape { bottom: 0; }
+  .tb-cabecalho img, .tb-rodape img { display: block; width: 100%; height: auto; }
+  /* Paisagem: o cabeçalho mantém a altura do retrato — logo à esquerda e faixa à direita (duas partes da mesma imagem) */
+  .tb-cabecalho.pais { height: 28mm; }
+  .tb-cab-esq, .tb-cab-dir { position: absolute; top: 0; height: 28mm; overflow: hidden; }
+  .tb-cab-esq { left: 0; width: 73mm; }
+  .tb-cab-dir { right: 0; width: 107mm; }
+  .tb-cabecalho .tb-cab-esq img, .tb-cabecalho .tb-cab-dir img { position: absolute; top: 0; height: 28mm; width: auto; }
+  .tb-cab-esq img { left: 0; }
+  .tb-cab-dir img { right: 0; }
+  .tb-rodape.pais img { width: 210mm; }
+  .tb-marca { position: fixed; top: 50%; left: 50%; width: ${paisagem ? '95mm' : '125mm'}; transform: translate(-50%, -50%); z-index: 0; pointer-events: none; }
+  .tb-folha { width: 100%; border-collapse: collapse; position: relative; z-index: 2; }
+  .tb-folha > thead > tr > td, .tb-folha > tfoot > tr > td, .tb-folha > tbody > tr > td.tb-conteudo { padding: 0; border: 0; background: none !important; }
+  .tb-folha > tbody > tr { background: none !important; }
+  .tb-espaco-cab { height: ${paisagem ? '32mm' : '36mm'}; }
+  .tb-espaco-rod { height: ${paisagem ? '15mm' : '17mm'}; }
+  .tb-conteudo { padding: 0 ${paisagem ? '14mm' : '18mm'} !important; vertical-align: top; }
+  .barra { position: fixed; top: 10px; right: 14px; z-index: 10; margin: 0 !important; }
+  @media print { .barra { display: none !important; } }
+</style>`;
+      const corpo = (html.match(/<body[^>]*>([\s\S]*)<\/body>/i) || [null, html])[1];
+      const novoCorpo = `<body>
+${paisagem
+  ? `<div class="tb-cabecalho pais"><div class="tb-cab-esq"><img src="${urlTimbrado('cabecalho')}" alt=""></div><div class="tb-cab-dir"><img src="${urlTimbrado('cabecalho')}" alt=""></div></div>`
+  : `<div class="tb-cabecalho"><img src="${urlTimbrado('cabecalho')}" alt=""></div>`}
+<img class="tb-marca" src="${urlTimbrado('marca')}" alt="">
+<div class="tb-rodape${paisagem ? ' pais' : ''}"><img src="${urlTimbrado('rodape')}" alt=""></div>
+<table class="tb-folha">
+  <thead><tr><td><div class="tb-espaco-cab"></div></td></tr></thead>
+  <tfoot><tr><td><div class="tb-espaco-rod"></div></td></tr></tfoot>
+  <tbody><tr><td class="tb-conteudo">${corpo}</td></tr></tbody>
+</table>
+</body>`;
+      let saida = /<\/head>/i.test(html) ? html.replace(/<\/head>/i, `${css}</head>`) : `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">${css}</head><body></body></html>`;
+      saida = /<body[^>]*>[\s\S]*<\/body>/i.test(saida) ? saida.replace(/<body[^>]*>[\s\S]*<\/body>/i, () => novoCorpo) : saida + novoCorpo;
+      return saida;
+    }
+
+    // Abre o documento numa janela, com o papel timbrado, e imprime quando as imagens estiverem carregadas
+    function abrirDocumentoTimbrado(html, opcoes = {}) {
+      const janela = window.open('', '_blank', opcoes.janela || 'width=900,height=1000');
+      if (!janela) {
+        mostrarToast('❌ O navegador bloqueou a janela do documento. Permita pop-ups para este site.', true);
+        return null;
+      }
+      const semAutoImpressao = html.replace(/<script>\s*window\.addEventListener\('load'[\s\S]*?<\/script>/i, '');
+      const comImpressao = semAutoImpressao.replace(/<\/body>/i, `<script>
+  (function () {
+    var imgs = Array.prototype.slice.call(document.images);
+    var pendentes = imgs.filter(function (i) { return !i.complete; });
+    var imprimiu = false;
+    function imprimir() { if (imprimiu) return; imprimiu = true; setTimeout(function () { window.print(); }, 200); }
+    if (!pendentes.length) { imprimir(); return; }
+    var faltam = pendentes.length;
+    pendentes.forEach(function (i) { i.addEventListener('load', fim); i.addEventListener('error', fim); });
+    function fim() { faltam--; if (faltam <= 0) imprimir(); }
+    setTimeout(imprimir, 4000); // não espera para sempre
+  })();
+<\/script></body>`);
+      janela.document.open();
+      janela.document.write(aplicarTimbrado(comImpressao, opcoes));
+      janela.document.close();
+      return janela;
+    }
+
     // ========= RESPONSÁVEL = USUÁRIOS DO SISTEMA (V38) =========
     let nomesUsuarios = [];
 
@@ -2992,12 +3073,8 @@
       const e = escaparHTML;
       const fimAviso = new Date(t.comunicacao); fimAviso.setDate(fimAviso.getDate() + AVISO_PREVIO_DIAS);
       const responsavel = NOMES_RESPONSAVEL[t.responsavel] || t.responsavel;
-      const logo = !paraWord && logoData ? `<img src="${logoData}" alt="Logo" style="max-height:60px; max-width:180px;">` : '';
+      // V39: o logo e o nome da empresa vêm do papel timbrado
       return `
-  <div style="text-align:center; margin-bottom:14pt;">
-    ${logo}
-    <div style="font-size:10pt; color:#555;">${e(EMPRESA_TERMO)}</div>
-  </div>
   <h1 style="font-size:15pt; text-align:center; margin:0 0 4pt;">TERMO DE DESOCUPAÇÃO DE IMÓVEL</h1>
   <p style="text-align:center; margin:0 0 16pt; font-size:10pt;">Comunicação de desocupação, aviso prévio e ciência da vistoria de saída</p>
 
@@ -3061,7 +3138,11 @@
         const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
 <head><meta charset="utf-8"><title>${escaparHTML(nomeArquivo)}</title>
 <style>@page { size: A4; margin: 2cm; } body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.45; }</style></head>
-<body>${htmlTermo(t, true)}</body></html>`;
+<body>
+<p style="margin:0 0 14pt;"><img src="${urlTimbrado('cabecalho')}" width="604" alt="Integrativa"></p>
+${htmlTermo(t, true)}
+<p style="margin:24pt 0 0;"><img src="${urlTimbrado('rodape')}" width="604" alt=""></p>
+</body></html>`;
         const blob = new Blob(['﻿', html], { type: 'application/msword' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -3072,13 +3153,9 @@
         return true;
       }
 
-      const janela = window.open('', '_blank', 'width=900,height=1000');
-      if (!janela) { mostrarToast('❌ O navegador bloqueou a janela do termo. Permita pop-ups para este site.', true); return false; }
-      janela.document.open();
-      janela.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${escaparHTML(nomeArquivo)}</title>
+      const janela = abrirDocumentoTimbrado(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${escaparHTML(nomeArquivo)}</title>
 <style>
-  @page { size: A4; margin: 18mm 18mm; }
-  body { font-family: Arial, Helvetica, sans-serif; font-size: 11.5pt; line-height: 1.5; color: #222; max-width: 760px; margin: 24px auto; padding: 0 16px; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 11pt; line-height: 1.45; color: #222; }
   .barra { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 16px; }
   .barra button { background: #8e44ad; color: #fff; border: 0; border-radius: 5px; padding: 9px 16px; font-weight: bold; cursor: pointer; }
   .barra button.sec { background: #95a5a6; }
@@ -3087,10 +3164,8 @@
 </style></head><body>
 <div class="barra"><button onclick="window.print()">🖨️ Imprimir / Salvar PDF</button><button class="sec" onclick="window.close()">Fechar</button></div>
 ${htmlTermo(t, false)}
-<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });<\/script>
 </body></html>`);
-      janela.document.close();
-      return true;
+      return !!janela;
     }
 
     function gerarTermoDesocupacao(id, formato) {
@@ -4714,19 +4789,18 @@ ${htmlTermo(t, false)}
       const descricao = document.getElementById('rep-descricao').value || 'Não informado';
 
       const agora = new Date().toLocaleString('pt-BR');
-      const logoHTML = getLogoHTML();
       const html = `
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <style>
-body { font-family: Arial, sans-serif; padding: 20px; }
-.header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 15px; }
+body { font-family: Arial, sans-serif; font-size: 13px; }
+.header { text-align: center; margin-bottom: 18px; border-bottom: 2px solid #333; padding-bottom: 15px; }
 .logo { text-align: center; margin-bottom: 20px; }
 .titulo { font-size: 24px; font-weight: bold; }
 .subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
-.secao { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+.secao { margin: 12px 0; padding: 10px 14px; border: 1px solid #ddd; background: rgba(255,255,255,.75); }
 .secao-titulo { font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #2c3e50; }
 .linha { display: flex; margin-bottom: 8px; }
 .label { font-weight: bold; width: 150px; }
@@ -4736,9 +4810,6 @@ body { font-family: Arial, sans-serif; padding: 20px; }
 </style>
 </head>
 <body>
-<div class="logo">
-  ${logoHTML}
-</div>
 <div class="header">
   <div class="titulo">🔑 RECIBO DE RETIRADA DE CHAVES</div>
   <div class="subtitulo">Integrativa Negócios Imobiliários</div>
@@ -4797,10 +4868,7 @@ Protocolo: REC-${new Date().getTime()}
 </html>
       `;
 
-      const janela = window.open('', '', 'width=800,height=600');
-      janela.document.write(html);
-      janela.document.close();
-      setTimeout(() => janela.print(), 250);
+      abrirDocumentoTimbrado(html); // V39: papel timbrado
     }
 
     // ========= RECIBO RETIRADA DE CHAVES - VISTORIADOR =========
@@ -4822,19 +4890,18 @@ Protocolo: REC-${new Date().getTime()}
       const quantidadeChaves = parseInt(document.getElementById('edit-quantidadeChaves').value) || 2;
 
       const agora = new Date().toLocaleString('pt-BR');
-      const logoHTML = getLogoHTML();
       const html = `
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <style>
-body { font-family: Arial, sans-serif; padding: 20px; }
-.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #27ae60; padding-bottom: 15px; }
+body { font-family: Arial, sans-serif; font-size: 13px; }
+.header { text-align: center; margin-bottom: 18px; border-bottom: 3px solid #27ae60; padding-bottom: 15px; }
 .logo { text-align: center; margin-bottom: 20px; }
 .titulo { font-size: 24px; font-weight: bold; color: #27ae60; }
 .subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
-.secao { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+.secao { margin: 12px 0; padding: 10px 14px; border: 1px solid #ddd; background: rgba(255,255,255,.75); }
 .secao-titulo { font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #2c3e50; }
 .linha { display: flex; margin-bottom: 8px; }
 .label { font-weight: bold; width: 180px; }
@@ -4844,9 +4911,6 @@ body { font-family: Arial, sans-serif; padding: 20px; }
 </style>
 </head>
 <body>
-<div class="logo">
-  ${logoHTML}
-</div>
 <div class="header">
   <div class="titulo">🔑 RECIBO DE RETIRADA DE CHAVES</div>
   <div style="font-size: 14px; color: #27ae60; margin-top: 5px;">VISTORIADOR RETIRA DO LOCATÁRIO</div>
@@ -4903,10 +4967,7 @@ Protocolo: REC-RET-${new Date().getTime()}
 </html>
       `;
 
-      const janela = window.open('', '', 'width=900,height=700');
-      janela.document.write(html);
-      janela.document.close();
-      setTimeout(() => janela.print(), 250);
+      abrirDocumentoTimbrado(html); // V39: papel timbrado
     }
 
     // ========= RECIBO DEVOLUÇÃO DE CHAVES - VISTORIADOR =========
@@ -4928,19 +4989,18 @@ Protocolo: REC-RET-${new Date().getTime()}
       const quantidadeChaves = parseInt(document.getElementById('edit-quantidadeChaves').value) || 2;
 
       const agora = new Date().toLocaleString('pt-BR');
-      const logoHTML = getLogoHTML();
       const html = `
 <!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
 <style>
-body { font-family: Arial, sans-serif; padding: 20px; }
-.header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #3498db; padding-bottom: 15px; }
+body { font-family: Arial, sans-serif; font-size: 13px; }
+.header { text-align: center; margin-bottom: 18px; border-bottom: 3px solid #3498db; padding-bottom: 15px; }
 .logo { text-align: center; margin-bottom: 20px; }
 .titulo { font-size: 24px; font-weight: bold; color: #3498db; }
 .subtitulo { font-size: 14px; color: #666; margin-top: 5px; }
-.secao { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+.secao { margin: 12px 0; padding: 10px 14px; border: 1px solid #ddd; background: rgba(255,255,255,.75); }
 .secao-titulo { font-weight: bold; font-size: 16px; margin-bottom: 10px; color: #2c3e50; }
 .linha { display: flex; margin-bottom: 8px; }
 .label { font-weight: bold; width: 180px; }
@@ -4950,9 +5010,6 @@ body { font-family: Arial, sans-serif; padding: 20px; }
 </style>
 </head>
 <body>
-<div class="logo">
-  ${logoHTML}
-</div>
 <div class="header">
   <div class="titulo">🔑 RECIBO DE DEVOLUÇÃO DE CHAVES</div>
   <div style="font-size: 14px; color: #3498db; margin-top: 5px;">VISTORIADOR DEVOLVE AO PROPRIETÁRIO (APÓS REPAROS)</div>
@@ -5010,10 +5067,7 @@ Protocolo: REC-DEV-${new Date().getTime()}
 </html>
       `;
 
-      const janela = window.open('', '', 'width=900,height=700');
-      janela.document.write(html);
-      janela.document.close();
-      setTimeout(() => janela.print(), 250);
+      abrirDocumentoTimbrado(html); // V39: papel timbrado
     }
 
     // ========= RELATÓRIOS (V25.10) =========
@@ -5186,7 +5240,7 @@ Protocolo: REC-DEV-${new Date().getTime()}
   th { background: ${cor}; color: #fff; text-align: left; padding: 8px; font-size: 11px; }
   td { padding: 7px 8px; border-bottom: 1px solid #e3e8ef; vertical-align: top; font-size: 11px; }
   tr { page-break-inside: avoid; }
-  tbody tr:nth-child(even) td { background: #f7f9fb; }
+  tbody tr:nth-child(even) td { background: rgba(240,244,248,.7); }
   .vazio { text-align: center; color: #7f8c8d; padding: 24px; }
   .sub { color: #7f8c8d; font-size: 10px; }
   .alerta { color: #c0392b; font-weight: bold; }
@@ -5203,7 +5257,6 @@ Protocolo: REC-DEV-${new Date().getTime()}
 </div>
 <div class="topo">
   <div>
-    ${logoData ? `<img src="${logoData}" alt="Logo">` : '<div class="empresa">Integrativa Desocupação</div>'}
     <h1>${escaparHTML(cfg.titulo)}</h1>
     <div class="desc">${escaparHTML(cfg.descricao || '')}</div>
   </div>
@@ -5223,14 +5276,7 @@ ${cfg.observacao ? `<div class="obs">${escaparHTML(cfg.observacao)}</div>` : ''}
 </body>
 </html>`;
 
-      const janela = window.open('', '_blank', 'width=1000,height=750');
-      if (!janela) {
-        mostrarToast('❌ O navegador bloqueou a janela do relatório. Permita pop-ups para este site.', true);
-        return;
-      }
-      janela.document.open();
-      janela.document.write(html);
-      janela.document.close();
+      abrirDocumentoTimbrado(html, { paisagem: !!cfg.paisagem, janela: 'width=1000,height=750' }); // V39: papel timbrado
     }
 
     function gerarRelatorioEmAndamento() {
@@ -5818,10 +5864,9 @@ ${cfg.observacao ? `<div class="obs">${escaparHTML(cfg.observacao)}</div>` : ''}
       `;
 
       const pdfHTML = `
-        <div style="background: white; padding: 40px; font-family: Arial, sans-serif; font-size: 11pt; color: #333;">
-          <div style="border-bottom: 3px solid #2c5aa0; padding-bottom: 15px; margin-bottom: 30px; text-align: center;">
-            ${logoData ? `<img src="${logoData}" style="max-height: 60px; max-width: 180px; margin-bottom: 8px;">` : ''}
-            <h1 style="font-size: 24pt; color: #2c5aa0; margin-bottom: 5px;">Integrativa Desocupação</h1>
+        <div class="rel-geral" style="font-family: Arial, sans-serif; font-size: 11pt; color: #333;">
+          <div style="border-bottom: 3px solid #2c5aa0; padding-bottom: 10px; margin-bottom: 18px; text-align: center;">
+            <h1 style="font-size: 20pt; color: #2c5aa0; margin: 0 0 5px;">Relatório Geral de Desocupações</h1>
             <p style="font-size: 9pt; color: #666; margin: 0;">Relatório de Desocupações e Manutenção</p>
             <p style="font-size: 9pt; color: #666; margin: 0;">Data: ${dataFormatada}</p>
           </div>
@@ -5855,19 +5900,24 @@ ${cfg.observacao ? `<div class="obs">${escaparHTML(cfg.observacao)}</div>` : ''}
         </div>
       `;
 
-      const elemento = document.createElement('div');
-      elemento.innerHTML = pdfHTML;
-
-      const opt = {
-        margin: 0,
-        filename: `Relatorio-Desocupacao-${dataFormatada.replace(/\//g, '-')}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2 },
-        jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
-      };
-
-      html2pdf().set(opt).from(elemento).save();
-      mostrarToast('✅ PDF gerado e baixado!');
+      // V39: abre em janela com o papel timbrado (Imprimir → Salvar como PDF)
+      const janela = abrirDocumentoTimbrado(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8">
+<title>Relatorio-Desocupacao-${dataFormatada.replace(/\//g, '-')}</title>
+<style>
+  body { font-family: Arial, sans-serif; }
+  thead { display: table-header-group; }
+  tr { page-break-inside: avoid; }
+  .rel-geral tbody tr:nth-child(odd) { background: rgba(240,244,248,.7) !important; }
+  .rel-geral tbody tr:nth-child(even) { background: transparent !important; }
+  .rel-geral thead th { background: #2c5aa0; color: #fff; }
+  .barra { display: flex; gap: 8px; }
+  .barra button { background: #2c5aa0; color: #fff; border: 0; border-radius: 5px; padding: 9px 16px; font-weight: bold; cursor: pointer; }
+  .barra button.sec { background: #95a5a6; }
+</style></head><body>
+<div class="barra"><button onclick="window.print()">🖨️ Imprimir / Salvar PDF</button><button class="sec" onclick="window.close()">Fechar</button></div>
+${pdfHTML}
+</body></html>`, { paisagem: true, janela: 'width=1100,height=800' });
+      if (janela) mostrarToast('📄 Relatório aberto — use "Salvar como PDF" na impressão');
     }
 
     function recarregarDados() {
