@@ -40,6 +40,7 @@ const contractSchema = new mongoose.Schema({
   tipoDesocupacao: { type: String, enum: ['comum', 'despejo'], default: 'comum' },
   comunicacaoInquilino: Date,
   agendamentoVistoria: Date,
+  horaVistoria: String, // V38: horário da vistoria ("HH:MM"), usado no termo de desocupação
   entregaChaves: Date,
   dataRetiradaChaves: Date,
   dataDevolucaoChaves: Date,
@@ -257,6 +258,10 @@ function senhaValida(senha) {
   return typeof senha === 'string' && senha.length >= SENHA_MINIMA;
 }
 
+function horaValida(h) {
+  return typeof h === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(h);
+}
+
 function agoraEmSegundos() {
   return new Date(Math.floor(Date.now() / 1000) * 1000);
 }
@@ -411,6 +416,16 @@ app.post('/api/auth/alterar-senha', async (req, res) => {
   }
 });
 
+// Nomes dos usuários ativos (para escolher o responsável no contrato) — qualquer usuário logado
+app.get('/api/usuarios/nomes', async (req, res) => {
+  try {
+    const nomes = (await Usuario.find({ ativo: true })).map(u => u.nome).sort((a, b) => a.localeCompare(b));
+    res.json({ sucesso: true, nomes });
+  } catch (erro) {
+    res.status(500).json({ sucesso: false, erro: erro.message });
+  }
+});
+
 // USUÁRIOS (somente administradores)
 app.get('/api/usuarios', exigirAdmin, async (req, res) => {
   try {
@@ -515,6 +530,7 @@ app.post('/api/contracts', async (req, res) => {
       tipoDesocupacao: req.body.tipoDesocupacao || 'comum',
       comunicacaoInquilino: req.body.comunicacaoInquilino,
       agendamentoVistoria: req.body.agendamentoVistoria,
+      horaVistoria: horaValida(req.body.horaVistoria) ? req.body.horaVistoria : undefined,
       entregaChaves: req.body.entregaChaves,
       dataRetiradaChaves: req.body.dataRetiradaChaves,
       dataDevolucaoChaves: req.body.dataDevolucaoChaves,
@@ -522,7 +538,8 @@ app.post('/api/contracts', async (req, res) => {
       finalizado: req.body.finalizado || 'nao',
       dataFinalizacao: req.body.finalizado === 'sim' ? new Date() : undefined,
       rescisao: req.body.finalizado === 'sim' ? { encaminhadoEm: new Date() } : undefined,
-      responsavel: req.body.responsavel,
+      // V38: o responsável é quem está cadastrando, se não vier outro escolhido
+      responsavel: (req.body.responsavel && String(req.body.responsavel).trim()) || req.usuario.nome,
       prioridade: req.body.prioridade || 'media',
       statusImovel: req.body.statusImovel || 'em-desocupacao',
       dataDisponivelAluguel: req.body.dataDisponivelAluguel,
@@ -547,8 +564,10 @@ app.put('/api/contracts/:id', async (req, res) => {
     contrato.locatario = req.body.locatario || contrato.locatario;
     contrato.endereco = req.body.endereco || contrato.endereco;
     contrato.tipoDesocupacao = req.body.tipoDesocupacao || contrato.tipoDesocupacao;
+    const semComunicacaoAntes = !contrato.comunicacaoInquilino;
     contrato.comunicacaoInquilino = req.body.comunicacaoInquilino || contrato.comunicacaoInquilino;
     contrato.agendamentoVistoria = req.body.agendamentoVistoria || contrato.agendamentoVistoria;
+    if (req.body.horaVistoria !== undefined) contrato.horaVistoria = horaValida(req.body.horaVistoria) ? req.body.horaVistoria : undefined;
     contrato.entregaChaves = req.body.entregaChaves || contrato.entregaChaves;
     contrato.dataRetiradaChaves = req.body.dataRetiradaChaves || contrato.dataRetiradaChaves;
     contrato.dataDevolucaoChaves = req.body.dataDevolucaoChaves || contrato.dataDevolucaoChaves;
@@ -566,6 +585,11 @@ app.put('/api/contracts/:id', async (req, res) => {
       contrato.dataFinalizacao = undefined;
     }
     contrato.responsavel = req.body.responsavel || contrato.responsavel;
+    // V38: quem registra a comunicação ao inquilino passa a ser o responsável (se não escolheu outro)
+    const responsavelEscolhido = req.body.responsavel && req.body.responsavel !== req.body.responsavelAnterior;
+    if (semComunicacaoAntes && contrato.comunicacaoInquilino && !responsavelEscolhido) {
+      contrato.responsavel = req.usuario.nome;
+    }
     contrato.prioridade = req.body.prioridade || contrato.prioridade;
     contrato.statusImovel = req.body.statusImovel || contrato.statusImovel;
     contrato.dataDisponivelAluguel = req.body.dataDisponivelAluguel || contrato.dataDisponivelAluguel;
