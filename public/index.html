@@ -1035,7 +1035,7 @@
 
   <div class="header">
     <h1>🏢 Integrativa Desocupação</h1>
-    <div class="version-badge">V37 📥 Importar planilha</div>
+    <div class="version-badge">V38 📄 Termo de desocupação</div>
     <div class="header-controls">
       <div class="nav-tabs">
         <button class="tab-btn active" data-aba="dashboard" onclick="mudarAba('dashboard')">📊 Dashboard</button>
@@ -1431,8 +1431,11 @@
         </div>
 
         <div class="modal-form-group">
-          <label>📅 Agendamento Vistoria:</label>
-          <input type="date" id="novo-agendamento">
+          <label>📅 Agendamento Vistoria (data e horário):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="date" id="novo-agendamento" style="flex: 2;">
+            <input type="time" id="novo-horaVistoria" style="flex: 1; min-width: 0;">
+          </div>
         </div>
 
         <div class="modal-form-group">
@@ -1460,13 +1463,6 @@
         <div class="modal-form-group">
           <label>👤 Responsável pela Ação:</label>
           <select id="novo-responsavel">
-            <option value="">-- Selecione --</option>
-            <option value="cassio">👨‍⚖️ Cássio (Advogado)</option>
-            <option value="yuri">👨‍⚖️ Yuri (Advogado)</option>
-            <option value="cristiane">👩‍⚖️ Cristiane (Advogada)</option>
-            <option value="vistoriador">👷 Vistoriador</option>
-            <option value="maria">👩‍💼 Maria (Integrativa)</option>
-            <option value="outro">🔧 Outro</option>
           </select>
         </div>
 
@@ -1531,8 +1527,11 @@
         </div>
 
         <div class="modal-form-group">
-          <label>📅 Agendamento Vistoria:</label>
-          <input type="date" id="edit-agendamento">
+          <label>📅 Agendamento Vistoria (data e horário):</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="date" id="edit-agendamento" style="flex: 2;">
+            <input type="time" id="edit-horaVistoria" style="flex: 1; min-width: 0;">
+          </div>
         </div>
 
         <div class="modal-form-group">
@@ -1590,13 +1589,6 @@
         <div class="modal-form-group">
           <label>👤 Responsável pela Ação:</label>
           <select id="edit-responsavel">
-            <option value="">-- Selecione --</option>
-            <option value="cassio">👨‍⚖️ Cássio (Advogado)</option>
-            <option value="yuri">👨‍⚖️ Yuri (Advogado)</option>
-            <option value="cristiane">👩‍⚖️ Cristiane (Advogada)</option>
-            <option value="vistoriador">👷 Vistoriador</option>
-            <option value="maria">👩‍💼 Maria (Integrativa)</option>
-            <option value="outro">🔧 Outro</option>
           </select>
         </div>
 
@@ -1629,6 +1621,10 @@
         <div class="modal-buttons">
           <button type="button" class="btn-primary" onclick="salvarEdicao()">💾 Salvar</button>
           <button type="button" class="btn-primary" style="background-color: #e67e22;" onclick="registrarReparoDaEdicao()">🔧 Registrar reparo</button>
+        </div>
+        <div class="modal-buttons" style="margin-top: 8px;">
+          <button type="button" class="btn-primary" style="background-color: #8e44ad;" onclick="gerarTermoDaEdicao('pdf')" title="Termo de desocupação com ciência da vistoria e aviso prévio de 30 dias">📄 Termo de desocupação (PDF)</button>
+          <button type="button" class="btn-primary" style="background-color: #6c3483;" onclick="gerarTermoDaEdicao('word')">📝 Termo (Word)</button>
           <button type="button" class="btn-secondary" onclick="fecharModalEditar()">❌ Cancelar</button>
         </div>
       </form>
@@ -1964,6 +1960,7 @@
       aplicarUsuario(u);
       if (u.trocarSenha) abrirModalSenha(true);
       verificarDrive();
+      carregarNomesUsuarios();
       carregarDados();
     }
 
@@ -2628,7 +2625,7 @@
           'maria': '👩‍💼 Maria',
           'outro': '🔧 Outro'
         };
-        responsavelTexto = respMap[c.responsavel] || '-';
+        responsavelTexto = respMap[c.responsavel] || (c.responsavel ? `👤 ${escaparHTML(c.responsavel)}` : '-');
         
         // Prioridade
         let prioridadeTexto = '';
@@ -2940,6 +2937,179 @@
           mostrarToast(`❌ ${erro.message}`, true);
           atualizarSyncStatus('error');
         });
+    }
+
+    // ========= RESPONSÁVEL = USUÁRIOS DO SISTEMA (V38) =========
+    let nomesUsuarios = [];
+
+    async function carregarNomesUsuarios() {
+      try {
+        const resp = await fetch(`${API_URL}/usuarios/nomes`);
+        const data = await resp.json().catch(() => ({}));
+        if (data.sucesso) nomesUsuarios = data.nomes;
+      } catch (e) { /* sem conexão: fica só o usuário logado */ }
+    }
+
+    // Preenche o campo "Responsável" com os usuários do sistema (e mantém um valor antigo, se houver)
+    function preencherResponsaveis(selectId, valor) {
+      const sel = document.getElementById(selectId);
+      const nomes = [...new Set([...(nomesUsuarios || []), ...(usuarioAtual ? [usuarioAtual.nome] : [])])].sort((a, b) => a.localeCompare(b));
+      const antigo = valor && !nomes.includes(valor) ? valor : null;
+      sel.innerHTML = `<option value="">-- Selecione --</option>` +
+        nomes.map(n => `<option value="${escaparHTML(n)}">${escaparHTML(n)}${usuarioAtual && n === usuarioAtual.nome ? ' (você)' : ''}</option>`).join('') +
+        (antigo ? `<option value="${escaparHTML(antigo)}">${escaparHTML(NOMES_RESPONSAVEL[antigo] || antigo)} (anterior)</option>` : '');
+      sel.value = valor || '';
+    }
+
+    // ========= TERMO DE DESOCUPAÇÃO (V38) =========
+    const AVISO_PREVIO_DIAS = 30;
+    const EMPRESA_TERMO = 'Integrativa Negócios Imobiliários Ltda';
+    const CIDADE_TERMO = 'Olímpia/SP';
+    const MESES = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+
+    function dataPorExtenso(d) {
+      return `${d.getDate()} de ${MESES[d.getMonth()]} de ${d.getFullYear()}`;
+    }
+
+    // Monta os dados do termo a partir do contrato salvo (ou do formulário de edição aberto)
+    function dadosTermo(c, form) {
+      const comunicacao = (form && form.comunicacao) || (c.comunicacaoInquilino ? String(c.comunicacaoInquilino).split('T')[0] : '');
+      const vistoria = (form && form.vistoria) || (c.agendamentoVistoria ? String(c.agendamentoVistoria).split('T')[0] : '');
+      const hora = (form && form.hora) || c.horaVistoria || '';
+      return {
+        contrato: c.contrato,
+        locatario: (form && form.locatario) || c.locatario || '',
+        endereco: (form && form.endereco) || c.endereco || '',
+        comunicacao: comunicacao ? dataLocal(comunicacao) : null,
+        vistoria: vistoria ? dataLocal(vistoria) : null,
+        hora,
+        garantia: [NOMES_GARANTIA[c.garantiaTipo], c.garantiaEmpresa].filter(Boolean).join(' – '),
+        responsavel: (form && form.responsavel) || c.responsavel || (usuarioAtual ? usuarioAtual.nome : '')
+      };
+    }
+
+    function htmlTermo(t, paraWord) {
+      const e = escaparHTML;
+      const fimAviso = new Date(t.comunicacao); fimAviso.setDate(fimAviso.getDate() + AVISO_PREVIO_DIAS);
+      const responsavel = NOMES_RESPONSAVEL[t.responsavel] || t.responsavel;
+      const logo = !paraWord && logoData ? `<img src="${logoData}" alt="Logo" style="max-height:60px; max-width:180px;">` : '';
+      return `
+  <div style="text-align:center; margin-bottom:14pt;">
+    ${logo}
+    <div style="font-size:10pt; color:#555;">${e(EMPRESA_TERMO)}</div>
+  </div>
+  <h1 style="font-size:15pt; text-align:center; margin:0 0 4pt;">TERMO DE DESOCUPAÇÃO DE IMÓVEL</h1>
+  <p style="text-align:center; margin:0 0 16pt; font-size:10pt;">Comunicação de desocupação, aviso prévio e ciência da vistoria de saída</p>
+
+  <p><b>LOCATÁRIO(A):</b> ${e(t.locatario)}${'&nbsp;'.repeat(2)}<b>CPF:</b> ____________________________</p>
+  <p><b>IMÓVEL:</b> ${e(t.endereco)}</p>
+  <p><b>CONTRATO DE LOCAÇÃO Nº:</b> ${e(t.contrato)}${t.garantia ? `${'&nbsp;'.repeat(4)}<b>GARANTIA:</b> ${e(t.garantia)}` : ''}</p>
+  <p><b>ADMINISTRADORA:</b> ${e(EMPRESA_TERMO)}</p>
+
+  <p style="text-align:justify;">Pelo presente termo, o(a) LOCATÁRIO(A) acima qualificado(a) declara ter comunicado à ADMINISTRADORA, em
+  <b>${dataPorExtenso(t.comunicacao)}</b>, sua intenção de desocupar o imóvel objeto do contrato de locação acima indicado, e declara estar
+  ciente e de acordo com as condições a seguir:</p>
+
+  <p style="text-align:justify;"><b>1. Aviso prévio.</b> Nos termos do art. 6º da Lei nº 8.245/1991 e do contrato de locação, a desocupação deve ser
+  comunicada com antecedência mínima de <b>${AVISO_PREVIO_DIAS} (trinta) dias</b>. Contado o aviso prévio a partir da data da comunicação, o prazo
+  se encerra em <b>${dataPorExtenso(fimAviso)}</b>. Os aluguéis e encargos da locação (condomínio, IPTU, água, energia e demais previstos
+  no contrato) são devidos até o término do aviso prévio ou até a efetiva entrega das chaves, o que ocorrer por último, ressalvadas as
+  demais condições do contrato, inclusive multa por rescisão antecipada, quando aplicável.</p>
+
+  <p style="text-align:justify;"><b>2. Vistoria de saída.</b> O(A) LOCATÁRIO(A) declara-se ciente de que a vistoria de saída do imóvel está agendada
+  para <b>${dataPorExtenso(t.vistoria)}, às ${e(t.hora)}</b>, devendo o imóvel estar desocupado de pessoas e bens, limpo e nas mesmas condições
+  em que foi recebido, conforme o laudo de vistoria inicial, ressalvado o desgaste natural decorrente do uso normal.</p>
+
+  <p style="text-align:justify;"><b>3. Reparos.</b> Os reparos necessários apontados na vistoria de saída, em comparação com o laudo de vistoria inicial,
+  serão de responsabilidade do(a) LOCATÁRIO(A), podendo ser orçados pela ADMINISTRADORA e cobrados diretamente ou por meio da garantia
+  locatícia.</p>
+
+  <p style="text-align:justify;"><b>4. Entrega das chaves.</b> A locação somente se encerra com a entrega das chaves à ADMINISTRADORA, mediante recibo,
+  acompanhada dos comprovantes de quitação e de transferência ou desligamento das contas de consumo (água e energia) e, quando houver,
+  das demais despesas do imóvel.</p>
+
+  <p style="margin-top:22pt;">${e(CIDADE_TERMO)}, ${dataPorExtenso(t.comunicacao)}.</p>
+
+  <table style="width:100%; margin-top:40pt; border-collapse:collapse;">
+    <tr>
+      <td style="width:50%; text-align:center; padding:0 10pt; vertical-align:top;">
+        ______________________________________<br><b>${e(t.locatario)}</b><br>Locatário(a)<br>CPF: ____________________
+      </td>
+      <td style="width:50%; text-align:center; padding:0 10pt; vertical-align:top;">
+        ______________________________________<br><b>${e(responsavel || '')}</b><br>p/ ${e(EMPRESA_TERMO)}
+      </td>
+    </tr>
+  </table>`;
+    }
+
+    function gerarTermo(c, form, formato) {
+      const t = dadosTermo(c, form);
+      const faltando = [
+        !t.locatario || normalizarTexto(t.locatario) === 'a preencher' ? 'nome do locatário' : '',
+        !t.endereco ? 'endereço do imóvel' : '',
+        !t.comunicacao ? 'data da comunicação ao inquilino' : '',
+        !t.vistoria ? 'data da vistoria' : '',
+        !t.hora ? 'horário da vistoria' : ''
+      ].filter(Boolean);
+      if (faltando.length) {
+        mostrarToast(`❌ Para gerar o termo, preencha: ${faltando.join(', ')}`, true);
+        return false;
+      }
+      const nomeArquivo = `Termo-desocupacao-${String(c.contrato).replace(/[\\/:*?"<>|]/g, '-')}`;
+
+      if (formato === 'word') {
+        const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="utf-8"><title>${escaparHTML(nomeArquivo)}</title>
+<style>@page { size: A4; margin: 2cm; } body { font-family: Arial, sans-serif; font-size: 11pt; line-height: 1.45; }</style></head>
+<body>${htmlTermo(t, true)}</body></html>`;
+        const blob = new Blob(['﻿', html], { type: 'application/msword' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = `${nomeArquivo}.doc`;
+        document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000);
+        mostrarToast('📝 Termo gerado em Word');
+        return true;
+      }
+
+      const janela = window.open('', '_blank', 'width=900,height=1000');
+      if (!janela) { mostrarToast('❌ O navegador bloqueou a janela do termo. Permita pop-ups para este site.', true); return false; }
+      janela.document.open();
+      janela.document.write(`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><title>${escaparHTML(nomeArquivo)}</title>
+<style>
+  @page { size: A4; margin: 18mm 18mm; }
+  body { font-family: Arial, Helvetica, sans-serif; font-size: 11.5pt; line-height: 1.5; color: #222; max-width: 760px; margin: 24px auto; padding: 0 16px; }
+  .barra { display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 16px; }
+  .barra button { background: #8e44ad; color: #fff; border: 0; border-radius: 5px; padding: 9px 16px; font-weight: bold; cursor: pointer; }
+  .barra button.sec { background: #95a5a6; }
+  p { margin: 0 0 9pt; }
+  @media print { .barra { display: none; } body { margin: 0; padding: 0; } }
+</style></head><body>
+<div class="barra"><button onclick="window.print()">🖨️ Imprimir / Salvar PDF</button><button class="sec" onclick="window.close()">Fechar</button></div>
+${htmlTermo(t, false)}
+<script>window.addEventListener('load', function () { setTimeout(function () { window.print(); }, 300); });<\/script>
+</body></html>`);
+      janela.document.close();
+      return true;
+    }
+
+    function gerarTermoDesocupacao(id, formato) {
+      const c = contratos.find(x => x._id === id);
+      if (c) gerarTermo(c, null, formato);
+    }
+
+    // Usa o que está digitado na janela de edição (mesmo antes de salvar)
+    function gerarTermoDaEdicao(formato) {
+      const c = contratos.find(x => x._id === contratoEmEdicao);
+      if (!c) return;
+      gerarTermo(c, {
+        locatario: document.getElementById('edit-locatario').value,
+        endereco: document.getElementById('edit-endereco').value,
+        comunicacao: document.getElementById('edit-comunicacao').value,
+        vistoria: document.getElementById('edit-agendamento').value,
+        hora: document.getElementById('edit-horaVistoria').value,
+        responsavel: document.getElementById('edit-responsavel').value
+      }, formato);
     }
 
     // ========= IMPORTAR PLANILHA DA SUPERLÓGICA (V37) =========
@@ -4237,6 +4407,8 @@
       document.getElementById('novo-entrega').value = '';
       document.getElementById('novo-tipoDesocupacao').value = 'comum';
       document.getElementById('novo-statusChaves').value = 'pendente';
+      document.getElementById('novo-horaVistoria').value = '';
+      preencherResponsaveis('novo-responsavel', usuarioAtual ? usuarioAtual.nome : '');
       document.getElementById('modalNovoContrato').classList.add('show');
     }
 
@@ -4263,6 +4435,7 @@
         tipoDesocupacao: document.getElementById('novo-tipoDesocupacao').value,
         comunicacaoInquilino: document.getElementById('novo-comunicacao').value ? new Date(document.getElementById('novo-comunicacao').value + 'T00:00:00Z').toISOString() : null,
         agendamentoVistoria: document.getElementById('novo-agendamento').value ? new Date(document.getElementById('novo-agendamento').value + 'T00:00:00Z').toISOString() : null,
+        horaVistoria: document.getElementById('novo-horaVistoria').value,
         entregaChaves: document.getElementById('novo-entrega').value ? new Date(document.getElementById('novo-entrega').value + 'T00:00:00Z').toISOString() : null,
         statusChaves: document.getElementById('novo-statusChaves').value,
         responsavel: document.getElementById('novo-responsavel').value,
@@ -4321,13 +4494,16 @@
       document.getElementById('edit-endereco').value = c.endereco || '';
       document.getElementById('edit-comunicacao').value = c.comunicacaoInquilino ? c.comunicacaoInquilino.split('T')[0] : '';
       document.getElementById('edit-agendamento').value = c.agendamentoVistoria ? c.agendamentoVistoria.split('T')[0] : '';
+      document.getElementById('edit-horaVistoria').value = c.horaVistoria || '';
       document.getElementById('edit-entrega').value = c.entregaChaves ? c.entregaChaves.split('T')[0] : '';
       document.getElementById('edit-tipoDesocupacao').value = c.tipoDesocupacao || 'comum';
       document.getElementById('edit-statusChaves').value = c.statusChaves || 'pendente';
       document.getElementById('edit-dataRetiradaChaves').value = c.dataRetiradaChaves ? c.dataRetiradaChaves.split('T')[0] : '';
       document.getElementById('edit-dataDevolucaoChaves').value = c.dataDevolucaoChaves ? c.dataDevolucaoChaves.split('T')[0] : '';
       document.getElementById('edit-finalizado').value = c.finalizado || 'nao';
-      document.getElementById('edit-responsavel').value = c.responsavel || '';
+      // Sem comunicação ainda: já sugere o usuário logado, que vai fazer a comunicação
+      preencherResponsaveis('edit-responsavel', c.responsavel || (!c.comunicacaoInquilino && usuarioAtual ? usuarioAtual.nome : ''));
+      document.getElementById('edit-responsavel').dataset.anterior = c.responsavel || '';
       document.getElementById('edit-prioridade').value = c.prioridade || 'media';
       document.getElementById('edit-statusImovel').value = c.statusImovel || 'em-desocupacao';
       document.getElementById('edit-dataDisponivelAluguel').value = c.dataDisponivelAluguel ? c.dataDisponivelAluguel.split('T')[0] : '';
@@ -4369,6 +4545,8 @@
         tipoDesocupacao: document.getElementById('edit-tipoDesocupacao').value,
         comunicacaoInquilino: comunicacao ? new Date(comunicacao + 'T00:00:00Z').toISOString() : null,
         agendamentoVistoria: agendamento ? new Date(agendamento + 'T00:00:00Z').toISOString() : null,
+        horaVistoria: document.getElementById('edit-horaVistoria').value,
+        responsavelAnterior: document.getElementById('edit-responsavel').dataset.anterior || '',
         entregaChaves: entrega ? new Date(entrega + 'T00:00:00Z').toISOString() : null,
         dataRetiradaChaves: dataRetirada ? new Date(dataRetirada + 'T00:00:00Z').toISOString() : null,
         dataDevolucaoChaves: dataDevolucao ? new Date(dataDevolucao + 'T00:00:00Z').toISOString() : null,
@@ -4398,8 +4576,18 @@
           } else {
             mostrarToast('✅ Contrato atualizado!');
           }
+          const idSalvo = contratoEmEdicao;
+          const registrouComunicacao = contratoAntigo && !contratoAntigo.comunicacaoInquilino && comunicacao;
           fecharModalEditar();
           carregarDados();
+          // V38: ao registrar a comunicação, oferece o termo de desocupação na hora
+          if (registrouComunicacao) {
+            setTimeout(() => {
+              if (confirm('Comunicação registrada. Gerar agora o termo de desocupação para o inquilino assinar?')) {
+                gerarTermoDesocupacao(idSalvo, 'pdf');
+              }
+            }, 700);
+          }
         } else {
           mostrarToast('❌ Erro ao atualizar!', true);
           atualizarSyncStatus('error');
